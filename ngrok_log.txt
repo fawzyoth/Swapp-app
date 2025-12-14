@@ -1,0 +1,2 @@
+t=2025-12-12T18:38:47+0100 lvl=info msg="no configuration paths supplied"
+t=2025-12-12T18:38:47+0100 lvl=info msg="using configuration at default config path" path=C:\\Users\\msi\\AppData\\Local/ngrok/ngrok.yml

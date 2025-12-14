@@ -194,7 +194,7 @@ export default function MerchantExchangeDetail() {
     );
 
     // Generate QR code URL for delivery person verification
-    const verificationUrl = `https://fawzyoth.github.io/Swapp-app/delivery/verify/${exchange.exchange_code}`;
+    const verificationUrl = `https://fawzyoth.github.io/Swapp-app/#/delivery/verify/${exchange.exchange_code}`;
 
     const printWindow = window.open("", "", "height=800,width=600");
     if (printWindow) {

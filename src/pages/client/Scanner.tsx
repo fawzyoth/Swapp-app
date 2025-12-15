@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { ScanLine, KeyRound } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useLanguage } from '../../contexts/LanguageContext';
-import LanguageSwitcher from '../../components/LanguageSwitcher';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { ScanLine, KeyRound } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useLanguage } from "../../contexts/LanguageContext";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function ClientScanner() {
-  const [error, setError] = useState('');
-  const [manualCode, setManualCode] = useState('');
+  const [error, setError] = useState("");
+  const [manualCode, setManualCode] = useState("");
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -17,9 +17,9 @@ export default function ClientScanner() {
   useEffect(() => {
     if (!useManualEntry) {
       const scanner = new Html5QrcodeScanner(
-        'qr-reader',
+        "qr-reader",
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
+        false,
       );
 
       scanner.render(onScanSuccess, onScanError);
@@ -34,20 +34,30 @@ export default function ClientScanner() {
     validateAndNavigate(decodedText);
   };
 
-  const onScanError = () => {
-  };
+  const onScanError = () => {};
 
   const validateAndNavigate = async (scannedData: string) => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Check if it's a direct URL
-      if (scannedData.includes('/client/exchange/new?merchant=')) {
+      if (scannedData.includes("/client/exchange/new?merchant=")) {
         const url = new URL(scannedData);
-        const merchantId = url.searchParams.get('merchant');
+        const merchantId = url.searchParams.get("merchant");
         if (merchantId) {
           navigate(`/client/exchange/new?merchant=${merchantId}`);
+          return;
+        }
+      }
+
+      // Check if it's a tracking URL
+      if (scannedData.includes("/client/tracking/")) {
+        const url = new URL(scannedData);
+        const pathParts = url.pathname.split("/");
+        const exchangeCode = pathParts[pathParts.length - 1];
+        if (exchangeCode) {
+          navigate(`/client/tracking/${exchangeCode}`);
           return;
         }
       }
@@ -61,17 +71,64 @@ export default function ClientScanner() {
         merchantId = parsed.merchant_id;
         qrCode = parsed.code;
       } catch {
-        // If not JSON, treat as QR code string (e.g., SWAPP-XXXXXXXX)
+        // If not JSON, treat as QR code string
         qrCode = scannedData;
       }
 
+      // Check if this is an exchange code (starts with EXC-)
+      if (qrCode && qrCode.startsWith("EXC-")) {
+        // This is an exchange code - redirect to tracking
+        const { data: exchange } = await supabase
+          .from("exchanges")
+          .select("exchange_code")
+          .eq("exchange_code", qrCode)
+          .maybeSingle();
+
+        if (exchange) {
+          navigate(`/client/tracking/${exchange.exchange_code}`);
+          return;
+        }
+      }
+
+      // Check if this is a bordereau code (starts with BDX-)
+      if (qrCode && qrCode.startsWith("BDX-")) {
+        // Check if this bordereau has an associated exchange
+        const { data: bordereau } = await supabase
+          .from("merchant_bordereaux")
+          .select("status, exchange_id")
+          .eq("bordereau_code", qrCode)
+          .maybeSingle();
+
+        if (
+          bordereau &&
+          bordereau.status !== "available" &&
+          bordereau.exchange_id
+        ) {
+          // Bordereau is used - get the exchange and redirect to tracking
+          const { data: exchange } = await supabase
+            .from("exchanges")
+            .select("exchange_code")
+            .eq("id", bordereau.exchange_id)
+            .single();
+
+          if (exchange) {
+            navigate(`/client/tracking/${exchange.exchange_code}`);
+            return;
+          }
+        }
+
+        // Bordereau available or not found - redirect to exchange form (it handles the logic)
+        navigate(`/client/exchange/new?bordereau=${qrCode}`);
+        return;
+      }
+
       // Look up merchant by QR code or ID
-      let query = supabase.from('merchants').select('*');
+      let query = supabase.from("merchants").select("*");
 
       if (merchantId) {
-        query = query.eq('id', merchantId);
+        query = query.eq("id", merchantId);
       } else if (qrCode) {
-        query = query.eq('qr_code_data', qrCode);
+        query = query.eq("qr_code_data", qrCode);
       }
 
       const { data: merchant, error: fetchError } = await query.maybeSingle();
@@ -82,11 +139,11 @@ export default function ClientScanner() {
         // Navigate to exchange form with merchant ID
         navigate(`/client/exchange/new?merchant=${merchant.id}`);
       } else {
-        setError(t('invalidQRCode'));
+        setError(t("invalidQRCode"));
       }
     } catch (err) {
-      console.error('Error validating QR code:', err);
-      setError(t('invalidQRCode'));
+      console.error("Error validating QR code:", err);
+      setError(t("invalidQRCode"));
     } finally {
       setLoading(false);
     }
@@ -100,7 +157,10 @@ export default function ClientScanner() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-sky-50" dir={dir}>
+    <div
+      className="min-h-screen bg-gradient-to-br from-emerald-50 to-sky-50"
+      dir={dir}
+    >
       <div className="container mx-auto px-4 py-8">
         {/* Language Switcher */}
         <div className="flex justify-end mb-6">
@@ -113,11 +173,9 @@ export default function ClientScanner() {
               <ScanLine className="w-8 h-8 text-emerald-600" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              {t('scanQRCode')}
+              {t("scanQRCode")}
             </h1>
-            <p className="text-slate-600">
-              {t('scanDescription')}
-            </p>
+            <p className="text-slate-600">{t("scanDescription")}</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -130,7 +188,7 @@ export default function ClientScanner() {
             {loading && (
               <div className="mb-4 p-4 bg-sky-50 border border-sky-200 rounded-lg text-sky-700 flex items-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-600"></div>
-                {t('loading')}
+                {t("loading")}
               </div>
             )}
 
@@ -142,14 +200,16 @@ export default function ClientScanner() {
                   className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
                 >
                   <KeyRound className="w-5 h-5" />
-                  {lang === 'ar' ? 'إدخال الرمز يدوياً' : 'Entrer le code manuellement'}
+                  {lang === "ar"
+                    ? "إدخال الرمز يدوياً"
+                    : "Entrer le code manuellement"}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleManualSubmit}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {lang === 'ar' ? 'رمز التاجر' : 'Code du commerçant'}
+                    {lang === "ar" ? "رمز التاجر" : "Code du commerçant"}
                   </label>
                   <input
                     type="text"
@@ -166,14 +226,18 @@ export default function ClientScanner() {
                     disabled={loading}
                     className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg font-medium transition-colors"
                   >
-                    {loading ? t('loading') : (lang === 'ar' ? 'التحقق من الرمز' : 'Valider le code')}
+                    {loading
+                      ? t("loading")
+                      : lang === "ar"
+                        ? "التحقق من الرمز"
+                        : "Valider le code"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setUseManualEntry(false)}
                     className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
                   >
-                    {lang === 'ar' ? 'العودة للماسح' : 'Retour au scanner'}
+                    {lang === "ar" ? "العودة للماسح" : "Retour au scanner"}
                   </button>
                 </div>
               </form>
@@ -181,10 +245,9 @@ export default function ClientScanner() {
 
             <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
               <p className="text-sm text-emerald-800">
-                {lang === 'ar'
-                  ? 'امسح رمز QR المقدم من التاجر لتقديم طلب تبديل المنتج.'
-                  : 'Scannez le QR code fourni par votre commerçant pour soumettre une demande d\'échange de produit.'
-                }
+                {lang === "ar"
+                  ? "امسح رمز QR المقدم من التاجر لتقديم طلب تبديل المنتج."
+                  : "Scannez le QR code fourni par votre commerçant pour soumettre une demande d'échange de produit."}
               </p>
             </div>
           </div>

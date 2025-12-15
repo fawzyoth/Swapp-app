@@ -305,11 +305,17 @@ export default function ExchangeVerification() {
       // Auto-generate bag ID
       const autoBagId = generateBagId();
 
+      // Determine status: if payment collected, mark as completed
+      const newStatus =
+        paymentCollected && collectedAmount > 0
+          ? "completed"
+          : "delivery_verified";
+
       // Update exchange status (core fields that always exist)
       const { error: updateError } = await supabase
         .from("exchanges")
         .update({
-          status: "delivery_verified",
+          status: newStatus,
           bag_id: autoBagId,
           updated_at: new Date().toISOString(),
         })
@@ -389,7 +395,7 @@ export default function ExchangeVerification() {
       // Add status history
       await supabase.from("status_history").insert({
         exchange_id: exchange.id,
-        status: "delivery_verified",
+        status: newStatus,
       });
 
       // Send SMS notification to client
@@ -397,8 +403,8 @@ export default function ExchangeVerification() {
         exchange.client_phone,
         exchange.client_name,
         exchange.exchange_code,
-        "delivery_verified",
-        STATUS_LABELS["delivery_verified"],
+        newStatus,
+        STATUS_LABELS[newStatus],
       );
 
       setAssignedBagId(autoBagId);

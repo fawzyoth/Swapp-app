@@ -84,7 +84,7 @@ export default function ClientExchangeForm() {
       // Find the bordereau and its merchant
       const { data: bordereau, error: bordereauError } = await supabase
         .from("merchant_bordereaux")
-        .select("*, merchants(*), exchanges(*)")
+        .select("*, merchants(*)")
         .eq("bordereau_code", bordereauCode)
         .single();
 
@@ -95,24 +95,33 @@ export default function ClientExchangeForm() {
       }
 
       // If bordereau is already assigned to an exchange, redirect to tracking
-      if (bordereau.status !== "available" && bordereau.exchange_id) {
-        // Get the exchange code to redirect
-        if (bordereau.exchanges && bordereau.exchanges.exchange_code) {
-          navigate(`/client/tracking/${bordereau.exchanges.exchange_code}`);
-          return;
-        } else {
-          // Fallback: fetch exchange separately
+      if (bordereau.status !== "available") {
+        // If we have an exchange_id, fetch the exchange code
+        if (bordereau.exchange_id) {
           const { data: exchange } = await supabase
             .from("exchanges")
             .select("exchange_code")
             .eq("id", bordereau.exchange_id)
             .single();
 
-          if (exchange) {
+          if (exchange && exchange.exchange_code) {
             navigate(`/client/tracking/${exchange.exchange_code}`);
             return;
           }
         }
+
+        // Fallback: search for exchange by bordereau_code in exchanges table
+        const { data: exchangeByBordereau } = await supabase
+          .from("exchanges")
+          .select("exchange_code")
+          .eq("bordereau_code", bordereauCode)
+          .maybeSingle();
+
+        if (exchangeByBordereau && exchangeByBordereau.exchange_code) {
+          navigate(`/client/tracking/${exchangeByBordereau.exchange_code}`);
+          return;
+        }
+
         setError("Ce bordereau a deja ete utilise");
         setLoadingMerchant(false);
         return;
@@ -459,6 +468,7 @@ export default function ClientExchangeForm() {
           status: "pending",
           payment_status: "pending",
           payment_amount: 0,
+          bordereau_code: bordereauCode || null,
         })
         .select()
         .single();

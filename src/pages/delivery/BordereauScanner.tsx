@@ -29,7 +29,31 @@ export default function BordereauScanner() {
     setCameraError("");
     setIsScanning(false);
 
+    // Check if we're on HTTPS (required for camera access)
+    if (
+      window.location.protocol !== "https:" &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      setCameraError("La caméra nécessite une connexion HTTPS sécurisée.");
+      return;
+    }
+
+    // Check if camera is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError("Votre navigateur ne supporte pas l'accès à la caméra.");
+      return;
+    }
+
     try {
+      // First request camera permission explicitly
+      await navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: "environment" } })
+        .then((stream) => {
+          // Stop the stream immediately, we just needed permission
+          stream.getTracks().forEach((track) => track.stop());
+        });
+
       // Clean up any existing scanner
       if (scannerRef.current) {
         try {
@@ -55,11 +79,27 @@ export default function BordereauScanner() {
       setIsScanning(true);
     } catch (err: any) {
       console.error("Camera error:", err);
-      setCameraError(
+
+      let errorMessage = "Impossible d'accéder à la caméra.";
+
+      if (
+        err.name === "NotAllowedError" ||
         err.message?.includes("Permission")
-          ? "Permission caméra refusée. Veuillez autoriser l'accès à la caméra."
-          : "Impossible d'accéder à la caméra. Utilisez l'entrée manuelle.",
-      );
+      ) {
+        errorMessage =
+          "Permission caméra refusée. Veuillez autoriser l'accès à la caméra dans les paramètres de votre navigateur.";
+      } else if (err.name === "NotFoundError") {
+        errorMessage = "Aucune caméra trouvée sur cet appareil.";
+      } else if (err.name === "NotReadableError") {
+        errorMessage = "La caméra est utilisée par une autre application.";
+      } else if (err.name === "OverconstrainedError") {
+        errorMessage = "La caméra arrière n'est pas disponible.";
+      } else if (err.name === "SecurityError") {
+        errorMessage =
+          "Accès à la caméra bloqué. Vérifiez que vous utilisez HTTPS.";
+      }
+
+      setCameraError(errorMessage);
     }
   };
 

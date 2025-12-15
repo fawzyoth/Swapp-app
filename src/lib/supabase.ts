@@ -277,3 +277,121 @@ export const STATUS_LABELS: Record<string, string> = {
   returned: "Produit retourné",
   rejected: "Rejeté",
 };
+
+// ============================================
+// MERCHANT PAYMENT SYSTEM
+// ============================================
+
+// Fixed exchange fee kept by SWAPP
+export const SWAPP_EXCHANGE_FEE = 9; // TND
+
+// Merchant Payment Types
+export type MerchantPaymentStatus =
+  | "pending"
+  | "approved"
+  | "paid"
+  | "disputed";
+
+export type MerchantPayment = {
+  id: string;
+  merchant_id: string;
+  payment_number: string;
+  period_number: number; // 1 or 2 (bi-weekly)
+  year: number;
+  month: number;
+  period_start: string;
+  period_end: string;
+  total_exchanges: number;
+  total_collected: number; // Total client payments
+  total_swapp_fees: number; // 9 TND × exchanges
+  amount_due: number; // collected - fees
+  status: MerchantPaymentStatus;
+  approved_by?: string;
+  approved_at?: string;
+  paid_at?: string;
+  payment_method?: string; // bank_transfer, cash, check
+  payment_reference?: string;
+  notes?: string;
+  created_at: string;
+};
+
+export type MerchantPaymentItem = {
+  id: string;
+  payment_id: string;
+  exchange_id: string;
+  exchange_code: string;
+  client_name: string;
+  amount_collected: number; // What client paid
+  swapp_fee: number; // Fixed 9 TND
+  merchant_amount: number; // collected - 9
+  collection_date: string;
+  created_at: string;
+};
+
+export type MerchantFinancialSummary = {
+  total_pending: number;
+  total_paid: number;
+  current_period_amount: number;
+  exchanges_this_period: number;
+  last_payment_date?: string;
+  last_payment_amount?: number;
+};
+
+// Calculate merchant amount from collected amount
+export const calculateMerchantAmount = (amountCollected: number): number => {
+  return Math.max(0, amountCollected - SWAPP_EXCHANGE_FEE);
+};
+
+// Get current bi-weekly period info
+export const getCurrentPeriod = (): {
+  periodNumber: number;
+  year: number;
+  month: number;
+  start: Date;
+  end: Date;
+} => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  if (day <= 15) {
+    // Period 1: 1st - 15th
+    return {
+      periodNumber: 1,
+      year,
+      month,
+      start: new Date(year, month - 1, 1),
+      end: new Date(year, month - 1, 15, 23, 59, 59),
+    };
+  } else {
+    // Period 2: 16th - end of month
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+      periodNumber: 2,
+      year,
+      month,
+      start: new Date(year, month - 1, 16),
+      end: new Date(year, month - 1, lastDay, 23, 59, 59),
+    };
+  }
+};
+
+// Generate payment number: PAY-2025-P24-001 (P = period count from start of year)
+export const generatePaymentNumber = (
+  year: number,
+  month: number,
+  periodNumber: number,
+  sequence: number,
+): string => {
+  const periodCount = (month - 1) * 2 + periodNumber;
+  return `PAY-${year}-P${periodCount.toString().padStart(2, "0")}-${sequence.toString().padStart(3, "0")}`;
+};
+
+// Payment status labels in French
+export const PAYMENT_STATUS_LABELS: Record<MerchantPaymentStatus, string> = {
+  pending: "En attente",
+  approved: "Approuvé",
+  paid: "Payé",
+  disputed: "Contesté",
+};

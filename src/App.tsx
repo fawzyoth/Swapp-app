@@ -52,6 +52,12 @@ const MerchantPrintBordereau = lazy(
 const MerchantBrandingSettings = lazy(
   () => import("./pages/merchant/BrandingSettings"),
 );
+const MerchantPaymentHistory = lazy(
+  () => import("./pages/merchant/PaymentHistory"),
+);
+const MerchantPaymentDetail = lazy(
+  () => import("./pages/merchant/PaymentDetail"),
+);
 
 // Admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -73,6 +79,12 @@ const AdminFinancialDashboard = lazy(
 const AdminInvoiceList = lazy(() => import("./pages/admin/InvoiceList"));
 const AdminInvoiceDetail = lazy(() => import("./pages/admin/InvoiceDetail"));
 const AdminSettlementList = lazy(() => import("./pages/admin/SettlementList"));
+const AdminMerchantPayments = lazy(
+  () => import("./pages/admin/MerchantPayments"),
+);
+const AdminMerchantPaymentDetail = lazy(
+  () => import("./pages/admin/MerchantPaymentDetail"),
+);
 
 // Delivery pages
 const DeliveryLogin = lazy(() => import("./pages/delivery/Login"));
@@ -281,6 +293,14 @@ function App() {
           <Route path="/admin/invoices" element={<AdminInvoiceList />} />
           <Route path="/admin/invoices/:id" element={<AdminInvoiceDetail />} />
           <Route path="/admin/settlements" element={<AdminSettlementList />} />
+          <Route
+            path="/admin/merchant-payments"
+            element={<AdminMerchantPayments />}
+          />
+          <Route
+            path="/admin/merchant-payments/:id"
+            element={<AdminMerchantPaymentDetail />}
+          />
 
           {/* Merchant routes */}
           <Route
@@ -360,6 +380,22 @@ function App() {
             element={
               <ProtectedRoute loginPath="/merchant/login">
                 <MerchantBrandingSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/payments"
+            element={
+              <ProtectedRoute loginPath="/merchant/login">
+                <MerchantPaymentHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/payments/:id"
+            element={
+              <ProtectedRoute loginPath="/merchant/login">
+                <MerchantPaymentDetail />
               </ProtectedRoute>
             }
           />

@@ -11,6 +11,7 @@ import {
   X,
   Printer,
   Palette,
+  Banknote,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -19,6 +20,7 @@ const menuItems = [
   { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/merchant/exchanges", icon: Package, label: "Échanges" },
   { path: "/merchant/clients", icon: Users, label: "Clients" },
+  { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
   {
     path: "/merchant/print-bordereau",
     icon: Printer,

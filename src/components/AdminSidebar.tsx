@@ -10,6 +10,7 @@ import {
   Banknote,
   FileText,
   Clock,
+  Store,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -18,6 +19,11 @@ const menuItems = [
   { path: "/admin/merchants", icon: Users, label: "E-Commerçants" },
   { path: "/admin/delivery-persons", icon: Truck, label: "Livreurs" },
   { path: "/admin/finances", icon: Banknote, label: "Finances" },
+  {
+    path: "/admin/merchant-payments",
+    icon: Store,
+    label: "Paiements Marchands",
+  },
   { path: "/admin/invoices", icon: FileText, label: "Factures" },
   { path: "/admin/settlements", icon: Clock, label: "Règlements" },
 ];

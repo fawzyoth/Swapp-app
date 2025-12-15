@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -16,10 +16,129 @@ import {
   Banknote,
   CreditCard,
   Smartphone,
+  Play,
+  Image as ImageIcon,
 } from "lucide-react";
 import { supabase, STATUS_LABELS } from "../../lib/supabase";
 import DeliveryLayout from "../../components/DeliveryLayout";
 import { sendStatusChangeSMS } from "../../lib/smsService";
+
+// Lazy loading image component
+function LazyImage({
+  src,
+  alt,
+  className,
+  onClick,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  onClick?: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && imgRef.current) {
+            imgRef.current.src = src;
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: "100px" },
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [src]);
+
+  if (error) {
+    return (
+      <div
+        className={`${className} bg-slate-100 flex items-center justify-center`}
+      >
+        <ImageIcon className="w-8 h-8 text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {!loaded && (
+        <div
+          className={`${className} bg-slate-100 animate-pulse flex items-center justify-center absolute inset-0`}
+        >
+          <ImageIcon className="w-8 h-8 text-slate-300" />
+        </div>
+      )}
+      <img
+        ref={imgRef}
+        alt={alt}
+        className={`${className} ${loaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        onClick={onClick}
+      />
+    </div>
+  );
+}
+
+// Lazy loading video component - only loads when user clicks play
+function LazyVideo({ src, className }: { src: string; className?: string }) {
+  const [showVideo, setShowVideo] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handlePlay = () => {
+    setLoading(true);
+    setShowVideo(true);
+  };
+
+  if (!showVideo) {
+    return (
+      <div
+        className={`${className} bg-slate-900 flex items-center justify-center cursor-pointer relative group`}
+        onClick={handlePlay}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:bg-white transition-colors shadow-lg">
+            <Play className="w-8 h-8 text-amber-600 ml-1" />
+          </div>
+          <span className="text-white font-medium text-sm">
+            Cliquez pour charger la vidéo
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div
+          className={`${className} bg-slate-900 flex items-center justify-center absolute inset-0 z-10`}
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+        </div>
+      )}
+      <video
+        src={src}
+        controls
+        autoPlay
+        className={className}
+        onLoadedData={() => setLoading(false)}
+        onCanPlay={() => setLoading(false)}
+      />
+    </div>
+  );
+}
 
 export default function ExchangeVerification() {
   const { code } = useParams();
@@ -479,11 +598,9 @@ export default function ExchangeVerification() {
                     </div>
                   </div>
                   <div className="bg-black rounded-lg overflow-hidden">
-                    <video
+                    <LazyVideo
                       src={exchange.video}
-                      controls
                       className="w-full max-h-96"
-                      poster=""
                     />
                   </div>
                   <p className="text-sm text-amber-700 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
@@ -498,11 +615,11 @@ export default function ExchangeVerification() {
               {exchange.photos && exchange.photos.length > 0 && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-slate-900 mb-4">
-                    Photos du produit
+                    Photos du produit ({exchange.photos.length})
                   </h3>
                   <div className="grid grid-cols-3 gap-4">
                     {exchange.photos.map((photo: string, index: number) => (
-                      <img
+                      <LazyImage
                         key={index}
                         src={photo}
                         alt={`Photo ${index + 1}`}

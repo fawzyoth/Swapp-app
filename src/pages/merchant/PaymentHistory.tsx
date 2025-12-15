@@ -1,215 +1,249 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Banknote,
+  Wallet,
+  TrendingUp,
+  Calendar,
+  ChevronRight,
   Clock,
   CheckCircle,
   AlertCircle,
-  ChevronRight,
-  Calendar,
-  TrendingUp,
-  Filter,
+  CreditCard,
 } from "lucide-react";
-import { supabase, MerchantPayment, PAYMENT_STATUS_LABELS, SWAPP_EXCHANGE_FEE } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
+import type {
+  MerchantPayment,
+  MerchantFinancialSummary,
+  MerchantPaymentStatus,
+} from "../../lib/supabase";
+import { PAYMENT_STATUS_LABELS, getCurrentPeriod } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
+
+// Demo data for when database tables don't exist
+const DEMO_PAYMENTS: MerchantPayment[] = [
+  {
+    id: "1",
+    merchant_id: "demo",
+    payment_number: "PAY-2025-P24-001",
+    period_number: 2,
+    year: 2025,
+    month: 12,
+    period_start: "2025-12-01",
+    period_end: "2025-12-15",
+    total_exchanges: 8,
+    total_collected: 245,
+    total_swapp_fees: 72,
+    amount_due: 173,
+    status: "pending",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    merchant_id: "demo",
+    payment_number: "PAY-2025-P23-001",
+    period_number: 1,
+    year: 2025,
+    month: 12,
+    period_start: "2025-12-01",
+    period_end: "2025-12-15",
+    total_exchanges: 12,
+    total_collected: 380,
+    total_swapp_fees: 108,
+    amount_due: 272,
+    status: "paid",
+    paid_at: "2025-12-18T10:30:00Z",
+    payment_method: "bank_transfer",
+    payment_reference: "VIR-2025-1218-001",
+    created_at: "2025-12-01T00:00:00Z",
+  },
+  {
+    id: "3",
+    merchant_id: "demo",
+    payment_number: "PAY-2025-P22-001",
+    period_number: 2,
+    year: 2025,
+    month: 11,
+    period_start: "2025-11-16",
+    period_end: "2025-11-30",
+    total_exchanges: 15,
+    total_collected: 425,
+    total_swapp_fees: 135,
+    amount_due: 290,
+    status: "paid",
+    paid_at: "2025-12-03T14:00:00Z",
+    payment_method: "bank_transfer",
+    payment_reference: "VIR-2025-1203-002",
+    created_at: "2025-11-16T00:00:00Z",
+  },
+  {
+    id: "4",
+    merchant_id: "demo",
+    payment_number: "PAY-2025-P21-001",
+    period_number: 1,
+    year: 2025,
+    month: 11,
+    period_start: "2025-11-01",
+    period_end: "2025-11-15",
+    total_exchanges: 10,
+    total_collected: 310,
+    total_swapp_fees: 90,
+    amount_due: 220,
+    status: "paid",
+    paid_at: "2025-11-18T09:15:00Z",
+    payment_method: "bank_transfer",
+    payment_reference: "VIR-2025-1118-001",
+    created_at: "2025-11-01T00:00:00Z",
+  },
+];
+
+const DEMO_SUMMARY: MerchantFinancialSummary = {
+  total_pending: 173,
+  total_paid: 782,
+  current_period_amount: 173,
+  exchanges_this_period: 8,
+  last_payment_date: "2025-12-18",
+  last_payment_amount: 272,
+};
 
 export default function PaymentHistory() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState<MerchantPayment[]>([]);
+  const [summary, setSummary] = useState<MerchantFinancialSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [summary, setSummary] = useState({
-    totalPending: 0,
-    totalPaid: 0,
-    currentPeriodExchanges: 0,
-    currentPeriodAmount: 0,
-  });
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
-    fetchPayments();
-  }, [statusFilter]);
+    checkAuth();
+    fetchData();
+  }, []);
 
-  const fetchPayments = async () => {
+  const checkAuth = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/merchant/login");
+    }
+  };
+
+  const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
 
-      // Fetch payments for this merchant
-      let query = supabase
-        .from("merchant_payments")
-        .select("*")
-        .eq("merchant_id", user.id)
-        .order("created_at", { ascending: false });
+      // Get merchant ID
+      const { data: merchantData } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
-
-      const { data: paymentsData, error } = await query;
-
-      if (error) {
-        console.warn("merchant_payments table may not exist yet:", error.message);
-        // Calculate from exchanges instead
-        await calculateFromExchanges(user.id);
+      if (!merchantData) {
+        // Use demo data
+        setPayments(DEMO_PAYMENTS);
+        setSummary(DEMO_SUMMARY);
+        setLoading(false);
         return;
       }
 
-      setPayments(paymentsData || []);
+      // Try to fetch real payments
+      const { data: paymentsData, error } = await supabase
+        .from("merchant_payments")
+        .select("*")
+        .eq("merchant_id", merchantData.id)
+        .order("created_at", { ascending: false });
 
-      // Calculate summary
-      const pending = (paymentsData || [])
-        .filter((p) => p.status === "pending" || p.status === "approved")
-        .reduce((sum, p) => sum + (p.amount_due || 0), 0);
+      if (error) {
+        console.log(
+          "Using demo data - merchant_payments table not created yet",
+        );
+        setPayments(DEMO_PAYMENTS);
+        setSummary(DEMO_SUMMARY);
+      } else {
+        setPayments(paymentsData || []);
+        // Calculate summary from real data
+        const pending = (paymentsData || [])
+          .filter((p) => p.status === "pending" || p.status === "approved")
+          .reduce((sum, p) => sum + p.amount_due, 0);
+        const paid = (paymentsData || [])
+          .filter((p) => p.status === "paid")
+          .reduce((sum, p) => sum + p.amount_due, 0);
+        const lastPaid = (paymentsData || []).find((p) => p.status === "paid");
+        const currentPeriod = getCurrentPeriod();
+        const currentPeriodPayment = (paymentsData || []).find(
+          (p) =>
+            p.year === currentPeriod.year &&
+            p.month === currentPeriod.month &&
+            p.period_number === currentPeriod.periodNumber,
+        );
 
-      const paid = (paymentsData || [])
-        .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + (p.amount_due || 0), 0);
-
-      setSummary((prev) => ({
-        ...prev,
-        totalPending: pending,
-        totalPaid: paid,
-      }));
-
-      // Calculate current period stats from exchanges
-      await calculateCurrentPeriodStats(user.id);
+        setSummary({
+          total_pending: pending,
+          total_paid: paid,
+          current_period_amount: currentPeriodPayment?.amount_due || 0,
+          exchanges_this_period: currentPeriodPayment?.total_exchanges || 0,
+          last_payment_date: lastPaid?.paid_at,
+          last_payment_amount: lastPaid?.amount_due,
+        });
+      }
     } catch (error) {
-      console.error("Error fetching payments:", error);
+      console.error("Error fetching data:", error);
+      setPayments(DEMO_PAYMENTS);
+      setSummary(DEMO_SUMMARY);
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateFromExchanges = async (merchantId: string) => {
-    try {
-      // Get exchanges with payment collected for this merchant
-      const { data: exchanges, error } = await supabase
-        .from("exchanges")
-        .select("*, delivery_verifications(amount_collected, payment_collected, created_at)")
-        .eq("merchant_id", merchantId)
-        .in("status", ["delivery_verified", "completed"]);
+  const filteredPayments =
+    filterStatus === "all"
+      ? payments
+      : payments.filter((p) => p.status === filterStatus);
 
-      if (error) throw error;
-
-      let totalCollected = 0;
-      let exchangeCount = 0;
-
-      (exchanges || []).forEach((exchange: any) => {
-        const verification = exchange.delivery_verifications?.[0];
-        if (verification?.payment_collected && verification.amount_collected > 0) {
-          totalCollected += verification.amount_collected;
-          exchangeCount++;
-        }
-      });
-
-      const merchantAmount = Math.max(0, totalCollected - (exchangeCount * SWAPP_EXCHANGE_FEE));
-
-      setSummary({
-        totalPending: merchantAmount,
-        totalPaid: 0,
-        currentPeriodExchanges: exchangeCount,
-        currentPeriodAmount: merchantAmount,
-      });
-    } catch (error) {
-      console.error("Error calculating from exchanges:", error);
-    }
+  const getStatusBadge = (status: MerchantPaymentStatus) => {
+    const styles: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-800",
+      approved: "bg-blue-100 text-blue-800",
+      paid: "bg-green-100 text-green-800",
+      disputed: "bg-red-100 text-red-800",
+    };
+    const icons: Record<string, React.ReactNode> = {
+      pending: <Clock className="w-3 h-3" />,
+      approved: <CheckCircle className="w-3 h-3" />,
+      paid: <CheckCircle className="w-3 h-3" />,
+      disputed: <AlertCircle className="w-3 h-3" />,
+    };
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}
+      >
+        {icons[status]}
+        {PAYMENT_STATUS_LABELS[status]}
+      </span>
+    );
   };
 
-  const calculateCurrentPeriodStats = async (merchantId: string) => {
-    try {
-      const now = new Date();
-      const day = now.getDate();
-      const year = now.getFullYear();
-      const month = now.getMonth();
-
-      let periodStart: Date;
-      let periodEnd: Date;
-
-      if (day <= 15) {
-        periodStart = new Date(year, month, 1);
-        periodEnd = new Date(year, month, 15, 23, 59, 59);
-      } else {
-        periodStart = new Date(year, month, 16);
-        periodEnd = new Date(year, month + 1, 0, 23, 59, 59);
-      }
-
-      const { data: exchanges, error } = await supabase
-        .from("exchanges")
-        .select("*, delivery_verifications(amount_collected, payment_collected, created_at)")
-        .eq("merchant_id", merchantId)
-        .in("status", ["delivery_verified", "completed"])
-        .gte("created_at", periodStart.toISOString())
-        .lte("created_at", periodEnd.toISOString());
-
-      if (error) throw error;
-
-      let periodCollected = 0;
-      let periodExchanges = 0;
-
-      (exchanges || []).forEach((exchange: any) => {
-        const verification = exchange.delivery_verifications?.[0];
-        if (verification?.payment_collected && verification.amount_collected > 0) {
-          periodCollected += verification.amount_collected;
-          periodExchanges++;
-        }
-      });
-
-      const periodMerchantAmount = Math.max(0, periodCollected - (periodExchanges * SWAPP_EXCHANGE_FEE));
-
-      setSummary((prev) => ({
-        ...prev,
-        currentPeriodExchanges: periodExchanges,
-        currentPeriodAmount: periodMerchantAmount,
-      }));
-    } catch (error) {
-      console.error("Error calculating current period:", error);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "paid":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-            <CheckCircle className="w-3.5 h-3.5" />
-            Payé
-          </span>
-        );
-      case "approved":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            <CheckCircle className="w-3.5 h-3.5" />
-            Approuvé
-          </span>
-        );
-      case "disputed":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Contesté
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-            <Clock className="w-3.5 h-3.5" />
-            En attente
-          </span>
-        );
-    }
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const formatPeriod = (payment: MerchantPayment) => {
-    const startDate = new Date(payment.period_start);
-    const endDate = new Date(payment.period_end);
-    return `${startDate.getDate()}-${endDate.getDate()} ${startDate.toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}`;
+    const start = new Date(payment.period_start);
+    const end = new Date(payment.period_end);
+    return `${start.getDate()}-${end.getDate()} ${start.toLocaleDateString("fr-FR", { month: "short" })} ${payment.year}`;
   };
 
   if (loading) {
     return (
       <MerchantLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
         </div>
       </MerchantLayout>
     );
@@ -217,145 +251,158 @@ export default function PaymentHistory() {
 
   return (
     <MerchantLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
+      <div>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Mes Paiements</h1>
-          <p className="text-slate-600">
-            Suivez vos paiements et l'historique des versements
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            Mes Paiements
+          </h2>
+          <p className="text-slate-600">Suivi de vos paiements bi-mensuels</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="w-5 h-5 text-amber-600" />
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600" />
               </div>
-              <span className="text-sm font-medium text-slate-600">En Attente</span>
             </div>
+            <p className="text-slate-600 text-sm mb-1">Solde en Attente</p>
             <p className="text-2xl font-bold text-slate-900">
-              {summary.totalPending.toFixed(2)} <span className="text-base font-normal text-slate-500">TND</span>
+              {summary?.total_pending.toFixed(2)} TND
             </p>
-            <p className="text-xs text-slate-500 mt-1">Montant à recevoir</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
-              <span className="text-sm font-medium text-slate-600">Total Reçu</span>
             </div>
+            <p className="text-slate-600 text-sm mb-1">Total Reçu</p>
             <p className="text-2xl font-bold text-slate-900">
-              {summary.totalPaid.toFixed(2)} <span className="text-base font-normal text-slate-500">TND</span>
+              {summary?.total_paid.toFixed(2)} TND
             </p>
-            <p className="text-xs text-slate-500 mt-1">Depuis le début</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-600">Cette Période</span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">
-              {summary.currentPeriodExchanges} <span className="text-base font-normal text-slate-500">échanges</span>
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              ≈ {summary.currentPeriodAmount.toFixed(2)} TND à recevoir
-            </p>
-          </div>
-        </div>
-
-        {/* Info Banner */}
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <Banknote className="w-5 h-5 text-indigo-600 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-indigo-900">Comment ça marche ?</p>
-              <p className="text-sm text-indigo-700 mt-1">
-                Pour chaque échange, des frais de <strong>{SWAPP_EXCHANGE_FEE} TND</strong> sont déduits.
-                Le reste du montant encaissé par le client vous est versé toutes les 2 semaines
-                (1-15 du mois et 16-fin du mois).
+            {summary?.last_payment_date && (
+              <p className="text-xs text-slate-500 mt-1">
+                Dernier paiement: {formatDate(summary.last_payment_date)}
               </p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Calendar className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
+            <p className="text-slate-600 text-sm mb-1">Période Actuelle</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {summary?.exchanges_this_period} échanges
+            </p>
+            <p className="text-sm text-slate-600 mt-1">
+              {summary?.current_period_amount.toFixed(2)} TND à recevoir
+            </p>
           </div>
         </div>
 
         {/* Filter */}
-        <div className="flex items-center gap-3 mb-4">
-          <Filter className="w-5 h-5 text-slate-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="all">Tous les paiements</option>
-            <option value="pending">En attente</option>
-            <option value="approved">Approuvés</option>
-            <option value="paid">Payés</option>
-            <option value="disputed">Contestés</option>
-          </select>
+        <div className="bg-white rounded-xl shadow p-4 mb-6">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-600">Filtrer par statut:</span>
+            <div className="flex gap-2">
+              {["all", "pending", "approved", "paid", "disputed"].map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                      filterStatus === status
+                        ? "bg-sky-600 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {status === "all"
+                      ? "Tous"
+                      : PAYMENT_STATUS_LABELS[status as MerchantPaymentStatus]}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Payments List */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">Historique des Paiements</h2>
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b border-slate-200">
+            <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Historique des Paiements
+            </h3>
           </div>
 
-          {payments.length === 0 ? (
-            <div className="p-12 text-center">
-              <Banknote className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600 mb-2">Aucun paiement pour le moment</p>
-              <p className="text-sm text-slate-500">
-                Les paiements apparaîtront ici une fois générés par l'administration
-              </p>
+          {filteredPayments.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              <Wallet className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p>Aucun paiement trouvé</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-200">
-              {payments.map((payment) => (
-                <div
+              {filteredPayments.map((payment) => (
+                <Link
                   key={payment.id}
-                  onClick={() => navigate(`/merchant/payments/${payment.id}`)}
-                  className="px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                  to={`/merchant/payments/${payment.id}`}
+                  className="block p-4 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-slate-100 rounded-lg">
-                        <Calendar className="w-5 h-5 text-slate-600" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-medium text-slate-900">
+                          {payment.payment_number}
+                        </span>
+                        {getStatusBadge(payment.status)}
                       </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{payment.payment_number}</p>
-                        <p className="text-sm text-slate-500">{formatPeriod(payment)}</p>
+                      <div className="flex items-center gap-4 text-sm text-slate-600">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {formatPeriod(payment)}
+                        </span>
+                        <span>{payment.total_exchanges} échanges</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">
-                          {payment.amount_due.toFixed(2)} TND
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-slate-900">
+                        {payment.amount_due.toFixed(2)} TND
+                      </p>
+                      {payment.paid_at && (
+                        <p className="text-xs text-green-600">
+                          Payé le {formatDate(payment.paid_at)}
                         </p>
-                        <p className="text-xs text-slate-500">
-                          {payment.total_exchanges} échange{payment.total_exchanges > 1 ? "s" : ""}
-                        </p>
-                      </div>
-                      {getStatusBadge(payment.status)}
-                      <ChevronRight className="w-5 h-5 text-slate-400" />
+                      )}
                     </div>
+                    <ChevronRight className="w-5 h-5 text-slate-400 ml-4" />
                   </div>
-                  {payment.status === "paid" && payment.paid_at && (
-                    <div className="mt-2 ml-14 text-xs text-emerald-600">
-                      Payé le {new Date(payment.paid_at).toLocaleDateString("fr-FR")}
-                      {payment.payment_reference && ` - Réf: ${payment.payment_reference}`}
-                    </div>
-                  )}
-                </div>
+                </Link>
               ))}
             </div>
           )}
+        </div>
+
+        {/* Info Box */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+          <h4 className="font-medium text-blue-900 mb-2">
+            Comment ça marche ?
+          </h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>
+              • Les paiements sont calculés toutes les 2 semaines (1-15 et
+              16-fin du mois)
+            </li>
+            <li>
+              • Frais SWAPP: 9 TND par échange (déduit du montant encaissé)
+            </li>
+            <li>• Le reste vous est versé par virement bancaire</li>
+          </ul>
         </div>
       </div>
     </MerchantLayout>

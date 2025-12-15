@@ -102,6 +102,17 @@ const DeliveryFinancialDashboard = lazy(
   () => import("./pages/delivery/FinancialDashboard"),
 );
 
+// Finance pages
+const FinanceLogin = lazy(() => import("./pages/finance/Login"));
+const FinanceDashboard = lazy(() => import("./pages/finance/Dashboard"));
+const FinanceWallets = lazy(() => import("./pages/finance/Wallets"));
+const FinanceTransactions = lazy(() => import("./pages/finance/Transactions"));
+const FinanceReconciliation = lazy(
+  () => import("./pages/finance/Reconciliation"),
+);
+const FinancePayouts = lazy(() => import("./pages/finance/Payouts"));
+const FinanceAlerts = lazy(() => import("./pages/finance/Alerts"));
+
 // Client routes wrapper
 function ClientRoutes() {
   return (
@@ -131,30 +142,31 @@ function ProtectedRoute({
   loginPath: string;
 }) {
   const [user, setUser] = useState<any>(undefined);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Timeout to prevent infinite loading on mobile
-    const timeout = setTimeout(() => {
-      if (mounted && user === undefined) {
-        console.log("Auth timeout - redirecting to login");
-        setUser(null);
-      }
-    }, 5000);
-
-    // Get initial session
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
+    // Get initial session immediately
+    const checkSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (mounted) {
           setUser(session?.user ?? null);
+          setChecked(true);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Session error:", err);
-        if (mounted) setUser(null);
-      });
+        if (mounted) {
+          setUser(null);
+          setChecked(true);
+        }
+      }
+    };
+
+    checkSession();
 
     // Listen for auth state changes
     const {
@@ -162,17 +174,17 @@ function ProtectedRoute({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         setUser(session?.user ?? null);
+        setChecked(true);
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
 
-  if (user === undefined) {
+  if (!checked) {
     return <LoadingSpinner />;
   }
 
@@ -192,30 +204,31 @@ function PublicRoute({
   dashboardPath: string;
 }) {
   const [user, setUser] = useState<any>(undefined);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Timeout to prevent infinite loading on mobile
-    const timeout = setTimeout(() => {
-      if (mounted && user === undefined) {
-        console.log("Auth timeout - showing login page");
-        setUser(null);
-      }
-    }, 5000);
-
-    // Get initial session
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
+    // Get initial session immediately
+    const checkSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (mounted) {
           setUser(session?.user ?? null);
+          setChecked(true);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Session error:", err);
-        if (mounted) setUser(null);
-      });
+        if (mounted) {
+          setUser(null);
+          setChecked(true);
+        }
+      }
+    };
+
+    checkSession();
 
     // Listen for auth state changes
     const {
@@ -223,17 +236,17 @@ function PublicRoute({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         setUser(session?.user ?? null);
+        setChecked(true);
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
 
-  if (user === undefined) {
+  if (!checked) {
     return <LoadingSpinner />;
   }
 
@@ -449,6 +462,21 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Finance routes - uses sessionStorage auth, no Supabase auth */}
+          <Route path="/finance/login" element={<FinanceLogin />} />
+          <Route path="/finance/dashboard" element={<FinanceDashboard />} />
+          <Route path="/finance/wallets" element={<FinanceWallets />} />
+          <Route
+            path="/finance/transactions"
+            element={<FinanceTransactions />}
+          />
+          <Route
+            path="/finance/reconciliation"
+            element={<FinanceReconciliation />}
+          />
+          <Route path="/finance/payouts" element={<FinancePayouts />} />
+          <Route path="/finance/alerts" element={<FinanceAlerts />} />
         </Routes>
       </Suspense>
     </Router>

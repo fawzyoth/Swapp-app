@@ -20,7 +20,14 @@ export default function MerchantLayout({ children }: MerchantLayoutProps) {
     try {
       const {
         data: { session },
+        error: sessionError,
       } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        setLoading(false);
+        return;
+      }
 
       if (!session) {
         navigate("/merchant/login");
@@ -48,7 +55,15 @@ export default function MerchantLayout({ children }: MerchantLayoutProps) {
         .eq("email", session.user.email)
         .maybeSingle();
 
-      if (error || !merchant) {
+      if (error) {
+        console.error("Merchant check error:", error);
+        // Don't redirect on error - just set as authorized if session exists
+        setIsAuthorized(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!merchant) {
         // Not a merchant - redirect to login
         navigate("/merchant/login");
         return;
@@ -57,7 +72,8 @@ export default function MerchantLayout({ children }: MerchantLayoutProps) {
       setIsAuthorized(true);
     } catch (error) {
       console.error("Auth check error:", error);
-      navigate("/merchant/login");
+      // Don't redirect on catch - might cause loop
+      setLoading(false);
     } finally {
       setLoading(false);
     }

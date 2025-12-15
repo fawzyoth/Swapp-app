@@ -8,6 +8,10 @@ import {
   CheckCircle,
   XCircle,
   Store,
+  Calculator,
+  Wallet,
+  CreditCard,
+  Truck,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import AdminLayout from "../../components/AdminLayout";
@@ -237,6 +241,94 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Platform Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Link
+            to="/finance/login"
+            className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-sm p-6 text-white hover:from-emerald-600 hover:to-emerald-700 transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <Calculator className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Finance</h3>
+                <p className="text-emerald-100 text-sm">
+                  Plateforme Financière
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-white/10 rounded-lg p-2">
+                <Wallet className="w-4 h-4 mx-auto mb-1" />
+                <p className="text-xs">Wallets</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2">
+                <CreditCard className="w-4 h-4 mx-auto mb-1" />
+                <p className="text-xs">Paiements</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2">
+                <TrendingUp className="w-4 h-4 mx-auto mb-1" />
+                <p className="text-xs">Rapports</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/merchant-payments"
+            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <Store className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Marchands</h3>
+                <p className="text-blue-100 text-sm">Paiements Marchands</p>
+              </div>
+            </div>
+            <p className="text-sm text-blue-100">
+              Gérer les paiements bi-mensuels aux marchands
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/delivery-persons"
+            className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-sm p-6 text-white hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <Truck className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Livreurs</h3>
+                <p className="text-orange-100 text-sm">Gestion des livreurs</p>
+              </div>
+            </div>
+            <p className="text-sm text-orange-100">
+              Gérer les livreurs et leurs vérifications
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/finances"
+            className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-sm p-6 text-white hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Rapports</h3>
+                <p className="text-purple-100 text-sm">Tableau Financier</p>
+              </div>
+            </div>
+            <p className="text-sm text-purple-100">
+              Voir les statistiques financières
+            </p>
+          </Link>
+        </div>
+
         {/* Quick Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">
@@ -254,6 +346,12 @@ export default function AdminDashboard() {
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Gérer les e-commerçants
+            </Link>
+            <Link
+              to="/finance/dashboard"
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Accéder à Finance
             </Link>
           </div>
         </div>

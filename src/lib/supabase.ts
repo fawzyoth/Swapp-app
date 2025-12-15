@@ -395,3 +395,486 @@ export const PAYMENT_STATUS_LABELS: Record<MerchantPaymentStatus, string> = {
   paid: "Payé",
   disputed: "Contesté",
 };
+
+// ============================================
+// FINANCE PLATFORM TYPES
+// ============================================
+
+// Delivery Company (for multi-partner support)
+export type DeliveryCompany = {
+  id: string;
+  name: string;
+  code: string;
+  tax_id?: string;
+  address?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_rib?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// Finance User Roles
+export type FinanceUserRole = "admin" | "officer" | "auditor";
+
+export type FinanceUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: FinanceUserRole;
+  is_active: boolean;
+  last_login?: string;
+  created_at: string;
+};
+
+// Chart of Accounts
+export type FinanceAccountType =
+  | "asset"
+  | "liability"
+  | "revenue"
+  | "expense"
+  | "equity"
+  | "suspense";
+
+export type FinanceAccount = {
+  id: string;
+  code: string;
+  name: string;
+  name_fr: string;
+  type: FinanceAccountType;
+  parent_code?: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+// Wallet (virtual account for each party)
+export type WalletOwnerType =
+  | "delivery_person"
+  | "delivery_company"
+  | "merchant"
+  | "swapp";
+
+export type WalletType =
+  | "merchant"
+  | "delivery_person"
+  | "delivery_company"
+  | "swapp_main"
+  | "swapp_fee";
+
+export type FinanceWallet = {
+  id: string;
+  wallet_number: string;
+  wallet_type: WalletType;
+  merchant_id?: string;
+  delivery_person_id?: string;
+  delivery_company_id?: string;
+  balance: number;
+  pending_in: number;
+  pending_out: number;
+  currency: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// Transaction Types
+export type FinanceTransactionType =
+  | "client_collection"
+  | "swapp_fee"
+  | "merchant_credit"
+  | "dp_to_company"
+  | "company_to_swapp"
+  | "merchant_payout"
+  | "adjustment_credit"
+  | "adjustment_debit"
+  | "refund";
+
+export type FinanceTransactionStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export type FinanceTransaction = {
+  id: string;
+  transaction_number: string;
+  transaction_type: FinanceTransactionType;
+  wallet_id?: string;
+  from_wallet_id?: string;
+  to_wallet_id?: string;
+  amount: number;
+  currency: string;
+  status: FinanceTransactionStatus;
+  reference_type?: string;
+  reference_id?: string;
+  reference?: string;
+  exchange_code?: string;
+  description?: string;
+  notes?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  completed_at?: string;
+  created_by?: string;
+  approved_by?: string;
+  approved_at?: string;
+  // Joined data
+  wallet?: { wallet_number: string; wallet_type: string };
+  from_wallet?: FinanceWallet;
+  to_wallet?: FinanceWallet;
+};
+
+// Ledger Entry (double-entry)
+export type LedgerEntryType = "debit" | "credit";
+
+export type FinanceLedgerEntry = {
+  id: string;
+  transaction_id: string;
+  entry_number: number;
+  account_code: string;
+  entry_type: LedgerEntryType;
+  amount: number;
+  currency: string;
+  balance_after?: number;
+  description?: string;
+  created_at: string;
+};
+
+// Payout
+export type PayoutType =
+  | "merchant_payout"
+  | "delivery_company_payout"
+  | "refund"
+  | "adjustment";
+export type PayoutStatus =
+  | "pending"
+  | "approved"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "rejected"
+  | "cancelled";
+export type PaymentMethod = "bank_transfer" | "cash" | "check" | "mobile";
+
+export type PayeeType = "merchant" | "delivery_person" | "delivery_company";
+
+export type FinancePayout = {
+  id: string;
+  payout_number: string;
+  payee_type: PayeeType;
+  merchant_id?: string;
+  delivery_person_id?: string;
+  delivery_company_id?: string;
+  wallet_id?: string;
+  amount: number;
+  currency: string;
+  status: PayoutStatus;
+  payment_method?: string;
+  payment_reference?: string;
+  period_start?: string;
+  period_end?: string;
+  approved_at?: string;
+  approved_by?: string;
+  paid_at?: string;
+  notes?: string;
+  created_at: string;
+};
+
+// Invoice
+export type InvoiceType = "merchant_fee_invoice" | "delivery_company_statement";
+export type InvoiceStatus =
+  | "draft"
+  | "generated"
+  | "sent"
+  | "paid"
+  | "overdue"
+  | "cancelled";
+
+export type FinanceInvoice = {
+  id: string;
+  invoice_number: string;
+  invoice_type: InvoiceType;
+  recipient_type: string;
+  recipient_id: string;
+  recipient_name?: string;
+  recipient_tax_id?: string;
+  recipient_address?: string;
+  period_start: string;
+  period_end: string;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total_amount: number;
+  currency: string;
+  status: InvoiceStatus;
+  issue_date?: string;
+  due_date?: string;
+  paid_at?: string;
+  payout_id?: string;
+  pdf_url?: string;
+  generated_at?: string;
+  sent_at?: string;
+  notes?: string;
+  created_at: string;
+  created_by?: string;
+};
+
+export type FinanceInvoiceLine = {
+  id: string;
+  invoice_id: string;
+  line_number: number;
+  description: string;
+  quantity: number;
+  unit_price?: number;
+  total_amount: number;
+  reference_type?: string;
+  reference_id?: string;
+  exchange_code?: string;
+  created_at: string;
+};
+
+// Daily Settlement (delivery person → company)
+export type DailySettlementStatus =
+  | "pending"
+  | "confirmed"
+  | "disputed"
+  | "cancelled";
+
+export type FinanceDailySettlement = {
+  id: string;
+  settlement_number: string;
+  settlement_date: string;
+  delivery_person_id: string;
+  delivery_company_id?: string;
+  total_collected: number;
+  total_exchanges: number;
+  cash_amount: number;
+  card_amount: number;
+  mobile_amount: number;
+  status: DailySettlementStatus;
+  confirmed_by?: string;
+  confirmed_at?: string;
+  supervisor_name?: string;
+  expected_amount?: number;
+  actual_amount?: number;
+  discrepancy: number;
+  discrepancy_reason?: string;
+  notes?: string;
+  created_at: string;
+  // Joined
+  delivery_person?: DeliveryPerson;
+};
+
+// Reconciliation
+export type ReconciliationType = "daily" | "weekly" | "monthly";
+export type ReconciliationStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "requires_review";
+
+export type FinanceReconciliation = {
+  id: string;
+  reconciliation_number: string;
+  reconciliation_type: ReconciliationType;
+  delivery_company_id?: string;
+  period_start: string;
+  period_end: string;
+  status: ReconciliationStatus;
+  expected_amount: number;
+  actual_amount: number;
+  discrepancy_amount: number;
+  started_at?: string;
+  completed_at?: string;
+  completed_by?: string;
+  notes?: string;
+  created_at: string;
+};
+
+// Alerts
+export type AlertType =
+  | "collection_mismatch"
+  | "large_transaction"
+  | "unsettled_cash"
+  | "duplicate_transaction"
+  | "delayed_settlement"
+  | "failed_payout"
+  | "reconciliation_gap"
+  | "unusual_pattern"
+  | "manual_review";
+
+export type AlertSeverity = "low" | "medium" | "high" | "critical";
+export type AlertStatus =
+  | "open"
+  | "investigating"
+  | "resolved"
+  | "dismissed"
+  | "escalated";
+
+export type FinanceAlert = {
+  id: string;
+  alert_number: string;
+  alert_type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  description?: string;
+  reference_type?: string;
+  reference_id?: string;
+  expected_amount?: number;
+  actual_amount?: number;
+  difference?: number;
+  status: AlertStatus;
+  assigned_to?: string;
+  assigned_at?: string;
+  resolved_at?: string;
+  resolved_by?: string;
+  resolution_type?: string;
+  resolution_notes?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+};
+
+// Audit Log
+export type AuditAction =
+  | "view"
+  | "create"
+  | "update"
+  | "approve"
+  | "reject"
+  | "cancel"
+  | "adjust"
+  | "export"
+  | "login"
+  | "logout";
+
+export type FinanceAuditLog = {
+  id: string;
+  timestamp: string;
+  user_id?: string;
+  user_email?: string;
+  user_role?: string;
+  action: AuditAction;
+  entity_type: string;
+  entity_id?: string;
+  entity_number?: string;
+  old_value?: any;
+  new_value?: any;
+  changes?: any;
+  ip_address?: string;
+  user_agent?: string;
+  reason?: string;
+  session_id?: string;
+};
+
+// Finance Dashboard Summary
+export type FinanceDashboardSummary = {
+  // Wallet totals
+  total_merchant_balance: number;
+  total_delivery_balance: number;
+  total_company_balance: number;
+  swapp_balance: number;
+  // Today's activity
+  today_collections: number;
+  today_settlements: number;
+  today_payouts: number;
+  today_fees: number;
+  // Pending items
+  pending_settlements: number;
+  pending_payouts: number;
+  open_alerts: number;
+  // Period stats
+  period_collections: number;
+  period_fees: number;
+  period_payouts: number;
+};
+
+// Labels
+export const TRANSACTION_TYPE_LABELS: Record<FinanceTransactionType, string> = {
+  client_collection: "Encaissement Client",
+  swapp_fee: "Frais SWAPP",
+  merchant_credit: "Crédit Marchand",
+  dp_to_company: "Règlement Livreur → Société",
+  company_to_swapp: "Dépôt Société → SWAPP",
+  merchant_payout: "Paiement Marchand",
+  adjustment_credit: "Ajustement Crédit",
+  adjustment_debit: "Ajustement Débit",
+  refund: "Remboursement",
+};
+
+export const TRANSACTION_STATUS_LABELS: Record<
+  FinanceTransactionStatus,
+  string
+> = {
+  pending: "En attente",
+  processing: "En cours",
+  completed: "Terminé",
+  failed: "Échoué",
+  cancelled: "Annulé",
+};
+
+export const PAYOUT_STATUS_LABELS: Record<PayoutStatus, string> = {
+  pending: "En attente",
+  approved: "Approuvé",
+  processing: "En cours",
+  completed: "Payé",
+  failed: "Échoué",
+  rejected: "Rejeté",
+  cancelled: "Annulé",
+};
+
+export const ALERT_SEVERITY_LABELS: Record<AlertSeverity, string> = {
+  low: "Faible",
+  medium: "Moyen",
+  high: "Élevé",
+  critical: "Critique",
+};
+
+export const ALERT_STATUS_LABELS: Record<AlertStatus, string> = {
+  open: "Ouvert",
+  investigating: "En investigation",
+  resolved: "Résolu",
+  dismissed: "Ignoré",
+  escalated: "Escaladé",
+};
+
+export const RECONCILIATION_STATUS_LABELS: Record<
+  ReconciliationStatus,
+  string
+> = {
+  pending: "En attente",
+  in_progress: "En cours",
+  completed: "Terminé",
+  failed: "Échoué",
+  requires_review: "À vérifier",
+};
+
+export const WALLET_TYPE_LABELS: Record<string, string> = {
+  merchant: "Marchand",
+  delivery_person: "Livreur",
+  delivery_company: "Société Livraison",
+  swapp_main: "SWAPP Principal",
+  swapp_fee: "SWAPP Commissions",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  bank_transfer: "Virement Bancaire",
+  cash: "Espèces",
+  check: "Chèque",
+  mobile: "Paiement Mobile",
+};
+
+// Aliases for component imports
+export const walletTypeLabels = WALLET_TYPE_LABELS;
+export const transactionTypeLabels = TRANSACTION_TYPE_LABELS;
+export const transactionStatusLabels = TRANSACTION_STATUS_LABELS;
+export const payoutStatusLabels = PAYOUT_STATUS_LABELS;
+export const paymentMethodLabels = PAYMENT_METHOD_LABELS;
+export const alertSeverityLabels = ALERT_SEVERITY_LABELS;
+export const alertStatusLabels = ALERT_STATUS_LABELS;
+export const reconciliationStatusLabels = RECONCILIATION_STATUS_LABELS;

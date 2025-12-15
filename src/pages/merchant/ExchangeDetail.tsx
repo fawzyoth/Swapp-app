@@ -262,7 +262,7 @@ export default function MerchantExchangeDetail() {
     }
   };
 
-  // Print GO Bordereau - For outbound shipment with the exchange product
+  // Print GO Bordereau - Professional black & white design
   const printBordereauGo = () => {
     if (!exchange) return;
 
@@ -283,200 +283,247 @@ export default function MerchantExchangeDetail() {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: 'Segoe UI', Arial, sans-serif;
-              padding: 20px;
+              font-family: Arial, Helvetica, sans-serif;
+              padding: 15px;
               max-width: 600px;
               margin: 0 auto;
-            }
-            .type-banner {
-              background: linear-gradient(135deg, #0369a1, #0284c7);
-              color: white;
-              text-align: center;
-              padding: 15px;
-              font-size: 28px;
-              font-weight: bold;
-              letter-spacing: 3px;
-              border-radius: 8px;
-              margin-bottom: 20px;
-              text-transform: uppercase;
-            }
-            .type-banner .icon {
-              font-size: 24px;
-              margin-right: 10px;
+              color: #000;
             }
             .header {
-              text-align: center;
-              border-bottom: 3px solid #0369a1;
-              padding-bottom: 15px;
-              margin-bottom: 20px;
+              border: 3px solid #000;
+              padding: 12px;
+              margin-bottom: 15px;
             }
-            .header h1 {
-              font-size: 20px;
-              margin-bottom: 5px;
-              color: #0369a1;
+            .header-top {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 2px solid #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
             }
-            .header .code {
-              font-size: 18px;
+            .logo {
+              font-size: 24px;
               font-weight: bold;
+              letter-spacing: 2px;
+            }
+            .doc-type {
+              background: #000;
+              color: #fff;
+              padding: 5px 15px;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .header-info {
+              display: flex;
+              justify-content: space-between;
+            }
+            .exchange-code {
+              font-family: 'Courier New', monospace;
+              font-size: 20px;
+              font-weight: bold;
+              letter-spacing: 2px;
+            }
+            .date {
+              font-size: 12px;
               color: #333;
             }
-            .header .date {
-              font-size: 12px;
-              color: #666;
-            }
-            .qr-section {
-              text-align: center;
-              padding: 20px;
-              background: #f0f9ff;
-              border: 2px solid #0369a1;
-              border-radius: 8px;
-              margin-bottom: 20px;
-            }
-            .qr-section img {
-              width: 150px;
-              height: 150px;
-            }
-            .qr-section .scan-text {
-              margin-top: 10px;
-              font-weight: bold;
-              color: #0369a1;
-              font-size: 14px;
-            }
-            .qr-section .scan-desc {
-              margin-top: 5px;
-              font-size: 11px;
-              color: #666;
-            }
-            .section {
+
+            .codes-section {
+              display: flex;
+              gap: 15px;
               margin-bottom: 15px;
-              padding: 12px;
-              border: 1px solid #bae6fd;
-              border-radius: 6px;
-              background: #f0f9ff;
             }
-            .section-title {
-              font-size: 12px;
+            .code-box {
+              flex: 1;
+              border: 2px solid #000;
+              padding: 10px;
+              text-align: center;
+            }
+            .code-box .title {
               font-weight: bold;
-              color: #0369a1;
+              font-size: 11px;
               text-transform: uppercase;
               margin-bottom: 8px;
-              border-bottom: 1px solid #bae6fd;
               padding-bottom: 5px;
+              border-bottom: 1px solid #000;
             }
-            .section-content {
+            .code-box img {
+              display: block;
+              margin: 0 auto;
+            }
+            .code-box .code-label {
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              font-weight: bold;
+              margin-top: 8px;
+            }
+
+            .info-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 15px;
+            }
+            .info-table th, .info-table td {
+              border: 1px solid #000;
+              padding: 8px 10px;
+              text-align: left;
+              font-size: 12px;
+            }
+            .info-table th {
+              background: #f0f0f0;
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 10px;
+              width: 120px;
+            }
+            .info-table td {
+              font-size: 13px;
+            }
+
+            .address-box {
+              border: 2px solid #000;
+              padding: 12px;
+              margin-bottom: 15px;
+            }
+            .address-box .title {
+              font-weight: bold;
+              font-size: 11px;
+              text-transform: uppercase;
+              margin-bottom: 8px;
+              padding-bottom: 5px;
+              border-bottom: 1px solid #000;
+            }
+            .address-box .content {
+              font-size: 13px;
+              line-height: 1.5;
+            }
+
+            .payment-box {
+              border: 3px solid #000;
+              padding: 12px;
+              margin-bottom: 15px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .payment-box .label {
+              font-weight: bold;
               font-size: 14px;
+              text-transform: uppercase;
             }
-            .section-content p {
-              margin: 3px 0;
+            .payment-box .amount {
+              font-size: 22px;
+              font-weight: bold;
+              font-family: 'Courier New', monospace;
             }
-            .section-content .label {
-              color: #666;
+
+            .notice {
+              border: 2px dashed #000;
+              padding: 10px;
+              text-align: center;
+              margin-bottom: 15px;
+            }
+            .notice .title {
+              font-weight: bold;
+              font-size: 12px;
+              margin-bottom: 5px;
+            }
+            .notice .text {
               font-size: 11px;
             }
-            .section-content .value {
-              font-weight: 500;
-            }
-            .grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 15px;
-            }
-            .payment {
-              background: #fef3c7;
-              border-color: #f59e0b;
-            }
-            .payment .value {
-              font-size: 18px;
-              color: #d97706;
-            }
-            .info-box {
-              background: #dbeafe;
-              border: 2px solid #3b82f6;
-              border-radius: 8px;
-              padding: 15px;
-              margin-top: 20px;
-              text-align: center;
-            }
-            .info-box .title {
-              font-weight: bold;
-              color: #1d4ed8;
-              font-size: 14px;
-              margin-bottom: 8px;
-            }
-            .info-box .desc {
-              font-size: 12px;
-              color: #1e40af;
-            }
+
             .footer {
-              margin-top: 20px;
-              padding-top: 15px;
-              border-top: 2px dashed #0369a1;
-              text-align: center;
+              border-top: 2px solid #000;
+              padding-top: 10px;
+              display: flex;
+              justify-content: space-between;
               font-size: 10px;
-              color: #0369a1;
             }
-            @media print {
-              body { padding: 10px; }
-              .qr-section { background: #fff; }
-              .section { background: #fff; }
-              .info-box { background: #fff; }
+            .footer .brand {
+              font-weight: bold;
+            }
+
+            .signature-area {
+              display: flex;
+              gap: 15px;
+              margin-top: 15px;
+            }
+            .signature-box {
+              flex: 1;
+              border: 1px solid #000;
+              padding: 10px;
+              height: 60px;
+            }
+            .signature-box .label {
+              font-size: 9px;
+              text-transform: uppercase;
+              color: #666;
             }
           </style>
         </head>
         <body>
-          <div class="type-banner">
-            <span class="icon">📦</span> ALLER <span class="icon">→</span>
-          </div>
-
           <div class="header">
-            <h1>BORDEREAU D'ENVOI - PRODUIT D'ÉCHANGE</h1>
-            <div class="code">${exchange.exchange_code}</div>
-            <div class="date">Créé le ${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
-          </div>
-
-          <div class="qr-section">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}" alt="QR Code" />
-            <p class="scan-text">SCANNER POUR VÉRIFIER L'ÉCHANGE</p>
-            <p class="scan-desc">Le livreur scanne ce QR code pour accéder à la vidéo de référence et vérifier le produit retourné</p>
-          </div>
-
-          <div class="grid">
-            <div class="section">
-              <div class="section-title">Client destinataire</div>
-              <div class="section-content">
-                <p class="value">${exchange.client_name}</p>
-                <p>${exchange.client_phone}</p>
-              </div>
+            <div class="header-top">
+              <div class="logo">SWAPP</div>
+              <div class="doc-type">BORDEREAU ALLER</div>
             </div>
-            <div class="section">
-              <div class="section-title">Produit envoyé</div>
-              <div class="section-content">
-                <p class="value">${exchange.product_name || "Non spécifié"}</p>
-                <p class="label">Raison d'échange: ${exchange.reason}</p>
-              </div>
+            <div class="header-info">
+              <div class="exchange-code">${exchange.exchange_code}</div>
+              <div class="date">${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
             </div>
           </div>
 
-          <div class="section">
-            <div class="section-title">Adresse de livraison</div>
-            <div class="section-content">
-              <p class="value">${exchange.client_address || "Non fournie"}</p>
-              <p>${exchange.client_city || ""} ${exchange.client_postal_code || ""}</p>
-              <p>${exchange.client_country || "Tunisia"}</p>
+          <div class="codes-section">
+            <div class="code-box">
+              <div class="title">QR Vérification</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(verificationUrl)}" alt="QR Code" width="100" height="100" />
+              <div class="code-label">SCAN LIVREUR</div>
+            </div>
+            <div class="code-box">
+              <div class="title">Code-Barres Colis</div>
+              <img src="https://barcodeapi.org/api/128/${exchange.exchange_code.slice(-8)}" alt="Barcode" width="160" height="50" />
+              <div class="code-label">${exchange.exchange_code.slice(-8)}</div>
+            </div>
+          </div>
+
+          <table class="info-table">
+            <tr>
+              <th>Client</th>
+              <td><strong>${exchange.client_name}</strong></td>
+            </tr>
+            <tr>
+              <th>Téléphone</th>
+              <td>${exchange.client_phone}</td>
+            </tr>
+            <tr>
+              <th>Produit</th>
+              <td>${exchange.product_name || "Non spécifié"}</td>
+            </tr>
+            <tr>
+              <th>Motif</th>
+              <td>${exchange.reason}</td>
+            </tr>
+          </table>
+
+          <div class="address-box">
+            <div class="title">Adresse de livraison</div>
+            <div class="content">
+              ${exchange.client_address || "Non fournie"}<br>
+              ${exchange.client_city || ""} ${exchange.client_postal_code || ""}<br>
+              ${exchange.client_country || "Tunisie"}
             </div>
           </div>
 
           ${
             depot
               ? `
-          <div class="section">
-            <div class="section-title">Mini-Dépôt</div>
-            <div class="section-content">
-              <p class="value">${depot.name}</p>
-              <p>${depot.address}, ${depot.city}</p>
-              <p>Tél: ${depot.phone}</p>
-            </div>
-          </div>
+          <table class="info-table">
+            <tr>
+              <th>Dépôt</th>
+              <td>${depot.name}</td>
+            </tr>
+          </table>
           `
               : ""
           }
@@ -484,32 +531,41 @@ export default function MerchantExchangeDetail() {
           ${
             transporter
               ? `
-          <div class="section">
-            <div class="section-title">Transporteur</div>
-            <div class="section-content">
-              <p class="value">${transporter.name}</p>
-              <p>Tél: ${transporter.phone}</p>
-            </div>
-          </div>
+          <table class="info-table">
+            <tr>
+              <th>Transporteur</th>
+              <td>${transporter.name}</td>
+            </tr>
+          </table>
           `
               : ""
           }
 
-          <div class="section payment">
-            <div class="section-title">Paiement</div>
-            <div class="section-content">
-              <p class="value">${exchange.payment_amount > 0 ? `${exchange.payment_amount} TND` : "GRATUIT"}</p>
+          <div class="payment-box">
+            <div class="label">Montant à encaisser</div>
+            <div class="amount">${exchange.payment_amount > 0 ? exchange.payment_amount + " TND" : "GRATUIT"}</div>
+          </div>
+
+          <div class="notice">
+            <div class="title">COLIS CONTENANT LE PRODUIT D'ÉCHANGE</div>
+            <div class="text">À livrer au client. Le bordereau RETOUR est inclus pour le retour du produit.</div>
+          </div>
+
+          <div class="signature-area">
+            <div class="signature-box">
+              <div class="label">Signature expéditeur</div>
+            </div>
+            <div class="signature-box">
+              <div class="label">Signature livreur</div>
+            </div>
+            <div class="signature-box">
+              <div class="label">Signature client</div>
             </div>
           </div>
 
-          <div class="info-box">
-            <p class="title">📦 CE COLIS CONTIENT LE PRODUIT D'ÉCHANGE</p>
-            <p class="desc">À livrer au client. Le sac de retour vide avec le bordereau RETOUR est inclus séparément.</p>
-          </div>
-
           <div class="footer">
-            <p>SWAPP - Plateforme d'échange de produits</p>
-            <p>Statut: ${STATUS_LABELS[exchange.status]} | Type: ALLER</p>
+            <div class="brand">SWAPP - Plateforme d'échange</div>
+            <div>Statut: ${STATUS_LABELS[exchange.status]}</div>
           </div>
         </body>
         </html>
@@ -521,7 +577,7 @@ export default function MerchantExchangeDetail() {
     }
   };
 
-  // Print RETURN Bordereau - Included in the product package from first delivery
+  // Print RETURN Bordereau - Professional black & white design
   const printBordereauReturn = () => {
     if (!exchange) return;
 
@@ -537,249 +593,236 @@ export default function MerchantExchangeDetail() {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: 'Segoe UI', Arial, sans-serif;
+              font-family: Arial, Helvetica, sans-serif;
               padding: 15px;
               max-width: 600px;
               margin: 0 auto;
+              color: #000;
             }
-            .type-banner {
-              background: linear-gradient(135deg, #059669, #10b981);
-              color: white;
-              text-align: center;
+            .header {
+              border: 3px solid #000;
               padding: 12px;
+              margin-bottom: 15px;
+            }
+            .header-top {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 2px solid #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .logo {
               font-size: 24px;
               font-weight: bold;
               letter-spacing: 2px;
-              border-radius: 8px;
-              margin-bottom: 15px;
-              text-transform: uppercase;
             }
-            .header {
-              text-align: center;
-              border-bottom: 3px solid #059669;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-            }
-            .header h1 {
-              font-size: 16px;
-              margin-bottom: 5px;
-              color: #059669;
-            }
-            .header .code {
-              font-size: 20px;
+            .doc-type {
+              background: #000;
+              color: #fff;
+              padding: 5px 15px;
               font-weight: bold;
-              color: #333;
-              font-family: 'Courier New', monospace;
+              font-size: 14px;
             }
-            .two-codes {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
+            .header-info {
+              text-align: center;
+            }
+            .exchange-code {
+              font-family: 'Courier New', monospace;
+              font-size: 22px;
+              font-weight: bold;
+              letter-spacing: 3px;
+            }
+            .subtitle {
+              font-size: 11px;
+              margin-top: 5px;
+            }
+
+            .codes-section {
+              display: flex;
               gap: 15px;
               margin-bottom: 15px;
             }
-            .qr-section {
-              text-align: center;
-              padding: 15px;
-              background: #dbeafe;
-              border: 2px solid #3b82f6;
-              border-radius: 10px;
-            }
-            .qr-section img {
-              width: 120px;
-              height: 120px;
-            }
-            .qr-section .title {
-              font-weight: bold;
-              color: #1d4ed8;
-              font-size: 11px;
-              margin-bottom: 8px;
-            }
-            .qr-section .desc {
-              font-size: 9px;
-              color: #1e40af;
-              margin-top: 8px;
-            }
-            .barcode-section {
-              text-align: center;
-              padding: 15px;
-              background: #fef3c7;
-              border: 2px solid #f59e0b;
-              border-radius: 10px;
-            }
-            .barcode-section .title {
-              font-weight: bold;
-              color: #b45309;
-              font-size: 11px;
-              margin-bottom: 8px;
-            }
-            .barcode-section .barcode-img {
-              width: 160px;
-              height: 60px;
-              object-fit: contain;
-              background: white;
-              padding: 8px;
-              border-radius: 6px;
-            }
-            .barcode-section .bag-code {
-              font-family: 'Courier New', monospace;
-              font-size: 14px;
-              font-weight: bold;
-              letter-spacing: 2px;
-              color: #000;
-              margin-top: 5px;
-            }
-            .barcode-section .desc {
-              font-size: 9px;
-              color: #92400e;
-              margin-top: 8px;
-            }
-            .instructions-fr {
-              background: #ecfdf5;
-              border: 2px solid #10b981;
-              border-radius: 8px;
+            .code-box {
+              flex: 1;
+              border: 2px solid #000;
               padding: 12px;
-              margin-bottom: 12px;
+              text-align: center;
             }
-            .instructions-fr .title {
+            .code-box .title {
               font-weight: bold;
-              color: #047857;
-              font-size: 12px;
-              margin-bottom: 8px;
-            }
-            .instructions-fr ol {
-              margin-left: 18px;
               font-size: 11px;
-              color: #065f46;
+              text-transform: uppercase;
+              margin-bottom: 8px;
+              padding-bottom: 5px;
+              border-bottom: 1px solid #000;
             }
-            .instructions-fr ol li {
+            .code-box img {
+              display: block;
+              margin: 0 auto;
+            }
+            .code-box .code-label {
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              font-weight: bold;
+              margin-top: 8px;
+            }
+            .code-box .desc {
+              font-size: 9px;
+              margin-top: 5px;
+              color: #333;
+            }
+
+            .info-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 15px;
+            }
+            .info-table th, .info-table td {
+              border: 1px solid #000;
+              padding: 8px 10px;
+              text-align: left;
+              font-size: 12px;
+            }
+            .info-table th {
+              background: #f0f0f0;
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 10px;
+              width: 100px;
+            }
+
+            .instructions-section {
+              display: flex;
+              gap: 15px;
+              margin-bottom: 15px;
+            }
+            .instructions-box {
+              flex: 1;
+              border: 2px solid #000;
+              padding: 12px;
+            }
+            .instructions-box .title {
+              font-weight: bold;
+              font-size: 11px;
+              text-transform: uppercase;
+              margin-bottom: 10px;
+              padding-bottom: 5px;
+              border-bottom: 1px solid #000;
+            }
+            .instructions-box ol {
+              margin-left: 18px;
+              font-size: 10px;
+              line-height: 1.6;
+            }
+            .instructions-box ol li {
               margin: 4px 0;
             }
-            .instructions-ar {
-              background: #fef3c7;
-              border: 2px solid #f59e0b;
-              border-radius: 8px;
-              padding: 12px;
-              margin-bottom: 12px;
+            .instructions-box.ar {
               direction: rtl;
               text-align: right;
             }
-            .instructions-ar .title {
-              font-weight: bold;
-              color: #b45309;
-              font-size: 14px;
-              margin-bottom: 10px;
-            }
-            .instructions-ar ol {
+            .instructions-box.ar ol {
+              margin-left: 0;
               margin-right: 18px;
-              font-size: 12px;
-              color: #92400e;
               list-style-type: arabic-indic;
             }
-            .instructions-ar ol li {
-              margin: 6px 0;
-              line-height: 1.6;
-            }
-            .product-info {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px;
-              margin-bottom: 12px;
-            }
-            .info-box {
-              padding: 10px;
-              border: 1px solid #d1d5db;
-              border-radius: 6px;
-              background: #f9fafb;
-            }
-            .info-box .label {
-              font-size: 9px;
-              color: #6b7280;
-              text-transform: uppercase;
-              margin-bottom: 3px;
-            }
-            .info-box .value {
-              font-size: 12px;
-              font-weight: 600;
-              color: #111827;
-            }
-            .footer {
-              margin-top: 15px;
-              padding-top: 10px;
-              border-top: 2px dashed #059669;
+
+            .notice {
+              border: 3px solid #000;
+              padding: 12px;
               text-align: center;
-              font-size: 9px;
-              color: #059669;
+              margin-bottom: 15px;
             }
-            @media print {
-              body { padding: 10px; }
-              .qr-section { background: #fff; }
-              .barcode-section { background: #fff; }
-              .instructions-fr { background: #fff; }
-              .instructions-ar { background: #fff; }
+            .notice .title {
+              font-weight: bold;
+              font-size: 14px;
+              margin-bottom: 5px;
+              text-transform: uppercase;
+            }
+            .notice .text {
+              font-size: 11px;
+            }
+
+            .footer {
+              border-top: 2px solid #000;
+              padding-top: 10px;
+              display: flex;
+              justify-content: space-between;
+              font-size: 10px;
+            }
+            .footer .brand {
+              font-weight: bold;
             }
           </style>
         </head>
         <body>
-          <div class="type-banner">
-            ↩️ بطاقة الإرجاع | BORDEREAU RETOUR
-          </div>
-
           <div class="header">
-            <h1>FICHE D'ÉCHANGE / بطاقة التبديل</h1>
-            <div class="code">${exchange.exchange_code}</div>
-          </div>
-
-          <div class="two-codes">
-            <div class="qr-section">
-              <p class="title">📱 SCANNER POUR ÉCHANGER</p>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(clientExchangeUrl)}" alt="QR Code" />
-              <p class="desc">Le client scanne ce code pour initier l'échange</p>
+            <div class="header-top">
+              <div class="logo">SWAPP</div>
+              <div class="doc-type">BORDEREAU RETOUR</div>
             </div>
-
-            <div class="barcode-section">
-              <p class="title">📦 CODE LIVREUR</p>
-              <img src="https://barcodeapi.org/api/128/BAG-${exchange.exchange_code.slice(-8)}" alt="Barcode" class="barcode-img" />
-              <p class="bag-code">BAG-${exchange.exchange_code.slice(-8)}</p>
-              <p class="desc">Le livreur scanne lors de la collecte</p>
+            <div class="header-info">
+              <div class="exchange-code">${exchange.exchange_code}</div>
+              <div class="subtitle">Fiche d'échange / بطاقة التبديل</div>
             </div>
           </div>
 
-          <div class="product-info">
-            <div class="info-box">
-              <p class="label">Produit / المنتج</p>
-              <p class="value">${exchange.product_name || "Non spécifié"}</p>
+          <div class="codes-section">
+            <div class="code-box">
+              <div class="title">QR Client</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(clientExchangeUrl)}" alt="QR Code" width="100" height="100" />
+              <div class="code-label">SCAN CLIENT</div>
+              <div class="desc">Scanner pour initier l'échange</div>
             </div>
-            <div class="info-box">
-              <p class="label">Raison / السبب</p>
-              <p class="value">${exchange.reason}</p>
+            <div class="code-box">
+              <div class="title">Code-Barres Retour</div>
+              <img src="https://barcodeapi.org/api/128/${exchange.exchange_code.slice(-8)}" alt="Barcode" width="160" height="50" />
+              <div class="code-label">${exchange.exchange_code.slice(-8)}</div>
+              <div class="desc">Scanner lors de la collecte</div>
             </div>
           </div>
 
-          <div class="instructions-fr">
-            <p class="title">📋 COMMENT EFFECTUER VOTRE ÉCHANGE</p>
-            <ol>
-              <li><strong>Scannez le QR code</strong> avec votre téléphone pour valider l'échange</li>
-              <li><strong>Préparez le produit</strong> à retourner dans son emballage d'origine</li>
-              <li><strong>Gardez ce bordereau</strong> avec le produit</li>
-              <li><strong>Remettez le tout au livreur</strong> lors de la collecte</li>
-              <li><strong>Le livreur scannera</strong> le code-barres pour confirmer</li>
-            </ol>
+          <table class="info-table">
+            <tr>
+              <th>Produit</th>
+              <td>${exchange.product_name || "Non spécifié"}</td>
+            </tr>
+            <tr>
+              <th>Motif</th>
+              <td>${exchange.reason}</td>
+            </tr>
+          </table>
+
+          <div class="instructions-section">
+            <div class="instructions-box">
+              <div class="title">Instructions</div>
+              <ol>
+                <li>Scannez le QR code avec votre téléphone</li>
+                <li>Préparez le produit dans son emballage</li>
+                <li>Gardez ce bordereau avec le produit</li>
+                <li>Remettez le tout au livreur</li>
+              </ol>
+            </div>
+            <div class="instructions-box ar">
+              <div class="title">التعليمات</div>
+              <ol>
+                <li>امسح رمز QR بهاتفك</li>
+                <li>جهّز المنتج في عبوته</li>
+                <li>احتفظ بهذه البطاقة مع المنتج</li>
+                <li>سلّم كل شيء للمندوب</li>
+              </ol>
+            </div>
           </div>
 
-          <div class="instructions-ar">
-            <p class="title">📋 كيفية إجراء عملية التبديل</p>
-            <ol>
-              <li><strong>امسح رمز QR</strong> بهاتفك للتحقق من صحة عملية التبديل</li>
-              <li><strong>جهّز المنتج</strong> المراد إرجاعه في عبوته الأصلية</li>
-              <li><strong>احتفظ بهذه البطاقة</strong> مع المنتج</li>
-              <li><strong>سلّم كل شيء للمندوب</strong> عند الاستلام</li>
-              <li><strong>سيقوم المندوب بمسح</strong> الباركود للتأكيد</li>
-            </ol>
+          <div class="notice">
+            <div class="title">A remettre au livreur</div>
+            <div class="text">Ce bordereau doit accompagner le produit retourné</div>
           </div>
 
           <div class="footer">
-            <p>SWAPP - منصة تبديل المنتجات | Plateforme d'échange de produits</p>
-            <p>${exchange.exchange_code} | ${new Date(exchange.created_at).toLocaleDateString("fr-FR")}</p>
+            <div class="brand">SWAPP - Plateforme d'échange</div>
+            <div>${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
           </div>
         </body>
         </html>

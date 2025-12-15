@@ -51,13 +51,22 @@ export default function ExchangeVerification() {
 
   const fetchExchangeData = async () => {
     try {
+      // Normalize the code (trim whitespace and ensure uppercase)
+      const normalizedCode = code?.trim().toUpperCase();
+      console.log("Fetching exchange with code:", normalizedCode);
+
       const { data: exchangeData, error } = await supabase
         .from("exchanges")
         .select("*")
-        .eq("exchange_code", code)
+        .eq("exchange_code", normalizedCode)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Exchange data received:", exchangeData);
 
       if (exchangeData) {
         setExchange(exchangeData);

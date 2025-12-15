@@ -20,14 +20,19 @@ export default function DeliveryLogin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setLoading(true);
     setError("");
 
     try {
+      console.log("Attempting login with:", email);
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
+
+      console.log("Login response:", { data, error });
 
       if (error) throw error;
 
@@ -63,7 +68,10 @@ export default function DeliveryLogin() {
         navigate("/delivery/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || "Erreur de connexion");
+      console.error("Login error:", err);
+      setError(
+        err.message || "Erreur de connexion. Vérifiez vos identifiants.",
+      );
     } finally {
       setLoading(false);
     }
@@ -187,10 +195,14 @@ export default function DeliveryLogin() {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base"
                 />
               </div>
 
@@ -201,10 +213,11 @@ export default function DeliveryLogin() {
                 <input
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base"
                 />
               </div>
 

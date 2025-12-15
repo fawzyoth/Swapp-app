@@ -1,52 +1,87 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, Filter } from 'lucide-react';
-import { supabase, STATUS_LABELS } from '../../lib/supabase';
-import MerchantLayout from '../../components/MerchantLayout';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Filter } from "lucide-react";
+import { supabase, STATUS_LABELS } from "../../lib/supabase";
+import MerchantLayout from "../../components/MerchantLayout";
+
+const PAGE_SIZE = 50;
 
 export default function MerchantExchangeList() {
   const navigate = useNavigate();
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [filteredExchanges, setFilteredExchanges] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [merchantId, setMerchantId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchExchanges();
+    checkAuthAndFetch();
   }, []);
 
   useEffect(() => {
     filterExchanges();
   }, [exchanges, searchTerm, statusFilter]);
 
-  const fetchExchanges = async () => {
+  const checkAuthAndFetch = async () => {
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/merchant/login");
+        return;
+      }
+
+      // Get merchant ID
+      const { data: merchantData } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      if (merchantData) {
+        setMerchantId(merchantData.id);
+        await fetchExchanges(merchantData.id);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchExchanges = async (mId: string) => {
+    try {
+      // Only fetch exchanges for this merchant, limited to recent ones
       const { data } = await supabase
-        .from('exchanges')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("exchanges")
+        .select(
+          "id, exchange_code, client_name, client_phone, reason, status, created_at",
+        )
+        .eq("merchant_id", mId)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
 
       setExchanges(data || []);
     } catch (error) {
-      console.error('Error fetching exchanges:', error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching exchanges:", error);
     }
   };
 
   const filterExchanges = () => {
     let filtered = [...exchanges];
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(e => e.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((e) => e.status === statusFilter);
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(e =>
-        e.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.client_phone.includes(searchTerm) ||
-        e.exchange_code.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (e) =>
+          e.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          e.client_phone.includes(searchTerm) ||
+          e.exchange_code.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -55,16 +90,16 @@ export default function MerchantExchangeList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'validated':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "validated":
+        return "bg-emerald-100 text-emerald-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-blue-100 text-blue-800';
+        return "bg-blue-100 text-blue-800";
     }
   };
 
@@ -82,8 +117,12 @@ export default function MerchantExchangeList() {
     <MerchantLayout>
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Demandes d'échange</h1>
-          <p className="text-slate-600">Gérez et validez les demandes de vos clients</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            Demandes d'échange
+          </h1>
+          <p className="text-slate-600">
+            Gérez et validez les demandes de vos clients
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 mb-6">
@@ -127,13 +166,27 @@ export default function MerchantExchangeList() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Code</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Client</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Téléphone</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Raison</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Date</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Statut</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">Actions</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Code
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Client
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Téléphone
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Raison
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Date
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Statut
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-slate-700">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -142,14 +195,24 @@ export default function MerchantExchangeList() {
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">
                       {exchange.exchange_code}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{exchange.client_name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{exchange.client_phone}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{exchange.reason}</td>
                     <td className="px-6 py-4 text-sm text-slate-700">
-                      {new Date(exchange.created_at).toLocaleDateString('fr-FR')}
+                      {exchange.client_name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700">
+                      {exchange.client_phone}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700">
+                      {exchange.reason}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700">
+                      {new Date(exchange.created_at).toLocaleDateString(
+                        "fr-FR",
+                      )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(exchange.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs ${getStatusColor(exchange.status)}`}
+                      >
                         {STATUS_LABELS[exchange.status]}
                       </span>
                     </td>

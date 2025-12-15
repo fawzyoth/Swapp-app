@@ -39,13 +39,14 @@ export default function BordereauScanner() {
         }
       }
 
-      scannerRef.current = new Html5Qrcode("qr-reader");
+      scannerRef.current = new Html5Qrcode("qr-reader", { verbose: false });
 
       await scannerRef.current.start(
         { facingMode: "environment" },
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
         },
         onScanSuccess,
         () => {}, // Silent error for continuous scanning
@@ -86,26 +87,47 @@ export default function BordereauScanner() {
     try {
       // The scanned data could be:
       // 1. A direct exchange code (e.g., EXC-1234567890-ABC)
-      // 2. A URL containing the exchange code
-      // 3. JSON with exchange_code field
+      // 2. A bordereau code (e.g., BDX-XXXXXX-XXXX)
+      // 3. A URL containing the exchange code or bordereau code
+      // 4. JSON with exchange_code field
 
-      let exchangeCode = scannedData;
+      let code = scannedData;
+      let isBordereauCode = false;
 
       // Check if it's a URL
-      if (
-        scannedData.includes("/verify/") ||
-        scannedData.includes("exchange_code=")
-      ) {
+      if (scannedData.includes("http")) {
         try {
           const url = new URL(scannedData);
-          const codeFromUrl =
-            url.searchParams.get("exchange_code") ||
-            url.pathname.split("/verify/")[1];
-          if (codeFromUrl) {
-            exchangeCode = codeFromUrl;
+          // Check for exchange code in URL path (/verify/EXC-...)
+          if (scannedData.includes("/verify/")) {
+            const pathParts = url.hash
+              ? url.hash.split("/verify/")
+              : url.pathname.split("/verify/");
+            if (pathParts[1]) {
+              code = pathParts[1].split("?")[0].split("/")[0];
+            }
+          }
+          // Check for bordereau code in URL params (?bordereau=BDX-...)
+          else if (scannedData.includes("bordereau=")) {
+            const bordereauParam = url.hash
+              ? new URLSearchParams(url.hash.split("?")[1]).get("bordereau")
+              : url.searchParams.get("bordereau");
+            if (bordereauParam) {
+              code = bordereauParam;
+              isBordereauCode = true;
+            }
+          }
+          // Check for exchange_code param
+          else if (scannedData.includes("exchange_code=")) {
+            const exchangeParam = url.hash
+              ? new URLSearchParams(url.hash.split("?")[1]).get("exchange_code")
+              : url.searchParams.get("exchange_code");
+            if (exchangeParam) {
+              code = exchangeParam;
+            }
           }
         } catch {
-          // Not a URL, continue with the raw string
+          // Not a valid URL, continue with the raw string
         }
       }
 
@@ -113,14 +135,58 @@ export default function BordereauScanner() {
       try {
         const parsed = JSON.parse(scannedData);
         if (parsed.exchange_code) {
-          exchangeCode = parsed.exchange_code;
+          code = parsed.exchange_code;
+        } else if (parsed.bordereau_code) {
+          code = parsed.bordereau_code;
+          isBordereauCode = true;
         }
       } catch {
         // Not JSON, continue with the raw string
       }
 
-      // Clean the exchange code
-      exchangeCode = exchangeCode.trim().toUpperCase();
+      // Clean the code
+      code = code.trim().toUpperCase();
+
+      // Detect if it's a bordereau code by prefix
+      if (code.startsWith("BDX-")) {
+        isBordereauCode = true;
+      }
+
+      let exchangeCode = code;
+
+      // If it's a bordereau code, look up the associated exchange
+      if (isBordereauCode) {
+        const { data: bordereau, error: bordereauError } = await supabase
+          .from("merchant_bordereaux")
+          .select("exchange_id")
+          .eq("bordereau_code", code)
+          .maybeSingle();
+
+        if (bordereauError) throw bordereauError;
+
+        if (!bordereau || !bordereau.exchange_id) {
+          setError(
+            "Ce bordereau n'est pas encore associé à un échange. Le client doit d'abord scanner le QR code pour créer l'échange.",
+          );
+          return;
+        }
+
+        // Get the exchange code from the exchange
+        const { data: exchangeData, error: exchangeError } = await supabase
+          .from("exchanges")
+          .select("exchange_code")
+          .eq("id", bordereau.exchange_id)
+          .maybeSingle();
+
+        if (exchangeError) throw exchangeError;
+
+        if (!exchangeData) {
+          setError("Échange non trouvé pour ce bordereau.");
+          return;
+        }
+
+        exchangeCode = exchangeData.exchange_code;
+      }
 
       // Validate the exchange exists and is in a verifiable state
       const { data: exchange, error: fetchError } = await supabase

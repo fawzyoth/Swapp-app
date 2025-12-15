@@ -25,11 +25,21 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { supabase, STATUS_LABELS } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
+import {
+  sendRejectionSMS,
+  sendAcceptanceSMS,
+  sendMessageNotificationSMS,
+} from "../../lib/smsService";
 
 export default function MerchantExchangeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [exchange, setExchange] = useState<any>(null);
+  const [mediaData, setMediaData] = useState<{
+    video?: string;
+    images?: string[];
+  } | null>(null);
+  const [loadingMedia, setLoadingMedia] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [depots, setDepots] = useState<any[]>([]);
@@ -49,45 +59,74 @@ export default function MerchantExchangeDetail() {
     fetchData();
   }, [id]);
 
+  // Lazy load video and images only when user clicks to view
+  const loadMedia = async () => {
+    if (mediaData || loadingMedia) return;
+    setLoadingMedia(true);
+    try {
+      const { data } = await supabase
+        .from("exchanges")
+        .select("video, images")
+        .eq("id", id)
+        .maybeSingle();
+      if (data) {
+        setMediaData({ video: data.video, images: data.images });
+      }
+    } catch (error) {
+      console.error("Error loading media:", error);
+    } finally {
+      setLoadingMedia(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [exchangeRes, messagesRes, transportersRes, depotsRes] =
+      // Fetch exchange - use * for compatibility, video/images loaded separately on demand
+      const { data: exchangeData } = await supabase
+        .from("exchanges")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!exchangeData) {
+        setLoading(false);
+        return;
+      }
+
+      setExchange(exchangeData);
+
+      // Then fetch other data in parallel - but only needed fields
+      const [messagesRes, transportersRes, depotsRes, historyRes, deliveryRes] =
         await Promise.all([
-          supabase.from("exchanges").select("*").eq("id", id).maybeSingle(),
           supabase
             .from("messages")
-            .select("*")
+            .select("id, sender_type, message, created_at")
             .eq("exchange_id", id)
             .order("created_at", { ascending: true }),
-          supabase.from("transporters").select("*"),
-          supabase.from("mini_depots").select("*"),
-        ]);
-
-      if (exchangeRes.data) {
-        setExchange(exchangeRes.data);
-
-        const [historyRes, deliveryRes] = await Promise.all([
+          supabase.from("transporters").select("id, name"),
+          supabase.from("mini_depots").select("id, name, address"),
+          // Client history - NO video/images, only basic info
           supabase
             .from("exchanges")
-            .select("*")
-            .eq("client_phone", exchangeRes.data.client_phone)
+            .select("id, exchange_code, reason, status, created_at")
+            .eq("client_phone", exchangeData.client_phone)
             .neq("id", id)
             .order("created_at", { ascending: false })
             .limit(5),
           supabase
             .from("delivery_attempts")
-            .select("*")
+            .select(
+              "id, attempt_number, status, scheduled_date, notes, created_at",
+            )
             .eq("exchange_id", id)
             .order("attempt_number", { ascending: true }),
         ]);
 
-        setClientHistory(historyRes.data || []);
-        setDeliveryAttempts(deliveryRes.data || []);
-      }
-
       setMessages(messagesRes.data || []);
       setTransporters(transportersRes.data || []);
       setDepots(depotsRes.data || []);
+      setClientHistory(historyRes.data || []);
+      setDeliveryAttempts(deliveryRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -105,6 +144,16 @@ export default function MerchantExchangeDetail() {
         sender_type: "merchant",
         message: newMessage,
       });
+
+      // Send SMS notification to client about new message
+      if (exchange && id) {
+        await sendMessageNotificationSMS(
+          exchange.client_phone,
+          exchange.client_name,
+          exchange.exchange_code,
+          id,
+        );
+      }
 
       setNewMessage("");
       fetchData();
@@ -144,6 +193,24 @@ export default function MerchantExchangeDetail() {
         message: paymentMessage,
       });
 
+      // Send SMS notification to client
+      if (exchange) {
+        const estimatedDate = new Date();
+        estimatedDate.setDate(estimatedDate.getDate() + 3); // Estimated 3 days
+        const dateStr = estimatedDate.toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        await sendAcceptanceSMS(
+          exchange.client_phone,
+          exchange.client_name,
+          exchange.exchange_code,
+          dateStr,
+        );
+      }
+
       setShowValidateModal(false);
       fetchData();
     } catch (error) {
@@ -178,6 +245,16 @@ export default function MerchantExchangeDetail() {
         message: `Votre demande d'échange a été refusée. Raison: ${rejectionReason}`,
       });
 
+      // Send SMS notification to client about rejection
+      if (exchange) {
+        await sendRejectionSMS(
+          exchange.client_phone,
+          exchange.client_name,
+          exchange.exchange_code,
+          rejectionReason,
+        );
+      }
+
       setShowRejectModal(false);
       fetchData();
     } catch (error) {
@@ -185,7 +262,8 @@ export default function MerchantExchangeDetail() {
     }
   };
 
-  const printBordereau = () => {
+  // Print GO Bordereau - For outbound shipment with the exchange product
+  const printBordereauGo = () => {
     if (!exchange) return;
 
     const depot = depots.find((d) => d.id === exchange.mini_depot_id);
@@ -201,7 +279,7 @@ export default function MerchantExchangeDetail() {
       printWindow.document.write(`
         <html>
         <head>
-          <title>Bordereau - ${exchange.exchange_code}</title>
+          <title>Bordereau ALLER - ${exchange.exchange_code}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
@@ -210,15 +288,32 @@ export default function MerchantExchangeDetail() {
               max-width: 600px;
               margin: 0 auto;
             }
+            .type-banner {
+              background: linear-gradient(135deg, #0369a1, #0284c7);
+              color: white;
+              text-align: center;
+              padding: 15px;
+              font-size: 28px;
+              font-weight: bold;
+              letter-spacing: 3px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              text-transform: uppercase;
+            }
+            .type-banner .icon {
+              font-size: 24px;
+              margin-right: 10px;
+            }
             .header {
               text-align: center;
-              border-bottom: 3px solid #000;
+              border-bottom: 3px solid #0369a1;
               padding-bottom: 15px;
               margin-bottom: 20px;
             }
             .header h1 {
-              font-size: 24px;
+              font-size: 20px;
               margin-bottom: 5px;
+              color: #0369a1;
             }
             .header .code {
               font-size: 18px;
@@ -232,8 +327,8 @@ export default function MerchantExchangeDetail() {
             .qr-section {
               text-align: center;
               padding: 20px;
-              background: #f5f5f5;
-              border: 2px solid #d97706;
+              background: #f0f9ff;
+              border: 2px solid #0369a1;
               border-radius: 8px;
               margin-bottom: 20px;
             }
@@ -244,7 +339,7 @@ export default function MerchantExchangeDetail() {
             .qr-section .scan-text {
               margin-top: 10px;
               font-weight: bold;
-              color: #d97706;
+              color: #0369a1;
               font-size: 14px;
             }
             .qr-section .scan-desc {
@@ -255,16 +350,17 @@ export default function MerchantExchangeDetail() {
             .section {
               margin-bottom: 15px;
               padding: 12px;
-              border: 1px solid #ddd;
+              border: 1px solid #bae6fd;
               border-radius: 6px;
+              background: #f0f9ff;
             }
             .section-title {
               font-size: 12px;
               font-weight: bold;
-              color: #666;
+              color: #0369a1;
               text-transform: uppercase;
               margin-bottom: 8px;
-              border-bottom: 1px solid #eee;
+              border-bottom: 1px solid #bae6fd;
               padding-bottom: 5px;
             }
             .section-content {
@@ -293,23 +389,47 @@ export default function MerchantExchangeDetail() {
               font-size: 18px;
               color: #d97706;
             }
+            .info-box {
+              background: #dbeafe;
+              border: 2px solid #3b82f6;
+              border-radius: 8px;
+              padding: 15px;
+              margin-top: 20px;
+              text-align: center;
+            }
+            .info-box .title {
+              font-weight: bold;
+              color: #1d4ed8;
+              font-size: 14px;
+              margin-bottom: 8px;
+            }
+            .info-box .desc {
+              font-size: 12px;
+              color: #1e40af;
+            }
             .footer {
               margin-top: 20px;
               padding-top: 15px;
-              border-top: 2px dashed #ccc;
+              border-top: 2px dashed #0369a1;
               text-align: center;
               font-size: 10px;
-              color: #999;
+              color: #0369a1;
             }
             @media print {
               body { padding: 10px; }
               .qr-section { background: #fff; }
+              .section { background: #fff; }
+              .info-box { background: #fff; }
             }
           </style>
         </head>
         <body>
+          <div class="type-banner">
+            <span class="icon">📦</span> ALLER <span class="icon">→</span>
+          </div>
+
           <div class="header">
-            <h1>BORDEREAU D'ÉCHANGE</h1>
+            <h1>BORDEREAU D'ENVOI - PRODUIT D'ÉCHANGE</h1>
             <div class="code">${exchange.exchange_code}</div>
             <div class="date">Créé le ${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
           </div>
@@ -317,22 +437,22 @@ export default function MerchantExchangeDetail() {
           <div class="qr-section">
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}" alt="QR Code" />
             <p class="scan-text">SCANNER POUR VÉRIFIER L'ÉCHANGE</p>
-            <p class="scan-desc">Ce QR code permet au livreur d'accéder à la vidéo et aux informations pour vérifier le produit</p>
+            <p class="scan-desc">Le livreur scanne ce QR code pour accéder à la vidéo de référence et vérifier le produit retourné</p>
           </div>
 
           <div class="grid">
             <div class="section">
-              <div class="section-title">Client</div>
+              <div class="section-title">Client destinataire</div>
               <div class="section-content">
                 <p class="value">${exchange.client_name}</p>
                 <p>${exchange.client_phone}</p>
               </div>
             </div>
             <div class="section">
-              <div class="section-title">Produit</div>
+              <div class="section-title">Produit envoyé</div>
               <div class="section-content">
                 <p class="value">${exchange.product_name || "Non spécifié"}</p>
-                <p class="label">Raison: ${exchange.reason}</p>
+                <p class="label">Raison d'échange: ${exchange.reason}</p>
               </div>
             </div>
           </div>
@@ -382,9 +502,284 @@ export default function MerchantExchangeDetail() {
             </div>
           </div>
 
+          <div class="info-box">
+            <p class="title">📦 CE COLIS CONTIENT LE PRODUIT D'ÉCHANGE</p>
+            <p class="desc">À livrer au client. Le sac de retour vide avec le bordereau RETOUR est inclus séparément.</p>
+          </div>
+
           <div class="footer">
             <p>SWAPP - Plateforme d'échange de produits</p>
-            <p>Statut actuel: ${STATUS_LABELS[exchange.status]}</p>
+            <p>Statut: ${STATUS_LABELS[exchange.status]} | Type: ALLER</p>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  };
+
+  // Print RETURN Bordereau - Included in the product package from first delivery
+  const printBordereauReturn = () => {
+    if (!exchange) return;
+
+    // QR code URL for client to initiate/validate exchange
+    const clientExchangeUrl = `https://fawzyoth.github.io/Swapp-app/#/client/exchange/${exchange.exchange_code}`;
+
+    const printWindow = window.open("", "", "height=900,width=600");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Bordereau RETOUR - ${exchange.exchange_code}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              padding: 15px;
+              max-width: 600px;
+              margin: 0 auto;
+            }
+            .type-banner {
+              background: linear-gradient(135deg, #059669, #10b981);
+              color: white;
+              text-align: center;
+              padding: 12px;
+              font-size: 24px;
+              font-weight: bold;
+              letter-spacing: 2px;
+              border-radius: 8px;
+              margin-bottom: 15px;
+              text-transform: uppercase;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 3px solid #059669;
+              padding-bottom: 10px;
+              margin-bottom: 15px;
+            }
+            .header h1 {
+              font-size: 16px;
+              margin-bottom: 5px;
+              color: #059669;
+            }
+            .header .code {
+              font-size: 20px;
+              font-weight: bold;
+              color: #333;
+              font-family: 'Courier New', monospace;
+            }
+            .two-codes {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin-bottom: 15px;
+            }
+            .qr-section {
+              text-align: center;
+              padding: 15px;
+              background: #dbeafe;
+              border: 2px solid #3b82f6;
+              border-radius: 10px;
+            }
+            .qr-section img {
+              width: 120px;
+              height: 120px;
+            }
+            .qr-section .title {
+              font-weight: bold;
+              color: #1d4ed8;
+              font-size: 11px;
+              margin-bottom: 8px;
+            }
+            .qr-section .desc {
+              font-size: 9px;
+              color: #1e40af;
+              margin-top: 8px;
+            }
+            .barcode-section {
+              text-align: center;
+              padding: 15px;
+              background: #fef3c7;
+              border: 2px solid #f59e0b;
+              border-radius: 10px;
+            }
+            .barcode-section .title {
+              font-weight: bold;
+              color: #b45309;
+              font-size: 11px;
+              margin-bottom: 8px;
+            }
+            .barcode-section .barcode-img {
+              width: 160px;
+              height: 60px;
+              object-fit: contain;
+              background: white;
+              padding: 8px;
+              border-radius: 6px;
+            }
+            .barcode-section .bag-code {
+              font-family: 'Courier New', monospace;
+              font-size: 14px;
+              font-weight: bold;
+              letter-spacing: 2px;
+              color: #000;
+              margin-top: 5px;
+            }
+            .barcode-section .desc {
+              font-size: 9px;
+              color: #92400e;
+              margin-top: 8px;
+            }
+            .instructions-fr {
+              background: #ecfdf5;
+              border: 2px solid #10b981;
+              border-radius: 8px;
+              padding: 12px;
+              margin-bottom: 12px;
+            }
+            .instructions-fr .title {
+              font-weight: bold;
+              color: #047857;
+              font-size: 12px;
+              margin-bottom: 8px;
+            }
+            .instructions-fr ol {
+              margin-left: 18px;
+              font-size: 11px;
+              color: #065f46;
+            }
+            .instructions-fr ol li {
+              margin: 4px 0;
+            }
+            .instructions-ar {
+              background: #fef3c7;
+              border: 2px solid #f59e0b;
+              border-radius: 8px;
+              padding: 12px;
+              margin-bottom: 12px;
+              direction: rtl;
+              text-align: right;
+            }
+            .instructions-ar .title {
+              font-weight: bold;
+              color: #b45309;
+              font-size: 14px;
+              margin-bottom: 10px;
+            }
+            .instructions-ar ol {
+              margin-right: 18px;
+              font-size: 12px;
+              color: #92400e;
+              list-style-type: arabic-indic;
+            }
+            .instructions-ar ol li {
+              margin: 6px 0;
+              line-height: 1.6;
+            }
+            .product-info {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 12px;
+            }
+            .info-box {
+              padding: 10px;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              background: #f9fafb;
+            }
+            .info-box .label {
+              font-size: 9px;
+              color: #6b7280;
+              text-transform: uppercase;
+              margin-bottom: 3px;
+            }
+            .info-box .value {
+              font-size: 12px;
+              font-weight: 600;
+              color: #111827;
+            }
+            .footer {
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 2px dashed #059669;
+              text-align: center;
+              font-size: 9px;
+              color: #059669;
+            }
+            @media print {
+              body { padding: 10px; }
+              .qr-section { background: #fff; }
+              .barcode-section { background: #fff; }
+              .instructions-fr { background: #fff; }
+              .instructions-ar { background: #fff; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="type-banner">
+            ↩️ بطاقة الإرجاع | BORDEREAU RETOUR
+          </div>
+
+          <div class="header">
+            <h1>FICHE D'ÉCHANGE / بطاقة التبديل</h1>
+            <div class="code">${exchange.exchange_code}</div>
+          </div>
+
+          <div class="two-codes">
+            <div class="qr-section">
+              <p class="title">📱 SCANNER POUR ÉCHANGER</p>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(clientExchangeUrl)}" alt="QR Code" />
+              <p class="desc">Le client scanne ce code pour initier l'échange</p>
+            </div>
+
+            <div class="barcode-section">
+              <p class="title">📦 CODE LIVREUR</p>
+              <img src="https://barcodeapi.org/api/128/BAG-${exchange.exchange_code.slice(-8)}" alt="Barcode" class="barcode-img" />
+              <p class="bag-code">BAG-${exchange.exchange_code.slice(-8)}</p>
+              <p class="desc">Le livreur scanne lors de la collecte</p>
+            </div>
+          </div>
+
+          <div class="product-info">
+            <div class="info-box">
+              <p class="label">Produit / المنتج</p>
+              <p class="value">${exchange.product_name || "Non spécifié"}</p>
+            </div>
+            <div class="info-box">
+              <p class="label">Raison / السبب</p>
+              <p class="value">${exchange.reason}</p>
+            </div>
+          </div>
+
+          <div class="instructions-fr">
+            <p class="title">📋 COMMENT EFFECTUER VOTRE ÉCHANGE</p>
+            <ol>
+              <li><strong>Scannez le QR code</strong> avec votre téléphone pour valider l'échange</li>
+              <li><strong>Préparez le produit</strong> à retourner dans son emballage d'origine</li>
+              <li><strong>Gardez ce bordereau</strong> avec le produit</li>
+              <li><strong>Remettez le tout au livreur</strong> lors de la collecte</li>
+              <li><strong>Le livreur scannera</strong> le code-barres pour confirmer</li>
+            </ol>
+          </div>
+
+          <div class="instructions-ar">
+            <p class="title">📋 كيفية إجراء عملية التبديل</p>
+            <ol>
+              <li><strong>امسح رمز QR</strong> بهاتفك للتحقق من صحة عملية التبديل</li>
+              <li><strong>جهّز المنتج</strong> المراد إرجاعه في عبوته الأصلية</li>
+              <li><strong>احتفظ بهذه البطاقة</strong> مع المنتج</li>
+              <li><strong>سلّم كل شيء للمندوب</strong> عند الاستلام</li>
+              <li><strong>سيقوم المندوب بمسح</strong> الباركود للتأكيد</li>
+            </ol>
+          </div>
+
+          <div class="footer">
+            <p>SWAPP - منصة تبديل المنتجات | Plateforme d'échange de produits</p>
+            <p>${exchange.exchange_code} | ${new Date(exchange.created_at).toLocaleDateString("fr-FR")}</p>
           </div>
         </body>
         </html>
@@ -567,6 +962,7 @@ export default function MerchantExchangeDetail() {
                 </div>
               </div>
 
+              {/* Video */}
               {exchange.video && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-4">
@@ -604,6 +1000,36 @@ export default function MerchantExchangeDetail() {
                     controls
                     className="w-full max-h-96 rounded-lg border border-slate-200 bg-black"
                   />
+                </div>
+              )}
+
+              {/* Extracted Images from Video */}
+              {exchange.images && exchange.images.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-semibold text-slate-900">
+                      Images extraites de la vidéo
+                    </h3>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                      {exchange.images.length} images
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {exchange.images.map((image: string, index: number) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={image}
+                          alt={`Frame ${index + 1}`}
+                          className="w-full aspect-square object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(image, "_blank")}
+                        />
+                        <span className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                          {index + 1}/{exchange.images.length}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -646,13 +1072,31 @@ export default function MerchantExchangeDetail() {
               )}
 
               {!isPending && exchange.status === "validated" && (
-                <button
-                  onClick={printBordereau}
-                  className="w-full mt-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <Printer className="w-5 h-5" />
-                  Imprimer le bordereau
-                </button>
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm font-medium text-slate-700 text-center">
+                    Imprimer les bordereaux
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={printBordereauGo}
+                      className="py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-5 h-5" />
+                      <span>ALLER →</span>
+                    </button>
+                    <button
+                      onClick={printBordereauReturn}
+                      className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-5 h-5" />
+                      <span>← RETOUR</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 text-center">
+                    ALLER: Produit d'échange | RETOUR: Sac vide pour le retour
+                    client
+                  </p>
+                </div>
               )}
             </div>
 

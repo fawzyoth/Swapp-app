@@ -7,6 +7,9 @@ import {
   X,
   Home,
   Truck,
+  Banknote,
+  FileText,
+  Clock,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -14,6 +17,9 @@ const menuItems = [
   { path: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/admin/merchants", icon: Users, label: "E-Commerçants" },
   { path: "/admin/delivery-persons", icon: Truck, label: "Livreurs" },
+  { path: "/admin/finances", icon: Banknote, label: "Finances" },
+  { path: "/admin/invoices", icon: FileText, label: "Factures" },
+  { path: "/admin/settlements", icon: Clock, label: "Règlements" },
 ];
 
 export default function AdminSidebar() {

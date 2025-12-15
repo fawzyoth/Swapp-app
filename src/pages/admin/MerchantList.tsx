@@ -1,14 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus, Store, Package, QrCode, Eye, Edit, Trash2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import AdminLayout from '../../components/AdminLayout';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Search,
+  Plus,
+  Store,
+  Package,
+  QrCode,
+  Eye,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import AdminLayout from "../../components/AdminLayout";
 
 export default function AdminMerchantList() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [deleteModal, setDeleteModal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,8 +27,13 @@ export default function AdminMerchantList() {
   const fetchData = async () => {
     try {
       const [merchantsRes, exchangesRes] = await Promise.all([
-        supabase.from('merchants').select('*').order('created_at', { ascending: false }),
-        supabase.from('exchanges').select('*')
+        // Only select fields needed for display - NO logo_base64
+        supabase
+          .from("merchants")
+          .select("id, name, email, phone, qr_code_data, created_at")
+          .order("created_at", { ascending: false }),
+        // Only select fields needed for stats - NO video, NO images
+        supabase.from("exchanges").select("merchant_id, status"),
       ]);
 
       setMerchants(merchantsRes.data || []);
@@ -31,28 +45,35 @@ export default function AdminMerchantList() {
 
   const handleDelete = async (merchantId: string) => {
     try {
-      await supabase.from('merchants').delete().eq('id', merchantId);
-      setMerchants(merchants.filter(m => m.id !== merchantId));
+      await supabase.from("merchants").delete().eq("id", merchantId);
+      setMerchants(merchants.filter((m) => m.id !== merchantId));
       setDeleteModal(null);
     } catch (error) {
-      console.error('Error deleting merchant:', error);
+      console.error("Error deleting merchant:", error);
     }
   };
 
   const getMerchantStats = (merchantId: string) => {
-    const merchantExchanges = exchanges.filter(e => e.merchant_id === merchantId);
+    const merchantExchanges = exchanges.filter(
+      (e) => e.merchant_id === merchantId,
+    );
     return {
       total: merchantExchanges.length,
-      pending: merchantExchanges.filter(e => e.status === 'pending').length,
-      validated: merchantExchanges.filter(e => ['validated', 'preparing', 'in_transit', 'completed'].includes(e.status)).length,
-      rejected: merchantExchanges.filter(e => e.status === 'rejected').length,
+      pending: merchantExchanges.filter((e) => e.status === "pending").length,
+      validated: merchantExchanges.filter((e) =>
+        ["validated", "preparing", "in_transit", "completed"].includes(
+          e.status,
+        ),
+      ).length,
+      rejected: merchantExchanges.filter((e) => e.status === "rejected").length,
     };
   };
 
-  const filteredMerchants = merchants.filter(merchant =>
-    merchant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    merchant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    merchant.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMerchants = merchants.filter(
+    (merchant) =>
+      merchant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      merchant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      merchant.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   if (loading) {
@@ -70,7 +91,9 @@ export default function AdminMerchantList() {
       <div>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">E-Commerçants</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              E-Commerçants
+            </h1>
             <p className="text-slate-600">Gérez les comptes e-commerçants</p>
           </div>
           <Link
@@ -102,44 +125,70 @@ export default function AdminMerchantList() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">E-Commerçant</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">Contact</th>
-                  <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">Échanges</th>
-                  <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">QR Code</th>
-                  <th className="text-right px-6 py-4 text-sm font-semibold text-slate-900">Actions</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">
+                    E-Commerçant
+                  </th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">
+                    Contact
+                  </th>
+                  <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">
+                    Échanges
+                  </th>
+                  <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">
+                    QR Code
+                  </th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-slate-900">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredMerchants.map((merchant) => {
                   const stats = getMerchantStats(merchant.id);
                   return (
-                    <tr key={merchant.id} className="hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={merchant.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                             <Store className="w-5 h-5 text-purple-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-slate-900">{merchant.name}</p>
+                            <p className="font-medium text-slate-900">
+                              {merchant.name}
+                            </p>
                             <p className="text-sm text-slate-500">
-                              Inscrit le {new Date(merchant.created_at).toLocaleDateString('fr-FR')}
+                              Inscrit le{" "}
+                              {new Date(merchant.created_at).toLocaleDateString(
+                                "fr-FR",
+                              )}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-slate-900">{merchant.email}</p>
-                        <p className="text-sm text-slate-500">{merchant.phone || '-'}</p>
+                        <p className="text-sm text-slate-500">
+                          {merchant.phone || "-"}
+                        </p>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="inline-flex items-center gap-2">
                           <Package className="w-4 h-4 text-slate-400" />
-                          <span className="font-medium text-slate-900">{stats.total}</span>
+                          <span className="font-medium text-slate-900">
+                            {stats.total}
+                          </span>
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
-                          <span className="text-emerald-600">{stats.validated} validés</span>
+                          <span className="text-emerald-600">
+                            {stats.validated} validés
+                          </span>
                           {stats.rejected > 0 && (
-                            <span className="text-red-600 ml-2">{stats.rejected} rejetés</span>
+                            <span className="text-red-600 ml-2">
+                              {stats.rejected} rejetés
+                            </span>
                           )}
                         </div>
                       </td>
@@ -207,9 +256,12 @@ export default function AdminMerchantList() {
         {deleteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Confirmer la suppression</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Confirmer la suppression
+              </h3>
               <p className="text-slate-600 mb-6">
-                Êtes-vous sûr de vouloir supprimer cet e-commerçant ? Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer cet e-commerçant ? Cette
+                action est irréversible.
               </p>
               <div className="flex justify-end gap-3">
                 <button

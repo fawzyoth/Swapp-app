@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ScanLine,
@@ -7,15 +7,21 @@ import {
   Menu,
   X,
   Home,
-  LogOut
-} from 'lucide-react';
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+  LogOut,
+  Banknote,
+} from "lucide-react";
+import { useState } from "react";
+import { supabase } from "../lib/supabase";
 
 const menuItems = [
-  { path: '/delivery/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/delivery/scan', icon: ScanLine, label: 'Scanner Bordereau' },
-  { path: '/delivery/verifications', icon: ClipboardCheck, label: 'Mes Vérifications' },
+  { path: "/delivery/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/delivery/scan", icon: ScanLine, label: "Scanner Bordereau" },
+  {
+    path: "/delivery/verifications",
+    icon: ClipboardCheck,
+    label: "Mes Vérifications",
+  },
+  { path: "/delivery/finances", icon: Banknote, label: "Mes Finances" },
 ];
 
 export default function DeliverySidebar() {
@@ -25,7 +31,7 @@ export default function DeliverySidebar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/delivery/login');
+    navigate("/delivery/login");
   };
 
   return (
@@ -34,12 +40,16 @@ export default function DeliverySidebar() {
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
       >
-        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isMobileMenuOpen ? (
+          <X className="w-6 h-6" />
+        ) : (
+          <Menu className="w-6 h-6" />
+        )}
       </button>
 
       <aside
         className={`fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-40 transition-transform duration-300 ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 w-64`}
       >
         <div className="flex flex-col h-full">
@@ -50,7 +60,9 @@ export default function DeliverySidebar() {
               </div>
               <div>
                 <h2 className="font-semibold text-slate-900">Espace Livreur</h2>
-                <p className="text-xs text-slate-500">Vérification des échanges</p>
+                <p className="text-xs text-slate-500">
+                  Vérification des échanges
+                </p>
               </div>
             </div>
           </div>
@@ -68,8 +80,8 @@ export default function DeliverySidebar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                         isActive
-                          ? 'bg-amber-50 text-amber-600'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? "bg-amber-50 text-amber-600"
+                          : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -83,7 +95,7 @@ export default function DeliverySidebar() {
 
           <div className="p-4 border-t border-slate-200 space-y-2">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate("/")}
               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 w-full transition-colors"
             >
               <Home className="w-5 h-5" />

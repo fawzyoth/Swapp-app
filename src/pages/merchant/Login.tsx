@@ -1,19 +1,27 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Store, ArrowLeft } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Store, ArrowLeft } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
 export default function MerchantLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  // Sign out any existing session when login page loads
+  useEffect(() => {
+    const signOutExisting = async () => {
+      await supabase.auth.signOut();
+    };
+    signOutExisting();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -24,61 +32,88 @@ export default function MerchantLogin() {
       if (error) throw error;
 
       if (data.user) {
-        navigate('/merchant/dashboard');
+        // Check if this email belongs to a delivery person (forbidden)
+        const { data: deliveryPerson } = await supabase
+          .from("delivery_persons")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (deliveryPerson) {
+          await supabase.auth.signOut();
+          throw new Error(
+            "Ce compte est un compte livreur. Veuillez utiliser le portail livreur.",
+          );
+        }
+
+        // Verify the user is a merchant by email
+        const { data: merchant, error: merchantError } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (merchantError || !merchant) {
+          await supabase.auth.signOut();
+          throw new Error(
+            "Compte e-commerçant non trouvé. Veuillez utiliser le bon portail de connexion.",
+          );
+        }
+
+        navigate("/merchant/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur de connexion');
+      setError(err.message || "Erreur de connexion");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDemoLogin = async () => {
-    setEmail('demo@merchant.com');
-    setPassword('demo123456');
+    setEmail("demo@merchant.com");
+    setPassword("demo123456");
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       let { data, error } = await supabase.auth.signInWithPassword({
-        email: 'demo@merchant.com',
-        password: 'demo123456',
+        email: "demo@merchant.com",
+        password: "demo123456",
       });
 
-      if (error && error.message.includes('Invalid login credentials')) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: 'demo@merchant.com',
-          password: 'demo123456',
-          options: {
-            data: {
-              name: 'Boutique Demo',
-              phone: '+216 70 000 000',
+      if (error && error.message.includes("Invalid login credentials")) {
+        const { data: signUpData, error: signUpError } =
+          await supabase.auth.signUp({
+            email: "demo@merchant.com",
+            password: "demo123456",
+            options: {
+              data: {
+                name: "Boutique Demo",
+                phone: "+216 70 000 000",
+              },
             },
-          },
-        });
+          });
 
         if (signUpError) throw signUpError;
 
         if (signUpData.user) {
-          const merchantId = '11111111-1111-1111-1111-111111111111';
+          const merchantId = "11111111-1111-1111-1111-111111111111";
 
           const { error: updateError } = await supabase
-            .from('merchants')
+            .from("merchants")
             .update({ id: signUpData.user.id })
-            .eq('id', merchantId);
+            .eq("id", merchantId);
 
           if (updateError) {
-            await supabase
-              .from('merchants')
-              .insert({
-                id: signUpData.user.id,
-                email: 'demo@merchant.com',
-                name: 'Boutique Demo',
-                phone: '+216 70 000 000',
-              });
+            await supabase.from("merchants").insert({
+              id: signUpData.user.id,
+              email: "demo@merchant.com",
+              name: "Boutique Demo",
+              phone: "+216 70 000 000",
+            });
           }
 
-          navigate('/merchant/dashboard');
+          navigate("/merchant/dashboard");
           return;
         }
       } else if (error) {
@@ -86,10 +121,37 @@ export default function MerchantLogin() {
       }
 
       if (data?.user) {
-        navigate('/merchant/dashboard');
+        // Check if this email belongs to a delivery person (forbidden)
+        const { data: deliveryPerson } = await supabase
+          .from("delivery_persons")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (deliveryPerson) {
+          await supabase.auth.signOut();
+          throw new Error("Ce compte est un compte livreur.");
+        }
+
+        // Verify the user is a merchant by email
+        const { data: merchant, error: merchantError } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (merchantError || !merchant) {
+          await supabase.auth.signOut();
+          throw new Error("Compte e-commerçant non trouvé.");
+        }
+
+        navigate("/merchant/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.');
+      setError(
+        err.message ||
+          "Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.",
+      );
     } finally {
       setLoading(false);
     }
@@ -99,7 +161,7 @@ export default function MerchantLogin() {
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50">
       <div className="container mx-auto px-4 py-8">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="flex items-center text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -114,9 +176,7 @@ export default function MerchantLogin() {
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Connexion E-Commerçant
             </h1>
-            <p className="text-slate-600">
-              Accédez à votre tableau de bord
-            </p>
+            <p className="text-slate-600">Accédez à votre tableau de bord</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -160,7 +220,7 @@ export default function MerchantLogin() {
                 disabled={loading}
                 className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
               >
-                {loading ? 'Connexion...' : 'Se connecter'}
+                {loading ? "Connexion..." : "Se connecter"}
               </button>
             </form>
 
@@ -188,7 +248,8 @@ export default function MerchantLogin() {
                 Compte de démonstration:
               </p>
               <p className="text-xs text-sky-700">
-                Email: demo@merchant.com<br />
+                Email: demo@merchant.com
+                <br />
                 Mot de passe: demo123456
               </p>
             </div>

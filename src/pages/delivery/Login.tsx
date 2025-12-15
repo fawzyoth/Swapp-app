@@ -1,19 +1,27 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Truck, ArrowLeft } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Truck, ArrowLeft } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
 export default function DeliveryLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  // Sign out any existing session when login page loads
+  useEffect(() => {
+    const signOutExisting = async () => {
+      await supabase.auth.signOut();
+    };
+    signOutExisting();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -24,64 +32,79 @@ export default function DeliveryLogin() {
       if (error) throw error;
 
       if (data.user) {
-        // Verify the user is a delivery person
+        // Check if this email belongs to a merchant (forbidden)
+        const { data: merchant } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (merchant) {
+          await supabase.auth.signOut();
+          throw new Error(
+            "Ce compte est un compte e-commerçant. Veuillez utiliser le portail e-commerçant.",
+          );
+        }
+
+        // Verify the user is a delivery person by email
         const { data: deliveryPerson, error: dpError } = await supabase
-          .from('delivery_persons')
-          .select('*')
-          .eq('id', data.user.id)
+          .from("delivery_persons")
+          .select("*")
+          .eq("email", data.user.email)
           .maybeSingle();
 
         if (dpError || !deliveryPerson) {
           await supabase.auth.signOut();
-          throw new Error('Compte livreur non trouvé');
+          throw new Error(
+            "Compte livreur non trouvé. Veuillez utiliser le bon portail de connexion.",
+          );
         }
 
-        navigate('/delivery/dashboard');
+        navigate("/delivery/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur de connexion');
+      setError(err.message || "Erreur de connexion");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDemoLogin = async () => {
-    setEmail('demo@livreur.com');
-    setPassword('demo123456');
+    setEmail("demo@livreur.com");
+    setPassword("demo123456");
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       let { data, error } = await supabase.auth.signInWithPassword({
-        email: 'demo@livreur.com',
-        password: 'demo123456',
+        email: "demo@livreur.com",
+        password: "demo123456",
       });
 
-      if (error && error.message.includes('Invalid login credentials')) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: 'demo@livreur.com',
-          password: 'demo123456',
-          options: {
-            data: {
-              name: 'Livreur Demo',
-              phone: '+216 70 000 001',
+      if (error && error.message.includes("Invalid login credentials")) {
+        const { data: signUpData, error: signUpError } =
+          await supabase.auth.signUp({
+            email: "demo@livreur.com",
+            password: "demo123456",
+            options: {
+              data: {
+                name: "Livreur Demo",
+                phone: "+216 70 000 001",
+              },
             },
-          },
-        });
+          });
 
         if (signUpError) throw signUpError;
 
         if (signUpData.user) {
-          await supabase
-            .from('delivery_persons')
-            .insert({
-              id: signUpData.user.id,
-              email: 'demo@livreur.com',
-              name: 'Livreur Demo',
-              phone: '+216 70 000 001',
-            });
+          await supabase.from("delivery_persons").insert({
+            id: signUpData.user.id,
+            email: "demo@livreur.com",
+            name: "Livreur Demo",
+            phone: "+216 70 000 001",
+          });
 
-          navigate('/delivery/dashboard');
+          navigate("/delivery/dashboard");
           return;
         }
       } else if (error) {
@@ -89,10 +112,37 @@ export default function DeliveryLogin() {
       }
 
       if (data?.user) {
-        navigate('/delivery/dashboard');
+        // Check if this email belongs to a merchant (forbidden)
+        const { data: merchant } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (merchant) {
+          await supabase.auth.signOut();
+          throw new Error("Ce compte est un compte e-commerçant.");
+        }
+
+        // Verify the user is a delivery person
+        const { data: deliveryPerson } = await supabase
+          .from("delivery_persons")
+          .select("id")
+          .eq("email", data.user.email)
+          .maybeSingle();
+
+        if (!deliveryPerson) {
+          await supabase.auth.signOut();
+          throw new Error("Compte livreur non trouvé.");
+        }
+
+        navigate("/delivery/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.');
+      setError(
+        err.message ||
+          "Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.",
+      );
     } finally {
       setLoading(false);
     }
@@ -102,7 +152,7 @@ export default function DeliveryLogin() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="flex items-center text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -163,7 +213,7 @@ export default function DeliveryLogin() {
                 disabled={loading}
                 className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
               >
-                {loading ? 'Connexion...' : 'Se connecter'}
+                {loading ? "Connexion..." : "Se connecter"}
               </button>
             </form>
 
@@ -191,7 +241,8 @@ export default function DeliveryLogin() {
                 Compte de démonstration:
               </p>
               <p className="text-xs text-amber-700">
-                Email: demo@livreur.com<br />
+                Email: demo@livreur.com
+                <br />
                 Mot de passe: demo123456
               </p>
             </div>

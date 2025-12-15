@@ -121,19 +121,43 @@ function ProtectedRoute({
   const [user, setUser] = useState<any>(undefined);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Timeout to prevent infinite loading on mobile
+    const timeout = setTimeout(() => {
+      if (mounted && user === undefined) {
+        console.log("Auth timeout - redirecting to login");
+        setUser(null);
+      }
+    }, 5000);
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (mounted) {
+          setUser(session?.user ?? null);
+        }
+      })
+      .catch((err) => {
+        console.error("Session error:", err);
+        if (mounted) setUser(null);
+      });
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (mounted) {
+        setUser(session?.user ?? null);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (user === undefined) {
@@ -158,19 +182,43 @@ function PublicRoute({
   const [user, setUser] = useState<any>(undefined);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Timeout to prevent infinite loading on mobile
+    const timeout = setTimeout(() => {
+      if (mounted && user === undefined) {
+        console.log("Auth timeout - showing login page");
+        setUser(null);
+      }
+    }, 5000);
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (mounted) {
+          setUser(session?.user ?? null);
+        }
+      })
+      .catch((err) => {
+        console.error("Session error:", err);
+        if (mounted) setUser(null);
+      });
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (mounted) {
+        setUser(session?.user ?? null);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (user === undefined) {

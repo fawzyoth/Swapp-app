@@ -18,6 +18,26 @@ export default function MerchantLayout({ children }: MerchantLayoutProps) {
 
   const checkMerchantAuth = async () => {
     try {
+      // Check cache first for faster subsequent loads
+      const cachedAuth = sessionStorage.getItem("merchant_auth");
+      if (cachedAuth) {
+        const { email, timestamp } = JSON.parse(cachedAuth);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        // Cache valid for 5 minutes and email matches
+        if (
+          session &&
+          session.user.email === email &&
+          Date.now() - timestamp < 300000
+        ) {
+          setIsAuthorized(true);
+          setLoading(false);
+          return;
+        }
+      }
+
       const {
         data: { session },
         error: sessionError,
@@ -30,49 +50,59 @@ export default function MerchantLayout({ children }: MerchantLayoutProps) {
       }
 
       if (!session) {
+        sessionStorage.removeItem("merchant_auth");
         navigate("/merchant/login");
         return;
       }
 
-      // Check if this is a delivery person (forbidden)
-      const { data: deliveryPerson } = await supabase
-        .from("delivery_persons")
-        .select("id")
-        .eq("email", session.user.email)
-        .maybeSingle();
+      // Run both checks in parallel for faster loading
+      const [deliveryResult, merchantResult] = await Promise.all([
+        supabase
+          .from("delivery_persons")
+          .select("id")
+          .eq("email", session.user.email)
+          .maybeSingle(),
+        supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", session.user.email)
+          .maybeSingle(),
+      ]);
 
-      if (deliveryPerson) {
-        // This is a delivery person, not allowed here
+      // Check if this is a delivery person (forbidden)
+      if (deliveryResult.data) {
+        sessionStorage.removeItem("merchant_auth");
         await supabase.auth.signOut();
         navigate("/merchant/login");
         return;
       }
 
-      // Verify user is a merchant by checking email
-      const { data: merchant, error } = await supabase
-        .from("merchants")
-        .select("id")
-        .eq("email", session.user.email)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Merchant check error:", error);
-        // Don't redirect on error - just set as authorized if session exists
+      if (merchantResult.error) {
+        console.error("Merchant check error:", merchantResult.error);
         setIsAuthorized(true);
         setLoading(false);
         return;
       }
 
-      if (!merchant) {
-        // Not a merchant - redirect to login
+      if (!merchantResult.data) {
+        sessionStorage.removeItem("merchant_auth");
         navigate("/merchant/login");
         return;
       }
 
+      // Cache the auth result
+      sessionStorage.setItem(
+        "merchant_auth",
+        JSON.stringify({
+          email: session.user.email,
+          timestamp: Date.now(),
+        }),
+      );
+
       setIsAuthorized(true);
     } catch (error) {
       console.error("Auth check error:", error);
-      // Don't redirect on catch - might cause loop
+      sessionStorage.removeItem("merchant_auth");
       setLoading(false);
     } finally {
       setLoading(false);

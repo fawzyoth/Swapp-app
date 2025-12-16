@@ -18,45 +18,78 @@ export default function DeliveryLayout({ children }: DeliveryLayoutProps) {
 
   const checkDeliveryAuth = async () => {
     try {
+      // Check cache first for faster subsequent loads
+      const cachedAuth = sessionStorage.getItem("delivery_auth");
+      if (cachedAuth) {
+        const { email, timestamp } = JSON.parse(cachedAuth);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        // Cache valid for 5 minutes and email matches
+        if (
+          session &&
+          session.user.email === email &&
+          Date.now() - timestamp < 300000
+        ) {
+          setIsAuthorized(true);
+          setLoading(false);
+          return;
+        }
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
+        sessionStorage.removeItem("delivery_auth");
         navigate("/delivery/login");
         return;
       }
 
-      // Check if this is a merchant (forbidden)
-      const { data: merchant } = await supabase
-        .from("merchants")
-        .select("id")
-        .eq("email", session.user.email)
-        .maybeSingle();
+      // Run both checks in parallel for faster loading
+      const [merchantResult, deliveryResult] = await Promise.all([
+        supabase
+          .from("merchants")
+          .select("id")
+          .eq("email", session.user.email)
+          .maybeSingle(),
+        supabase
+          .from("delivery_persons")
+          .select("id")
+          .eq("email", session.user.email)
+          .maybeSingle(),
+      ]);
 
-      if (merchant) {
-        // This is a merchant, not allowed here
+      // Check if this is a merchant (forbidden)
+      if (merchantResult.data) {
+        sessionStorage.removeItem("delivery_auth");
         await supabase.auth.signOut();
         navigate("/delivery/login");
         return;
       }
 
-      // Verify user is a delivery person by checking email
-      const { data: deliveryPerson, error } = await supabase
-        .from("delivery_persons")
-        .select("id")
-        .eq("email", session.user.email)
-        .maybeSingle();
-
-      if (error || !deliveryPerson) {
-        // Not a delivery person - redirect to login
+      // Verify user is a delivery person
+      if (deliveryResult.error || !deliveryResult.data) {
+        sessionStorage.removeItem("delivery_auth");
         navigate("/delivery/login");
         return;
       }
 
+      // Cache the auth result
+      sessionStorage.setItem(
+        "delivery_auth",
+        JSON.stringify({
+          email: session.user.email,
+          timestamp: Date.now(),
+        }),
+      );
+
       setIsAuthorized(true);
     } catch (error) {
       console.error("Auth check error:", error);
+      sessionStorage.removeItem("delivery_auth");
       navigate("/delivery/login");
     } finally {
       setLoading(false);

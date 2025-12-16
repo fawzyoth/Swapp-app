@@ -19,7 +19,13 @@ import {
   Play,
   Image as ImageIcon,
 } from "lucide-react";
-import { supabase, STATUS_LABELS } from "../../lib/supabase";
+import {
+  supabase,
+  STATUS_LABELS,
+  getMerchantFees,
+  DEFAULT_PLATFORM_FEE,
+  DEFAULT_DELIVERY_FEE,
+} from "../../lib/supabase";
 import DeliveryLayout from "../../components/DeliveryLayout";
 import { sendStatusChangeSMS } from "../../lib/smsService";
 
@@ -899,6 +905,53 @@ export default function ExchangeVerification() {
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 font-mono text-lg"
                         />
                       </div>
+
+                      {/* Fee Breakdown Info */}
+                      {amountCollected && parseFloat(amountCollected) > 0 && (
+                        <div className="bg-white border border-slate-200 rounded-lg p-3">
+                          <p className="text-xs font-medium text-slate-600 mb-2">
+                            Répartition du montant:
+                          </p>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">
+                                Frais plateforme:
+                              </span>
+                              <span className="text-red-600">
+                                -
+                                {merchant?.platform_fee ?? DEFAULT_PLATFORM_FEE}{" "}
+                                TND
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">
+                                Frais livraison:
+                              </span>
+                              <span className="text-red-600">
+                                -
+                                {merchant?.delivery_fee ?? DEFAULT_DELIVERY_FEE}{" "}
+                                TND
+                              </span>
+                            </div>
+                            <div className="flex justify-between pt-1 border-t border-slate-200">
+                              <span className="font-medium text-slate-900">
+                                Pour le marchand:
+                              </span>
+                              <span className="font-bold text-emerald-600">
+                                {Math.max(
+                                  0,
+                                  parseFloat(amountCollected) -
+                                    (merchant?.platform_fee ??
+                                      DEFAULT_PLATFORM_FEE) -
+                                    (merchant?.delivery_fee ??
+                                      DEFAULT_DELIVERY_FEE),
+                                ).toFixed(2)}{" "}
+                                TND
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">

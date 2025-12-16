@@ -22,6 +22,8 @@ import {
   PAYMENT_STATUS_LABELS,
   SWAPP_EXCHANGE_FEE,
   PAYMENT_METHOD_LABELS,
+  DEFAULT_PLATFORM_FEE,
+  DEFAULT_DELIVERY_FEE,
 } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
@@ -38,11 +40,12 @@ const DEMO_PAYMENT: MerchantPayment = {
   total_exchanges: 8,
   total_collected: 245,
   total_swapp_fees: 72,
-  amount_due: 173,
+  total_delivery_fees: 40,
+  amount_due: 133,
   status: "paid",
   paid_at: "2025-12-18T10:30:00Z",
-  payment_method: "bank_transfer",
-  payment_reference: "VIR-2025-1218-001",
+  payment_method: "cash",
+  merchant_accepted: false,
   created_at: new Date().toISOString(),
 };
 
@@ -151,6 +154,10 @@ export default function PaymentDetail() {
   const [payment, setPayment] = useState<MerchantPayment | null>(null);
   const [items, setItems] = useState<MerchantPaymentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [accepting, setAccepting] = useState(false);
+  const [disputing, setDisputing] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -277,13 +284,15 @@ export default function PaymentDetail() {
     const styles: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800",
       approved: "bg-blue-100 text-blue-800",
-      paid: "bg-green-100 text-green-800",
+      paid: "bg-emerald-100 text-emerald-800",
+      accepted: "bg-green-100 text-green-800",
       disputed: "bg-red-100 text-red-800",
     };
     const icons: Record<string, React.ReactNode> = {
       pending: <Clock className="w-4 h-4" />,
       approved: <CheckCircle className="w-4 h-4" />,
       paid: <CheckCircle className="w-4 h-4" />,
+      accepted: <CheckCircle className="w-4 h-4" />,
       disputed: <AlertCircle className="w-4 h-4" />,
     };
     return (
@@ -294,6 +303,61 @@ export default function PaymentDetail() {
         {PAYMENT_STATUS_LABELS[status]}
       </span>
     );
+  };
+
+  const needsAcceptance =
+    payment?.status === "paid" && !payment?.merchant_accepted;
+
+  const handleAccept = async () => {
+    if (!payment) return;
+    setAccepting(true);
+    try {
+      const { error } = await supabase
+        .from("merchant_payments")
+        .update({
+          merchant_accepted: true,
+          merchant_accepted_at: new Date().toISOString(),
+          status: "accepted",
+        })
+        .eq("id", payment.id);
+
+      if (!error) {
+        setPayment({
+          ...payment,
+          merchant_accepted: true,
+          merchant_accepted_at: new Date().toISOString(),
+          status: "accepted",
+        });
+      }
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleDispute = async () => {
+    if (!payment || !disputeReason.trim()) return;
+    setDisputing(true);
+    try {
+      const { error } = await supabase
+        .from("merchant_payments")
+        .update({
+          status: "disputed",
+          dispute_reason: disputeReason,
+        })
+        .eq("id", payment.id);
+
+      if (!error) {
+        setPayment({
+          ...payment,
+          status: "disputed",
+          dispute_reason: disputeReason,
+        });
+        setShowDisputeModal(false);
+        setDisputeReason("");
+      }
+    } finally {
+      setDisputing(false);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -369,9 +433,87 @@ export default function PaymentDetail() {
                 Période: {formatPeriod(payment)}
               </p>
             </div>
-            {getStatusBadge(payment.status)}
+            <div className="flex items-center gap-3">
+              {getStatusBadge(payment.status)}
+              {payment.merchant_accepted && (
+                <span className="text-xs text-green-600 font-medium">
+                  ✓ Accepté par vous
+                </span>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Accept/Dispute Action Bar */}
+        {needsAcceptance && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="font-medium text-amber-900">Action requise</h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Vous avez reçu un paiement de{" "}
+                  <strong>{payment.amount_due.toFixed(2)} TND</strong>. Veuillez
+                  confirmer la réception ou signaler un problème.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDisputeModal(true)}
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Contester
+                </button>
+                <button
+                  onClick={handleAccept}
+                  disabled={accepting}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {accepting ? "Confirmation..." : "Accepter le paiement"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dispute Modal */}
+        {showDisputeModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">
+                Contester le paiement
+              </h3>
+              <p className="text-sm text-slate-600 mb-4">
+                Veuillez expliquer la raison de votre contestation. Notre équipe
+                examinera votre demande.
+              </p>
+              <textarea
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                placeholder="Expliquez le problème rencontré..."
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                rows={4}
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => {
+                    setShowDisputeModal(false);
+                    setDisputeReason("");
+                  }}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDispute}
+                  disabled={!disputeReason.trim() || disputing}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {disputing ? "Envoi..." : "Envoyer la contestation"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Payment Info Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -390,11 +532,20 @@ export default function PaymentDetail() {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="text-slate-600">
-                  Frais SWAPP ({SWAPP_EXCHANGE_FEE} TND ×{" "}
+                  Frais Plateforme ({DEFAULT_PLATFORM_FEE} TND ×{" "}
                   {payment.total_exchanges})
                 </span>
                 <span className="font-medium text-red-600">
                   - {payment.total_swapp_fees.toFixed(2)} TND
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-slate-600">
+                  Frais Livraison ({DEFAULT_DELIVERY_FEE} TND ×{" "}
+                  {payment.total_exchanges})
+                </span>
+                <span className="font-medium text-red-600">
+                  - {(payment.total_delivery_fees || 0).toFixed(2)} TND
                 </span>
               </div>
               <div className="flex justify-between items-center py-3 bg-green-50 -mx-2 px-2 rounded-lg">

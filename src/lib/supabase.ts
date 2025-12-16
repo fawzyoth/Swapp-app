@@ -16,6 +16,8 @@ export type Merchant = {
   business_address?: string;
   business_city?: string;
   business_postal_code?: string;
+  platform_fee?: number; // Custom SWAPP fee per exchange (default: 9 TND)
+  delivery_fee?: number; // Custom delivery fee per exchange (default: 5 TND)
   created_at: string;
 };
 
@@ -290,6 +292,7 @@ export type MerchantPaymentStatus =
   | "pending"
   | "approved"
   | "paid"
+  | "accepted"
   | "disputed";
 
 export type MerchantPayment = {
@@ -303,16 +306,80 @@ export type MerchantPayment = {
   period_end: string;
   total_exchanges: number;
   total_collected: number; // Total client payments
-  total_swapp_fees: number; // 9 TND × exchanges
-  amount_due: number; // collected - fees
+  total_swapp_fees: number; // platform_fee × exchanges
+  total_delivery_fees: number; // delivery_fee × exchanges
+  amount_due: number; // collected - platform_fees - delivery_fees
   status: MerchantPaymentStatus;
   approved_by?: string;
   approved_at?: string;
   paid_at?: string;
-  payment_method?: string; // bank_transfer, cash, check
+  payment_method?: string; // cash only for now
   payment_reference?: string;
+  // Merchant acceptance
+  merchant_accepted?: boolean;
+  merchant_accepted_at?: string;
+  dispute_reason?: string;
   notes?: string;
   created_at: string;
+  // Joined data
+  merchant?: Merchant;
+};
+
+// Delivery Deposit - Cash deposit from delivery person to SWAPP
+export type DeliveryDepositStatus = "pending" | "confirmed" | "disputed";
+
+export type DeliveryDeposit = {
+  id: string;
+  deposit_number: string; // DEP-2025-001
+  delivery_person_id: string;
+  deposit_date: string;
+  total_collected: number; // Total collected from clients
+  total_exchanges: number; // Number of exchanges
+  amount_deposited: number; // Cash deposited at SWAPP office
+  discrepancy: number; // collected - deposited (should be 0)
+  status: DeliveryDepositStatus;
+  received_by?: string; // Admin who received the deposit
+  received_at?: string;
+  notes?: string;
+  created_at: string;
+  // Joined data
+  delivery_person?: DeliveryPerson;
+};
+
+// Delivery Deposit Items - Individual exchanges in a deposit
+export type DeliveryDepositItem = {
+  id: string;
+  deposit_id: string;
+  exchange_id: string;
+  exchange_code: string;
+  merchant_id: string;
+  merchant_name?: string;
+  amount_collected: number;
+  collection_date: string;
+  created_at: string;
+};
+
+// Default fees
+export const DEFAULT_PLATFORM_FEE = 9; // TND
+export const DEFAULT_DELIVERY_FEE = 5; // TND
+
+// Get merchant fees (uses custom or default)
+export const getMerchantFees = (
+  merchant: Merchant,
+): { platformFee: number; deliveryFee: number } => {
+  return {
+    platformFee: merchant.platform_fee ?? DEFAULT_PLATFORM_FEE,
+    deliveryFee: merchant.delivery_fee ?? DEFAULT_DELIVERY_FEE,
+  };
+};
+
+// Calculate merchant payment amount (what merchant receives)
+export const calculateMerchantPayment = (
+  amountCollected: number,
+  platformFee: number,
+  deliveryFee: number,
+): number => {
+  return Math.max(0, amountCollected - platformFee - deliveryFee);
 };
 
 export type MerchantPaymentItem = {
@@ -393,7 +460,21 @@ export const PAYMENT_STATUS_LABELS: Record<MerchantPaymentStatus, string> = {
   pending: "En attente",
   approved: "Approuvé",
   paid: "Payé",
+  accepted: "Accepté",
   disputed: "Contesté",
+};
+
+// Deposit status labels in French
+export const DEPOSIT_STATUS_LABELS: Record<DeliveryDepositStatus, string> = {
+  pending: "En attente",
+  confirmed: "Confirmé",
+  disputed: "Contesté",
+};
+
+// Generate deposit number: DEP-2025-001
+export const generateDepositNumber = (sequence: number): string => {
+  const year = new Date().getFullYear();
+  return `DEP-${year}-${sequence.toString().padStart(3, "0")}`;
 };
 
 // ============================================

@@ -85,6 +85,9 @@ const AdminMerchantPayments = lazy(
 const AdminMerchantPaymentDetail = lazy(
   () => import("./pages/admin/MerchantPaymentDetail"),
 );
+const AdminDeliveryCollections = lazy(
+  () => import("./pages/admin/DeliveryCollections"),
+);
 
 // Delivery pages
 const DeliveryLogin = lazy(() => import("./pages/delivery/Login"));
@@ -101,6 +104,7 @@ const DeliveryVerificationList = lazy(
 const DeliveryFinancialDashboard = lazy(
   () => import("./pages/delivery/FinancialDashboard"),
 );
+const DeliveryWallet = lazy(() => import("./pages/delivery/Wallet"));
 
 // Finance pages
 const FinanceLogin = lazy(() => import("./pages/finance/Login"));
@@ -314,6 +318,10 @@ function App() {
             path="/admin/merchant-payments/:id"
             element={<AdminMerchantPaymentDetail />}
           />
+          <Route
+            path="/admin/delivery-collections"
+            element={<AdminDeliveryCollections />}
+          />
 
           {/* Merchant routes */}
           <Route
@@ -459,6 +467,14 @@ function App() {
             element={
               <ProtectedRoute loginPath="/delivery/login">
                 <DeliveryFinancialDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/wallet"
+            element={
+              <ProtectedRoute loginPath="/delivery/login">
+                <DeliveryWallet />
               </ProtectedRoute>
             }
           />

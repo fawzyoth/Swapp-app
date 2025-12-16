@@ -11,6 +11,7 @@ import {
   FileText,
   Clock,
   Store,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -19,6 +20,11 @@ const menuItems = [
   { path: "/admin/merchants", icon: Users, label: "E-Commerçants" },
   { path: "/admin/delivery-persons", icon: Truck, label: "Livreurs" },
   { path: "/admin/finances", icon: Banknote, label: "Finances" },
+  {
+    path: "/admin/delivery-collections",
+    icon: Wallet,
+    label: "Collectes Livreurs",
+  },
   {
     path: "/admin/merchant-payments",
     icon: Store,

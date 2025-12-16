@@ -23,6 +23,8 @@ import {
   PAYMENT_STATUS_LABELS,
   getCurrentPeriod,
   generatePaymentNumber,
+  DEFAULT_PLATFORM_FEE,
+  DEFAULT_DELIVERY_FEE,
 } from "../../lib/supabase";
 import AdminLayout from "../../components/AdminLayout";
 
@@ -44,7 +46,8 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
     total_exchanges: 12,
     total_collected: 380,
     total_swapp_fees: 108,
-    amount_due: 272,
+    total_delivery_fees: 60,
+    amount_due: 212,
     status: "pending",
     created_at: new Date().toISOString(),
     merchant: {
@@ -53,6 +56,8 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
       name: "TechStore",
       phone: "+216 98 123 456",
       business_name: "TechStore Tunisie",
+      platform_fee: 9,
+      delivery_fee: 5,
       created_at: "",
     },
   },
@@ -68,8 +73,11 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
     total_exchanges: 8,
     total_collected: 245,
     total_swapp_fees: 72,
-    amount_due: 173,
-    status: "pending",
+    total_delivery_fees: 40,
+    amount_due: 133,
+    status: "paid",
+    paid_at: "2025-12-16T10:00:00Z",
+    merchant_accepted: false,
     created_at: new Date().toISOString(),
     merchant: {
       id: "m2",
@@ -77,6 +85,8 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
       name: "ModaShop",
       phone: "+216 97 456 789",
       business_name: "ModaShop Fashion",
+      platform_fee: 9,
+      delivery_fee: 5,
       created_at: "",
     },
   },
@@ -92,11 +102,14 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
     total_exchanges: 5,
     total_collected: 134,
     total_swapp_fees: 45,
-    amount_due: 89,
-    status: "paid",
+    total_delivery_fees: 25,
+    amount_due: 64,
+    status: "accepted",
     paid_at: "2025-12-16T10:00:00Z",
-    payment_method: "bank_transfer",
-    payment_reference: "VIR-2025-1216-001",
+    payment_method: "cash",
+    payment_reference: "CASH-2025-1216-001",
+    merchant_accepted: true,
+    merchant_accepted_at: "2025-12-16T12:00:00Z",
     created_at: new Date().toISOString(),
     merchant: {
       id: "m3",
@@ -104,6 +117,8 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
       name: "ElectroPlus",
       phone: "+216 96 789 012",
       business_name: "ElectroPlus SARL",
+      platform_fee: 9,
+      delivery_fee: 5,
       created_at: "",
     },
   },
@@ -119,11 +134,14 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
     total_exchanges: 15,
     total_collected: 425,
     total_swapp_fees: 135,
-    amount_due: 290,
-    status: "paid",
+    total_delivery_fees: 75,
+    amount_due: 215,
+    status: "accepted",
     paid_at: "2025-12-17T14:30:00Z",
-    payment_method: "bank_transfer",
-    payment_reference: "VIR-2025-1217-001",
+    payment_method: "cash",
+    payment_reference: "CASH-2025-1217-001",
+    merchant_accepted: true,
+    merchant_accepted_at: "2025-12-17T16:00:00Z",
     created_at: "2025-12-01T00:00:00Z",
     merchant: {
       id: "m1",
@@ -131,6 +149,8 @@ const DEMO_PAYMENTS: PaymentWithMerchant[] = [
       name: "TechStore",
       phone: "+216 98 123 456",
       business_name: "TechStore Tunisie",
+      platform_fee: 9,
+      delivery_fee: 5,
       created_at: "",
     },
   },
@@ -252,13 +272,15 @@ export default function MerchantPayments() {
     const styles: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-800",
       approved: "bg-blue-100 text-blue-800",
-      paid: "bg-green-100 text-green-800",
+      paid: "bg-emerald-100 text-emerald-800",
+      accepted: "bg-green-100 text-green-800",
       disputed: "bg-red-100 text-red-800",
     };
     const icons: Record<string, React.ReactNode> = {
       pending: <Clock className="w-3 h-3" />,
       approved: <CheckCircle className="w-3 h-3" />,
       paid: <CheckCircle className="w-3 h-3" />,
+      accepted: <CheckCircle className="w-3 h-3" />,
       disputed: <AlertCircle className="w-3 h-3" />,
     };
     return (
@@ -269,6 +291,29 @@ export default function MerchantPayments() {
         {PAYMENT_STATUS_LABELS[status]}
       </span>
     );
+  };
+
+  const getAcceptanceBadge = (payment: PaymentWithMerchant) => {
+    if (payment.status === "pending") {
+      return <span className="text-xs text-slate-400">—</span>;
+    }
+    if (payment.merchant_accepted) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="w-3 h-3" />
+          Accepté
+        </span>
+      );
+    }
+    if (payment.status === "paid") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          <Clock className="w-3 h-3" />
+          En attente
+        </span>
+      );
+    }
+    return <span className="text-xs text-slate-400">—</span>;
   };
 
   const formatPeriod = (payment: MerchantPayment) => {
@@ -432,10 +477,19 @@ export default function MerchantPayments() {
                       Échanges
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
+                      Collecté
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
+                      Frais
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                       À Payer
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">
                       Statut
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">
+                      Acceptation
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                       Actions
@@ -473,11 +527,28 @@ export default function MerchantPayments() {
                       <td className="px-4 py-3 text-center text-slate-900">
                         {payment.total_exchanges}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-900">
+                      <td className="px-4 py-3 text-right text-slate-900">
+                        {payment.total_collected.toFixed(2)} TND
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="text-xs text-slate-500">
+                          <div>
+                            Plateforme: {payment.total_swapp_fees.toFixed(2)}
+                          </div>
+                          <div>
+                            Livraison:{" "}
+                            {(payment.total_delivery_fees || 0).toFixed(2)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-600">
                         {payment.amount_due.toFixed(2)} TND
                       </td>
                       <td className="px-4 py-3 text-center">
                         {getStatusBadge(payment.status)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {getAcceptanceBadge(payment)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
@@ -508,7 +579,18 @@ export default function MerchantPayments() {
               • <strong>Période 2:</strong> Du 16 à la fin du mois → Paiement
               entre le 1er et le 5 du mois suivant
             </li>
-            <li>• Frais SWAPP: 9 TND par échange (déduit automatiquement)</li>
+            <li>
+              • <strong>Frais Plateforme:</strong> {DEFAULT_PLATFORM_FEE} TND
+              par défaut (configurable par marchand)
+            </li>
+            <li>
+              • <strong>Frais Livraison:</strong> {DEFAULT_DELIVERY_FEE} TND par
+              défaut (configurable par marchand)
+            </li>
+            <li>
+              • <strong>Paiement espèces:</strong> Le marchand doit accepter le
+              paiement après réception
+            </li>
           </ul>
         </div>
       </div>

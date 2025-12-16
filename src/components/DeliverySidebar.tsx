@@ -9,6 +9,7 @@ import {
   Home,
   LogOut,
   Banknote,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -21,6 +22,7 @@ const menuItems = [
     icon: ClipboardCheck,
     label: "Mes Vérifications",
   },
+  { path: "/delivery/wallet", icon: Wallet, label: "Mon Portefeuille" },
   { path: "/delivery/finances", icon: Banknote, label: "Mes Finances" },
 ];
 

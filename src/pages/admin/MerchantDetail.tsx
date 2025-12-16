@@ -1,9 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Store, Package, Clock, CheckCircle, XCircle, QrCode, Download, Edit, TrendingUp, Users } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { supabase } from '../../lib/supabase';
-import AdminLayout from '../../components/AdminLayout';
+import { useState, useEffect, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Store,
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  QrCode,
+  Download,
+  Edit,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Save,
+} from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  supabase,
+  DEFAULT_PLATFORM_FEE,
+  DEFAULT_DELIVERY_FEE,
+} from "../../lib/supabase";
+import AdminLayout from "../../components/AdminLayout";
 
 export default function AdminMerchantDetail() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +31,12 @@ export default function AdminMerchantDetail() {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fee configuration state
+  const [platformFee, setPlatformFee] = useState<number>(DEFAULT_PLATFORM_FEE);
+  const [deliveryFee, setDeliveryFee] = useState<number>(DEFAULT_DELIVERY_FEE);
+  const [savingFees, setSavingFees] = useState(false);
+  const [feesSaved, setFeesSaved] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, [id]);
@@ -20,8 +44,12 @@ export default function AdminMerchantDetail() {
   const fetchData = async () => {
     try {
       const [merchantRes, exchangesRes] = await Promise.all([
-        supabase.from('merchants').select('*').eq('id', id).single(),
-        supabase.from('exchanges').select('*').eq('merchant_id', id).order('created_at', { ascending: false })
+        supabase.from("merchants").select("*").eq("id", id).single(),
+        supabase
+          .from("exchanges")
+          .select("*")
+          .eq("merchant_id", id)
+          .order("created_at", { ascending: false }),
       ]);
 
       if (merchantRes.data) {
@@ -29,12 +57,15 @@ export default function AdminMerchantDetail() {
         if (!merchantRes.data.qr_code_data) {
           const qrData = `SWAPP-${merchantRes.data.id.slice(0, 8).toUpperCase()}`;
           await supabase
-            .from('merchants')
+            .from("merchants")
             .update({ qr_code_data: qrData })
-            .eq('id', id);
+            .eq("id", id);
           merchantRes.data.qr_code_data = qrData;
         }
         setMerchant(merchantRes.data);
+        // Set fee values from merchant data
+        setPlatformFee(merchantRes.data.platform_fee ?? DEFAULT_PLATFORM_FEE);
+        setDeliveryFee(merchantRes.data.delivery_fee ?? DEFAULT_DELIVERY_FEE);
       }
       setExchanges(exchangesRes.data || []);
     } finally {
@@ -45,75 +76,105 @@ export default function AdminMerchantDetail() {
   const generateNewQRCode = async () => {
     const qrData = `SWAPP-${merchant.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
     await supabase
-      .from('merchants')
+      .from("merchants")
       .update({ qr_code_data: qrData })
-      .eq('id', id);
+      .eq("id", id);
     setMerchant({ ...merchant, qr_code_data: qrData });
+  };
+
+  const saveFees = async () => {
+    setSavingFees(true);
+    setFeesSaved(false);
+    try {
+      const { error } = await supabase
+        .from("merchants")
+        .update({
+          platform_fee: platformFee,
+          delivery_fee: deliveryFee,
+        })
+        .eq("id", id);
+
+      if (!error) {
+        setMerchant({
+          ...merchant,
+          platform_fee: platformFee,
+          delivery_fee: deliveryFee,
+        });
+        setFeesSaved(true);
+        setTimeout(() => setFeesSaved(false), 3000);
+      }
+    } finally {
+      setSavingFees(false);
+    }
   };
 
   const downloadQRCode = () => {
     if (!qrRef.current) return;
 
-    const svg = qrRef.current.querySelector('svg');
+    const svg = qrRef.current.querySelector("svg");
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
     const img = new Image();
 
     img.onload = () => {
       canvas.width = img.width;
       canvas.height = img.height;
       ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = `qr-${merchant.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `qr-${merchant.name.replace(/\s+/g, "-").toLowerCase()}.png`;
       downloadLink.href = pngFile;
       downloadLink.click();
     };
 
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const stats = {
     total: exchanges.length,
-    pending: exchanges.filter(e => e.status === 'pending').length,
-    validated: exchanges.filter(e => ['validated', 'preparing', 'in_transit', 'completed'].includes(e.status)).length,
-    rejected: exchanges.filter(e => e.status === 'rejected').length,
-    completed: exchanges.filter(e => e.status === 'completed').length,
-    uniqueClients: [...new Set(exchanges.map(e => e.client_phone))].length,
+    pending: exchanges.filter((e) => e.status === "pending").length,
+    validated: exchanges.filter((e) =>
+      ["validated", "preparing", "in_transit", "completed"].includes(e.status),
+    ).length,
+    rejected: exchanges.filter((e) => e.status === "rejected").length,
+    completed: exchanges.filter((e) => e.status === "completed").length,
+    uniqueClients: [...new Set(exchanges.map((e) => e.client_phone))].length,
   };
 
-  const validationRate = stats.total > 0
-    ? Math.round((stats.validated / stats.total) * 100)
-    : 0;
+  const validationRate =
+    stats.total > 0 ? Math.round((stats.validated / stats.total) * 100) : 0;
 
-  const completionRate = stats.total > 0
-    ? Math.round((stats.completed / stats.total) * 100)
-    : 0;
+  const completionRate =
+    stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: 'bg-amber-100 text-amber-700',
-      validated: 'bg-sky-100 text-sky-700',
-      preparing: 'bg-purple-100 text-purple-700',
-      in_transit: 'bg-indigo-100 text-indigo-700',
-      completed: 'bg-emerald-100 text-emerald-700',
-      rejected: 'bg-red-100 text-red-700',
-      returned: 'bg-slate-100 text-slate-700',
+      pending: "bg-amber-100 text-amber-700",
+      validated: "bg-sky-100 text-sky-700",
+      preparing: "bg-purple-100 text-purple-700",
+      in_transit: "bg-indigo-100 text-indigo-700",
+      completed: "bg-emerald-100 text-emerald-700",
+      rejected: "bg-red-100 text-red-700",
+      returned: "bg-slate-100 text-slate-700",
     };
     const labels: Record<string, string> = {
-      pending: 'En attente',
-      validated: 'Validé',
-      preparing: 'Préparation',
-      in_transit: 'En route',
-      completed: 'Complété',
-      rejected: 'Rejeté',
-      returned: 'Retourné',
+      pending: "En attente",
+      validated: "Validé",
+      preparing: "Préparation",
+      in_transit: "En route",
+      completed: "Complété",
+      rejected: "Rejeté",
+      returned: "Retourné",
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-slate-100 text-slate-700'}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-slate-100 text-slate-700"}`}
+      >
         {labels[status] || status}
       </span>
     );
@@ -134,7 +195,10 @@ export default function AdminMerchantDetail() {
       <AdminLayout>
         <div className="text-center py-12">
           <p className="text-slate-500">E-commerçant non trouvé</p>
-          <Link to="/admin/merchants" className="text-purple-600 hover:text-purple-700 mt-2 inline-block">
+          <Link
+            to="/admin/merchants"
+            className="text-purple-600 hover:text-purple-700 mt-2 inline-block"
+          >
             Retour à la liste
           </Link>
         </div>
@@ -148,13 +212,15 @@ export default function AdminMerchantDetail() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate('/admin/merchants')}
+            onClick={() => navigate("/admin/merchants")}
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-slate-600" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-slate-900">{merchant.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {merchant.name}
+            </h1>
             <p className="text-slate-600">{merchant.email}</p>
           </div>
           <Link
@@ -176,8 +242,12 @@ export default function AdminMerchantDetail() {
                   <Store className="w-8 h-8 text-purple-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">{merchant.name}</h2>
-                  <p className="text-slate-500">{merchant.phone || 'Pas de téléphone'}</p>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {merchant.name}
+                  </h2>
+                  <p className="text-slate-500">
+                    {merchant.phone || "Pas de téléphone"}
+                  </p>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
@@ -188,7 +258,7 @@ export default function AdminMerchantDetail() {
                 <div className="flex justify-between">
                   <span className="text-slate-500">Inscrit le</span>
                   <span className="text-slate-900">
-                    {new Date(merchant.created_at).toLocaleDateString('fr-FR')}
+                    {new Date(merchant.created_at).toLocaleDateString("fr-FR")}
                   </span>
                 </div>
               </div>
@@ -197,11 +267,16 @@ export default function AdminMerchantDetail() {
             {/* QR Code */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">QR Code</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  QR Code
+                </h3>
                 <QrCode className="w-5 h-5 text-purple-600" />
               </div>
 
-              <div ref={qrRef} className="flex justify-center mb-4 p-4 bg-white rounded-lg border border-slate-200">
+              <div
+                ref={qrRef}
+                className="flex justify-center mb-4 p-4 bg-white rounded-lg border border-slate-200"
+              >
                 <QRCodeSVG
                   value={`https://swapp-test-app.netlify.app/client/exchange/new?merchant=${merchant.id}`}
                   size={200}
@@ -230,6 +305,86 @@ export default function AdminMerchantDetail() {
                 </button>
               </div>
             </div>
+
+            {/* Fee Configuration */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Configuration des Frais
+                </h3>
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Frais Plateforme SWAPP (TND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={platformFee}
+                    onChange={(e) =>
+                      setPlatformFee(parseFloat(e.target.value) || 0)
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Défaut: {DEFAULT_PLATFORM_FEE} TND
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Frais de Livraison (TND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={deliveryFee}
+                    onChange={(e) =>
+                      setDeliveryFee(parseFloat(e.target.value) || 0)
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Défaut: {DEFAULT_DELIVERY_FEE} TND
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200">
+                  <div className="flex justify-between text-sm mb-3">
+                    <span className="text-slate-600">
+                      Total frais par échange:
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {(platformFee + deliveryFee).toFixed(2)} TND
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={saveFees}
+                  disabled={savingFees}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                  {savingFees ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {savingFees ? "Enregistrement..." : "Enregistrer les Frais"}
+                </button>
+
+                {feesSaved && (
+                  <div className="text-center text-sm text-emerald-600 font-medium">
+                    ✓ Frais enregistrés avec succès
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Right Column - Stats & Exchanges */}
@@ -241,7 +396,9 @@ export default function AdminMerchantDetail() {
                   <Package className="w-5 h-5 text-sky-600" />
                   <span className="text-sm text-slate-600">Total</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {stats.total}
+                </p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -249,7 +406,9 @@ export default function AdminMerchantDetail() {
                   <Clock className="w-5 h-5 text-amber-600" />
                   <span className="text-sm text-slate-600">En attente</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{stats.pending}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {stats.pending}
+                </p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -257,7 +416,9 @@ export default function AdminMerchantDetail() {
                   <CheckCircle className="w-5 h-5 text-emerald-600" />
                   <span className="text-sm text-slate-600">Validés</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{stats.validated}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {stats.validated}
+                </p>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -265,20 +426,28 @@ export default function AdminMerchantDetail() {
                   <XCircle className="w-5 h-5 text-red-600" />
                   <span className="text-sm text-slate-600">Rejetés</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{stats.rejected}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {stats.rejected}
+                </p>
               </div>
             </div>
 
             {/* Performance */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Performance</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Performance
+              </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-5 h-5 text-emerald-600" />
-                    <span className="text-sm text-slate-600">Taux de validation</span>
+                    <span className="text-sm text-slate-600">
+                      Taux de validation
+                    </span>
                   </div>
-                  <p className="text-3xl font-bold text-emerald-600">{validationRate}%</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {validationRate}%
+                  </p>
                   <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all"
@@ -290,9 +459,13 @@ export default function AdminMerchantDetail() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Package className="w-5 h-5 text-sky-600" />
-                    <span className="text-sm text-slate-600">Taux de complétion</span>
+                    <span className="text-sm text-slate-600">
+                      Taux de complétion
+                    </span>
                   </div>
-                  <p className="text-3xl font-bold text-sky-600">{completionRate}%</p>
+                  <p className="text-3xl font-bold text-sky-600">
+                    {completionRate}%
+                  </p>
                   <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-sky-500 rounded-full transition-all"
@@ -304,9 +477,13 @@ export default function AdminMerchantDetail() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-5 h-5 text-purple-600" />
-                    <span className="text-sm text-slate-600">Clients uniques</span>
+                    <span className="text-sm text-slate-600">
+                      Clients uniques
+                    </span>
                   </div>
-                  <p className="text-3xl font-bold text-purple-600">{stats.uniqueClients}</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {stats.uniqueClients}
+                  </p>
                 </div>
               </div>
             </div>
@@ -314,22 +491,33 @@ export default function AdminMerchantDetail() {
             {/* Recent Exchanges */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-200">
-                <h3 className="text-lg font-semibold text-slate-900">Échanges récents</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Échanges récents
+                </h3>
               </div>
 
               {exchanges.length > 0 ? (
                 <div className="divide-y divide-slate-200">
                   {exchanges.slice(0, 10).map((exchange) => (
-                    <div key={exchange.id} className="p-4 hover:bg-slate-50 transition-colors">
+                    <div
+                      key={exchange.id}
+                      className="p-4 hover:bg-slate-50 transition-colors"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-slate-900">{exchange.client_name}</p>
-                          <p className="text-sm text-slate-500">{exchange.product_name || exchange.reason}</p>
+                          <p className="font-medium text-slate-900">
+                            {exchange.client_name}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {exchange.product_name || exchange.reason}
+                          </p>
                         </div>
                         <div className="text-right">
                           {getStatusBadge(exchange.status)}
                           <p className="text-xs text-slate-500 mt-1">
-                            {new Date(exchange.created_at).toLocaleDateString('fr-FR')}
+                            {new Date(exchange.created_at).toLocaleDateString(
+                              "fr-FR",
+                            )}
                           </p>
                         </div>
                       </div>

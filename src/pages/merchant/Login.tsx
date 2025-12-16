@@ -24,14 +24,19 @@ export default function MerchantLogin() {
     setError("");
 
     try {
+      console.log("Attempting login with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log("Login response:", { data, error });
+
       if (error) throw error;
 
       if (data.user) {
+        console.log("User authenticated:", data.user.email);
+
         // Check if this email belongs to a delivery person (forbidden)
         const { data: deliveryPerson } = await supabase
           .from("delivery_persons")
@@ -53,16 +58,20 @@ export default function MerchantLogin() {
           .eq("email", data.user.email)
           .maybeSingle();
 
+        console.log("Merchant lookup:", { merchant, merchantError });
+
         if (merchantError || !merchant) {
           await supabase.auth.signOut();
           throw new Error(
-            "Compte e-commerçant non trouvé. Veuillez utiliser le bon portail de connexion.",
+            `Compte e-commerçant non trouvé pour ${data.user.email}. Veuillez contacter l'administrateur.`,
           );
         }
 
+        console.log("Login successful, navigating to dashboard");
         navigate("/merchant/dashboard");
       }
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Erreur de connexion");
     } finally {
       setLoading(false);

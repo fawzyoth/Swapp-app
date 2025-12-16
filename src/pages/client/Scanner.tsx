@@ -41,7 +41,66 @@ export default function ClientScanner() {
     setError("");
 
     try {
-      // Check if it's a direct URL
+      // Check if it's a bordereau URL (most common case for re-scanning)
+      if (scannedData.includes("/client/exchange/new?bordereau=")) {
+        // Extract bordereau code from URL
+        let bordereauCode: string | null = null;
+        try {
+          const url = new URL(scannedData);
+          bordereauCode = url.searchParams.get("bordereau");
+        } catch {
+          // If URL parsing fails, try to extract from hash
+          const match = scannedData.match(/bordereau=([^&]+)/);
+          if (match) {
+            bordereauCode = match[1];
+          }
+        }
+
+        if (bordereauCode) {
+          // Check if this bordereau has an associated exchange
+          const { data: bordereau } = await supabase
+            .from("merchant_bordereaux")
+            .select("status, exchange_id")
+            .eq("bordereau_code", bordereauCode)
+            .maybeSingle();
+
+          if (
+            bordereau &&
+            bordereau.status !== "available" &&
+            bordereau.exchange_id
+          ) {
+            // Bordereau is used - get the exchange and redirect to tracking
+            const { data: exchange } = await supabase
+              .from("exchanges")
+              .select("exchange_code")
+              .eq("id", bordereau.exchange_id)
+              .single();
+
+            if (exchange) {
+              navigate(`/client/tracking/${exchange.exchange_code}`);
+              return;
+            }
+          }
+
+          // Also check exchanges table directly by bordereau_code
+          const { data: exchangeByBordereau } = await supabase
+            .from("exchanges")
+            .select("exchange_code")
+            .eq("bordereau_code", bordereauCode)
+            .maybeSingle();
+
+          if (exchangeByBordereau) {
+            navigate(`/client/tracking/${exchangeByBordereau.exchange_code}`);
+            return;
+          }
+
+          // Bordereau available - redirect to exchange form
+          navigate(`/client/exchange/new?bordereau=${bordereauCode}`);
+          return;
+        }
+      }
+
+      // Check if it's a direct URL with merchant
       if (scannedData.includes("/client/exchange/new?merchant=")) {
         const url = new URL(scannedData);
         const merchantId = url.searchParams.get("merchant");

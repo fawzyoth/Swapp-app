@@ -139,54 +139,71 @@ export default function PrintBordereau() {
         return `
         <div class="bordereau">
           <div class="header">
-            ${merchant?.logo_base64 ? `<img src="${merchant.logo_base64}" alt="Logo" class="logo" />` : '<div class="logo-placeholder">LOGO</div>'}
-            <div class="title-section">
-              <h1>SWAPP - Bordereau d'Echange</h1>
-              <p class="business-name">${merchant?.business_name || merchant?.name || "E-Commercant"}</p>
+            <div class="header-top">
+              <div class="logo-section">
+                ${merchant?.logo_base64 ? `<img src="${merchant.logo_base64}" alt="Logo" class="logo" />` : '<div class="logo-text">SWAPP</div>'}
+              </div>
+              <div class="doc-type">FICHE D'ECHANGE</div>
             </div>
+            <div class="header-info">
+              <div class="code">${item.bordereau_code}</div>
+              <div class="subtitle">Fiche d'echange / بطاقة التبديل</div>
+            </div>
+            <div class="merchant-info">${merchant?.business_name || merchant?.name || "E-Commercant"}</div>
           </div>
 
           <div class="codes-section">
-            <div class="qr-box">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}" alt="QR Code" />
-              <p class="readable-code">${item.bordereau_code}</p>
-              <p class="code-label">Scanner pour initier l'echange</p>
+            <div class="code-box">
+              <div class="title">QR Client</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrUrl)}" alt="QR Code" width="120" height="120" />
+              <div class="code-label">${item.bordereau_code}</div>
+              <div class="desc">Scanner pour initier l'echange</div>
             </div>
-
-            <div class="barcode-box">
-              <img src="https://barcodeapi.org/api/128/${item.bordereau_code}" alt="Barcode" class="barcode-img" />
-              <p class="barcode-text">${item.bordereau_code}</p>
-              <p class="code-label">Code Livreur</p>
+            <div class="code-box">
+              <div class="title">Code-Barres Livreur</div>
+              <img src="https://barcodeapi.org/api/128/${item.bordereau_code}" alt="Barcode" width="160" height="50" />
+              <div class="code-label">${item.bordereau_code}</div>
+              <div class="desc">Scanner lors de la collecte</div>
             </div>
           </div>
 
           <div class="contact-section">
-            <p><strong>Contact:</strong> ${merchant?.phone || ""}</p>
+            <div class="contact-title">Contact Marchand</div>
+            <p><strong>Tel:</strong> ${merchant?.phone || "Non renseigne"}</p>
             <p><strong>Adresse:</strong> ${merchant?.business_address || ""} ${merchant?.business_city || ""} ${merchant?.business_postal_code || ""}</p>
           </div>
 
-          <div class="instructions-fr">
-            <h3>Instructions</h3>
-            <ol>
-              <li>Scannez le QR code pour demarrer l'echange</li>
-              <li>Suivez les etapes sur votre telephone</li>
-              <li>Preparez le produit a retourner</li>
-              <li>Le livreur scannera le code-barres lors de la collecte</li>
-            </ol>
+          <div class="instructions-section">
+            <div class="instructions-box">
+              <div class="title">Instructions</div>
+              <ol>
+                <li>Scannez le QR code avec votre telephone</li>
+                <li>Remplissez le formulaire d'echange</li>
+                <li>Preparez le produit dans son emballage</li>
+                <li>Gardez cette fiche avec le produit</li>
+                <li>Remettez le tout au livreur</li>
+              </ol>
+            </div>
+            <div class="instructions-box ar">
+              <div class="title">التعليمات</div>
+              <ol>
+                <li>امسح رمز QR بهاتفك</li>
+                <li>املأ استمارة التبديل</li>
+                <li>جهّز المنتج في عبوته</li>
+                <li>احتفظ بهذه البطاقة مع المنتج</li>
+                <li>سلّم كل شيء للمندوب</li>
+              </ol>
+            </div>
           </div>
 
-          <div class="instructions-ar">
-            <h3>التعليمات</h3>
-            <ol>
-              <li>امسح رمز QR لبدء عملية التبديل</li>
-              <li>اتبع الخطوات على هاتفك</li>
-              <li>جهّز المنتج للإرجاع</li>
-              <li>سيقوم المندوب بمسح الباركود عند الاستلام</li>
-            </ol>
+          <div class="notice">
+            <div class="title">A remettre au livreur</div>
+            <div class="text">Cette fiche doit accompagner le produit retourne</div>
           </div>
 
           <div class="footer">
-            <p>SWAPP - Plateforme d'echange de produits | ${item.bordereau_code}</p>
+            <div class="brand">SWAPP - Plateforme d'echange</div>
+            <div class="date">${new Date().toLocaleDateString("fr-FR")}</div>
           </div>
         </div>
       `;
@@ -199,186 +216,204 @@ export default function PrintBordereau() {
         <title>Bordereaux - ${items.length} exemplaires</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; }
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 15px;
+            color: #000;
+          }
 
           .bordereau {
             max-width: 600px;
             margin: 20px auto;
-            padding: 20px;
-            border: 2px solid #0369a1;
-            border-radius: 10px;
+            padding: 15px;
           }
 
           .header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            border-bottom: 2px solid #0369a1;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-          }
-
-          .logo {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-          }
-
-          .logo-placeholder {
-            width: 80px;
-            height: 80px;
-            background: #f0f9ff;
-            border: 2px dashed #0369a1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #0369a1;
-            border-radius: 8px;
-          }
-
-          .title-section h1 {
-            font-size: 18px;
-            color: #0369a1;
-          }
-
-          .business-name {
-            font-size: 14px;
-            color: #64748b;
-            margin-top: 5px;
-          }
-
-          .codes-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-          }
-
-          .qr-box, .barcode-box {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-          }
-
-          .qr-box {
-            background: #dbeafe;
-            border: 2px solid #3b82f6;
-          }
-
-          .qr-box img {
-            width: 150px;
-            height: 150px;
-          }
-
-          .readable-code {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-top: 8px;
-            color: #1d4ed8;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-          }
-
-          .barcode-box {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-          }
-
-          .barcode-img {
-            width: 180px;
-            height: 70px;
-            object-fit: contain;
-            background: white;
-            padding: 8px;
-            border-radius: 6px;
-          }
-
-          .barcode-text {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-top: 10px;
-          }
-
-          .code-label {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 8px;
-          }
-
-          .contact-section {
-            background: #f8fafc;
+            border: 3px solid #000;
             padding: 12px;
-            border-radius: 8px;
             margin-bottom: 15px;
-            font-size: 12px;
           }
 
-          .contact-section p {
-            margin: 4px 0;
-          }
-
-          .instructions-fr {
-            background: #ecfdf5;
-            border: 1px solid #10b981;
-            border-radius: 8px;
-            padding: 12px;
+          .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
             margin-bottom: 10px;
           }
 
-          .instructions-fr h3 {
+          .logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+          }
+
+          .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+          }
+
+          .doc-type {
+            background: #000;
+            color: #fff;
+            padding: 5px 15px;
+            font-weight: bold;
             font-size: 12px;
-            color: #047857;
+          }
+
+          .header-info {
+            text-align: center;
             margin-bottom: 8px;
           }
 
-          .instructions-fr ol {
-            margin-left: 18px;
+          .header-info .code {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+          }
+
+          .header-info .subtitle {
             font-size: 11px;
-            color: #065f46;
+            color: #333;
+            margin-top: 3px;
           }
 
-          .instructions-fr ol li {
-            margin: 4px 0;
+          .merchant-info {
+            text-align: center;
+            font-size: 12px;
+            color: #333;
+            font-weight: bold;
           }
 
-          .instructions-ar {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 8px;
-            padding: 12px;
+          .codes-section {
+            display: flex;
+            gap: 15px;
             margin-bottom: 15px;
+          }
+
+          .code-box {
+            flex: 1;
+            border: 2px solid #000;
+            padding: 10px;
+            text-align: center;
+          }
+
+          .code-box .title {
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+          }
+
+          .code-box img {
+            display: block;
+            margin: 0 auto;
+          }
+
+          .code-box .code-label {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 8px;
+          }
+
+          .code-box .desc {
+            font-size: 9px;
+            color: #666;
+            margin-top: 4px;
+          }
+
+          .contact-section {
+            border: 1px solid #000;
+            padding: 10px;
+            margin-bottom: 15px;
+          }
+
+          .contact-title {
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+          }
+
+          .contact-section p {
+            font-size: 11px;
+            margin: 3px 0;
+          }
+
+          .instructions-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+          }
+
+          .instructions-box {
+            flex: 1;
+            border: 1px solid #000;
+            padding: 10px;
+          }
+
+          .instructions-box.ar {
             direction: rtl;
             text-align: right;
           }
 
-          .instructions-ar h3 {
-            font-size: 14px;
-            color: #b45309;
+          .instructions-box .title {
+            font-weight: bold;
+            font-size: 11px;
             margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
           }
 
-          .instructions-ar ol {
-            margin-right: 18px;
+          .instructions-box ol {
+            margin-left: 15px;
+            font-size: 10px;
+          }
+
+          .instructions-box.ar ol {
+            margin-left: 0;
+            margin-right: 15px;
+          }
+
+          .instructions-box ol li {
+            margin: 4px 0;
+          }
+
+          .notice {
+            border: 2px dashed #000;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+          }
+
+          .notice .title {
+            font-weight: bold;
             font-size: 12px;
-            color: #92400e;
+            margin-bottom: 5px;
           }
 
-          .instructions-ar ol li {
-            margin: 6px 0;
+          .notice .text {
+            font-size: 11px;
           }
 
           .footer {
-            text-align: center;
-            font-size: 10px;
-            color: #64748b;
+            border-top: 2px solid #000;
             padding-top: 10px;
-            border-top: 1px dashed #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+          }
+
+          .footer .brand {
+            font-weight: bold;
           }
 
           .page-break {
@@ -387,7 +422,7 @@ export default function PrintBordereau() {
 
           @media print {
             body { padding: 0; }
-            .bordereau { border: 1px solid #ccc; margin: 10px auto; }
+            .bordereau { margin: 10px auto; }
             .page-break { page-break-after: always; }
           }
         </style>

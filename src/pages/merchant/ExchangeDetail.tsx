@@ -581,8 +581,11 @@ export default function MerchantExchangeDetail() {
   const printBordereauReturn = () => {
     if (!exchange) return;
 
-    // QR code URL for client to initiate/validate exchange
-    const clientExchangeUrl = `https://fawzyoth.github.io/Swapp-app/#/client/exchange/${exchange.exchange_code}`;
+    // QR code URL for client - use the original bordereau code if it exists
+    // This way the client can use the SAME QR code they already have
+    const clientExchangeUrl = exchange.bordereau_code
+      ? `https://fawzyoth.github.io/Swapp-app/#/client/exchange/new?bordereau=${exchange.bordereau_code}`
+      : `https://fawzyoth.github.io/Swapp-app/#/client/tracking/${exchange.exchange_code}`;
 
     const printWindow = window.open("", "", "height=900,width=600");
     if (printWindow) {
@@ -772,8 +775,8 @@ export default function MerchantExchangeDetail() {
             <div class="code-box">
               <div class="title">QR Client</div>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(clientExchangeUrl)}" alt="QR Code" width="100" height="100" />
-              <div class="code-label">SCAN CLIENT</div>
-              <div class="desc">Scanner pour initier l'échange</div>
+              <div class="code-label">${exchange.bordereau_code || exchange.exchange_code}</div>
+              <div class="desc">${exchange.bordereau_code ? "Même QR que le client" : "Scanner pour suivi"}</div>
             </div>
             <div class="code-box">
               <div class="title">Code-Barres Retour</div>

@@ -450,28 +450,51 @@ export default function ClientExchangeForm() {
     try {
       const exchangeCode = generateExchangeCode();
 
-      const { data: exchange, error: insertError } = await supabase
+      // Try to insert with bordereau_code first
+      let exchange: any = null;
+      let insertError: any = null;
+
+      const baseData = {
+        exchange_code: exchangeCode,
+        merchant_id: merchant?.id || merchantId,
+        client_name: formData.clientName,
+        client_phone: formData.clientPhone,
+        client_address: formData.clientAddress,
+        client_city: formData.clientCity,
+        client_postal_code: formData.clientPostalCode,
+        client_country: formData.clientCountry,
+        product_name: formData.productName,
+        reason: formData.reason,
+        video: video,
+        images: extractedImages.length > 0 ? extractedImages : null,
+        status: "pending",
+        payment_status: "pending",
+        payment_amount: 0,
+      };
+
+      // Try with bordereau_code
+      const result = await supabase
         .from("exchanges")
         .insert({
-          exchange_code: exchangeCode,
-          merchant_id: merchant?.id || merchantId,
-          client_name: formData.clientName,
-          client_phone: formData.clientPhone,
-          client_address: formData.clientAddress,
-          client_city: formData.clientCity,
-          client_postal_code: formData.clientPostalCode,
-          client_country: formData.clientCountry,
-          product_name: formData.productName,
-          reason: formData.reason,
-          video: video,
-          images: extractedImages.length > 0 ? extractedImages : null,
-          status: "pending",
-          payment_status: "pending",
-          payment_amount: 0,
+          ...baseData,
           bordereau_code: bordereauCode || null,
         })
         .select()
         .single();
+
+      if (result.error && result.error.message?.includes("bordereau_code")) {
+        // Column doesn't exist, try without it
+        const fallbackResult = await supabase
+          .from("exchanges")
+          .insert(baseData)
+          .select()
+          .single();
+        exchange = fallbackResult.data;
+        insertError = fallbackResult.error;
+      } else {
+        exchange = result.data;
+        insertError = result.error;
+      }
 
       if (insertError) throw insertError;
 

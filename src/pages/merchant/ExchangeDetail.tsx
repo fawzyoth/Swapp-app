@@ -548,7 +548,7 @@ export default function MerchantExchangeDetail() {
 
           <div class="notice">
             <div class="title">COLIS CONTENANT LE PRODUIT D'ÉCHANGE</div>
-            <div class="text">À livrer au client. Le bordereau RETOUR est inclus pour le retour du produit.</div>
+            <div class="text">À livrer au client. Le retour du produit sera géré par notre partenaire de livraison.</div>
           </div>
 
           <div class="signature-area">
@@ -566,266 +566,6 @@ export default function MerchantExchangeDetail() {
           <div class="footer">
             <div class="brand">SWAPP - Plateforme d'échange</div>
             <div>Statut: ${STATUS_LABELS[exchange.status]}</div>
-          </div>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
-    }
-  };
-
-  // Print RETURN Bordereau - Professional black & white design
-  const printBordereauReturn = () => {
-    if (!exchange) return;
-
-    // QR code URL for client - use the original bordereau code if it exists
-    // This way the client can use the SAME QR code they already have
-    const clientExchangeUrl = exchange.bordereau_code
-      ? `https://fawzyoth.github.io/Swapp-app/#/client/exchange/new?bordereau=${exchange.bordereau_code}`
-      : `https://fawzyoth.github.io/Swapp-app/#/client/tracking/${exchange.exchange_code}`;
-
-    const printWindow = window.open("", "", "height=900,width=600");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-        <head>
-          <title>Bordereau RETOUR - ${exchange.exchange_code}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              padding: 15px;
-              max-width: 600px;
-              margin: 0 auto;
-              color: #000;
-            }
-            .header {
-              border: 3px solid #000;
-              padding: 12px;
-              margin-bottom: 15px;
-            }
-            .header-top {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 2px solid #000;
-              padding-bottom: 10px;
-              margin-bottom: 10px;
-            }
-            .logo {
-              font-size: 24px;
-              font-weight: bold;
-              letter-spacing: 2px;
-            }
-            .doc-type {
-              background: #000;
-              color: #fff;
-              padding: 5px 15px;
-              font-weight: bold;
-              font-size: 14px;
-            }
-            .header-info {
-              text-align: center;
-            }
-            .exchange-code {
-              font-family: 'Courier New', monospace;
-              font-size: 22px;
-              font-weight: bold;
-              letter-spacing: 3px;
-            }
-            .subtitle {
-              font-size: 11px;
-              margin-top: 5px;
-            }
-
-            .codes-section {
-              display: flex;
-              gap: 15px;
-              margin-bottom: 15px;
-            }
-            .code-box {
-              flex: 1;
-              border: 2px solid #000;
-              padding: 12px;
-              text-align: center;
-            }
-            .code-box .title {
-              font-weight: bold;
-              font-size: 11px;
-              text-transform: uppercase;
-              margin-bottom: 8px;
-              padding-bottom: 5px;
-              border-bottom: 1px solid #000;
-            }
-            .code-box img {
-              display: block;
-              margin: 0 auto;
-            }
-            .code-box .code-label {
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              font-weight: bold;
-              margin-top: 8px;
-            }
-            .code-box .desc {
-              font-size: 9px;
-              margin-top: 5px;
-              color: #333;
-            }
-
-            .info-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 15px;
-            }
-            .info-table th, .info-table td {
-              border: 1px solid #000;
-              padding: 8px 10px;
-              text-align: left;
-              font-size: 12px;
-            }
-            .info-table th {
-              background: #f0f0f0;
-              font-weight: bold;
-              text-transform: uppercase;
-              font-size: 10px;
-              width: 100px;
-            }
-
-            .instructions-section {
-              display: flex;
-              gap: 15px;
-              margin-bottom: 15px;
-            }
-            .instructions-box {
-              flex: 1;
-              border: 2px solid #000;
-              padding: 12px;
-            }
-            .instructions-box .title {
-              font-weight: bold;
-              font-size: 11px;
-              text-transform: uppercase;
-              margin-bottom: 10px;
-              padding-bottom: 5px;
-              border-bottom: 1px solid #000;
-            }
-            .instructions-box ol {
-              margin-left: 18px;
-              font-size: 10px;
-              line-height: 1.6;
-            }
-            .instructions-box ol li {
-              margin: 4px 0;
-            }
-            .instructions-box.ar {
-              direction: rtl;
-              text-align: right;
-            }
-            .instructions-box.ar ol {
-              margin-left: 0;
-              margin-right: 18px;
-              list-style-type: arabic-indic;
-            }
-
-            .notice {
-              border: 3px solid #000;
-              padding: 12px;
-              text-align: center;
-              margin-bottom: 15px;
-            }
-            .notice .title {
-              font-weight: bold;
-              font-size: 14px;
-              margin-bottom: 5px;
-              text-transform: uppercase;
-            }
-            .notice .text {
-              font-size: 11px;
-            }
-
-            .footer {
-              border-top: 2px solid #000;
-              padding-top: 10px;
-              display: flex;
-              justify-content: space-between;
-              font-size: 10px;
-            }
-            .footer .brand {
-              font-weight: bold;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="header-top">
-              <div class="logo">SWAPP</div>
-              <div class="doc-type">BORDEREAU RETOUR</div>
-            </div>
-            <div class="header-info">
-              <div class="exchange-code">${exchange.exchange_code}</div>
-              <div class="subtitle">Fiche d'échange / بطاقة التبديل</div>
-            </div>
-          </div>
-
-          <div class="codes-section">
-            <div class="code-box">
-              <div class="title">QR Client</div>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(clientExchangeUrl)}" alt="QR Code" width="100" height="100" />
-              <div class="code-label">${exchange.bordereau_code || exchange.exchange_code}</div>
-              <div class="desc">${exchange.bordereau_code ? "Même QR que le client" : "Scanner pour suivi"}</div>
-            </div>
-            <div class="code-box">
-              <div class="title">Code-Barres Retour</div>
-              <img src="https://barcodeapi.org/api/128/${exchange.exchange_code.slice(-8)}" alt="Barcode" width="160" height="50" />
-              <div class="code-label">${exchange.exchange_code.slice(-8)}</div>
-              <div class="desc">Scanner lors de la collecte</div>
-            </div>
-          </div>
-
-          <table class="info-table">
-            <tr>
-              <th>Produit</th>
-              <td>${exchange.product_name || "Non spécifié"}</td>
-            </tr>
-            <tr>
-              <th>Motif</th>
-              <td>${exchange.reason}</td>
-            </tr>
-          </table>
-
-          <div class="instructions-section">
-            <div class="instructions-box">
-              <div class="title">Instructions</div>
-              <ol>
-                <li>Scannez le QR code avec votre téléphone</li>
-                <li>Préparez le produit dans son emballage</li>
-                <li>Gardez ce bordereau avec le produit</li>
-                <li>Remettez le tout au livreur</li>
-              </ol>
-            </div>
-            <div class="instructions-box ar">
-              <div class="title">التعليمات</div>
-              <ol>
-                <li>امسح رمز QR بهاتفك</li>
-                <li>جهّز المنتج في عبوته</li>
-                <li>احتفظ بهذه البطاقة مع المنتج</li>
-                <li>سلّم كل شيء للمندوب</li>
-              </ol>
-            </div>
-          </div>
-
-          <div class="notice">
-            <div class="title">A remettre au livreur</div>
-            <div class="text">Ce bordereau doit accompagner le produit retourné</div>
-          </div>
-
-          <div class="footer">
-            <div class="brand">SWAPP - Plateforme d'échange</div>
-            <div>${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
           </div>
         </body>
         </html>
@@ -1120,27 +860,17 @@ export default function MerchantExchangeDetail() {
               {!isPending && exchange.status === "validated" && (
                 <div className="mt-6 space-y-3">
                   <p className="text-sm font-medium text-slate-700 text-center">
-                    Imprimer les bordereaux
+                    Imprimer le bordereau
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={printBordereauGo}
-                      className="py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Printer className="w-5 h-5" />
-                      <span>ALLER →</span>
-                    </button>
-                    <button
-                      onClick={printBordereauReturn}
-                      className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Printer className="w-5 h-5" />
-                      <span>← RETOUR</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={printBordereauGo}
+                    className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Printer className="w-5 h-5" />
+                    <span>Bordereau ALLER →</span>
+                  </button>
                   <p className="text-xs text-slate-500 text-center">
-                    ALLER: Produit d'échange | RETOUR: Sac vide pour le retour
-                    client
+                    Le retour sera géré par notre partenaire de livraison
                   </p>
                 </div>
               )}

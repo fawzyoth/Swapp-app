@@ -138,7 +138,9 @@ export default function MerchantExchangeDetail() {
         // Fetch merchant info for JAX API
         supabase
           .from("merchants")
-          .select("id, name, phone, business_address, business_city, jax_token")
+          .select(
+            "id, name, business_name, phone, business_address, business_city, jax_token",
+          )
           .eq("id", exchangeData.merchant_id)
           .maybeSingle(),
       ]);

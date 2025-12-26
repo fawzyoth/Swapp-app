@@ -196,6 +196,7 @@ export const buildJaxRequestFromExchange = (
   merchant:
     | {
         name?: string;
+        business_name?: string; // Nom commercial from branding settings
         phone?: string;
         business_address?: string;
         business_city?: string;
@@ -219,14 +220,21 @@ export const buildJaxRequestFromExchange = (
   if (!exchange?.client_city) {
     throw new JaxValidationError("Ville du client manquante");
   }
-  if (!merchant?.name) {
-    throw new JaxValidationError("Nom du marchand manquant");
+
+  // Use business_name (Nom commercial) or fallback to name
+  const merchantName = merchant?.business_name || merchant?.name;
+  if (!merchantName) {
+    throw new JaxValidationError(
+      "Nom commercial du marchand manquant (Paramètres > Marque)",
+    );
   }
   if (!merchant?.phone) {
     throw new JaxValidationError("Téléphone du marchand manquant");
   }
   if (!merchant?.business_address) {
-    throw new JaxValidationError("Adresse du marchand manquante");
+    throw new JaxValidationError(
+      "Adresse du marchand manquante (Paramètres > Marque)",
+    );
   }
 
   const clientGovId = getGovernorateId(exchange.client_city);
@@ -249,6 +257,6 @@ export const buildJaxRequestFromExchange = (
     gouvernorat_pickup: merchantGovId,
     adresse_pickup: merchant.business_address,
     expediteur_phone: parseInt(merchantPhone, 10),
-    expediteur_name: merchant.name,
+    expediteur_name: merchantName,
   };
 };

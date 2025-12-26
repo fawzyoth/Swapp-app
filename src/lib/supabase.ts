@@ -18,6 +18,7 @@ export type Merchant = {
   business_postal_code?: string;
   platform_fee?: number; // Custom SWAPP fee per exchange (default: 9 TND)
   delivery_fee?: number; // Custom delivery fee per exchange (default: 5 TND)
+  jax_token?: string; // JAX Delivery API token for bordereau generation
   created_at: string;
 };
 

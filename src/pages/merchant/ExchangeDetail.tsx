@@ -30,11 +30,17 @@ import {
   sendAcceptanceSMS,
   sendMessageNotificationSMS,
 } from "../../lib/smsService";
+import {
+  createJaxExchangeColis,
+  buildJaxRequestFromExchange,
+  JaxColisResponse,
+} from "../../lib/jaxService";
 
 export default function MerchantExchangeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [exchange, setExchange] = useState<any>(null);
+  const [merchant, setMerchant] = useState<any>(null);
   const [mediaData, setMediaData] = useState<{
     video?: string;
     images?: string[];
@@ -54,6 +60,8 @@ export default function MerchantExchangeDetail() {
   const [paymentType, setPaymentType] = useState<"free" | "paid">("free");
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(true);
+  const [jaxLoading, setJaxLoading] = useState(false);
+  const [jaxError, setJaxError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -96,37 +104,50 @@ export default function MerchantExchangeDetail() {
       setExchange(exchangeData);
 
       // Then fetch other data in parallel - but only needed fields
-      const [messagesRes, transportersRes, depotsRes, historyRes, deliveryRes] =
-        await Promise.all([
-          supabase
-            .from("messages")
-            .select("id, sender_type, message, created_at")
-            .eq("exchange_id", id)
-            .order("created_at", { ascending: true }),
-          supabase.from("transporters").select("id, name"),
-          supabase.from("mini_depots").select("id, name, address"),
-          // Client history - NO video/images, only basic info
-          supabase
-            .from("exchanges")
-            .select("id, exchange_code, reason, status, created_at")
-            .eq("client_phone", exchangeData.client_phone)
-            .neq("id", id)
-            .order("created_at", { ascending: false })
-            .limit(5),
-          supabase
-            .from("delivery_attempts")
-            .select(
-              "id, attempt_number, status, scheduled_date, notes, created_at",
-            )
-            .eq("exchange_id", id)
-            .order("attempt_number", { ascending: true }),
-        ]);
+      const [
+        messagesRes,
+        transportersRes,
+        depotsRes,
+        historyRes,
+        deliveryRes,
+        merchantRes,
+      ] = await Promise.all([
+        supabase
+          .from("messages")
+          .select("id, sender_type, message, created_at")
+          .eq("exchange_id", id)
+          .order("created_at", { ascending: true }),
+        supabase.from("transporters").select("id, name"),
+        supabase.from("mini_depots").select("id, name, address"),
+        // Client history - NO video/images, only basic info
+        supabase
+          .from("exchanges")
+          .select("id, exchange_code, reason, status, created_at")
+          .eq("client_phone", exchangeData.client_phone)
+          .neq("id", id)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("delivery_attempts")
+          .select(
+            "id, attempt_number, status, scheduled_date, notes, created_at",
+          )
+          .eq("exchange_id", id)
+          .order("attempt_number", { ascending: true }),
+        // Fetch merchant info for JAX API
+        supabase
+          .from("merchants")
+          .select("id, name, phone, business_address, business_city, jax_token")
+          .eq("id", exchangeData.merchant_id)
+          .maybeSingle(),
+      ]);
 
       setMessages(messagesRes.data || []);
       setTransporters(transportersRes.data || []);
       setDepots(depotsRes.data || []);
       setClientHistory(historyRes.data || []);
       setDeliveryAttempts(deliveryRes.data || []);
+      setMerchant(merchantRes.data || null);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -262,14 +283,62 @@ export default function MerchantExchangeDetail() {
     }
   };
 
-  // Print GO Bordereau - Professional black & white design
-  const printBordereauGo = () => {
+  // Create JAX colis and print bordereau
+  const printBordereauGo = async () => {
     if (!exchange) return;
 
     const depot = depots.find((d) => d.id === exchange.mini_depot_id);
     const transporter = transporters.find(
       (t) => t.id === exchange.transporter_id,
     );
+
+    // Check if JAX colis already created
+    let jaxEan = exchange.jax_ean;
+
+    // If no JAX EAN yet and merchant has JAX token, create the colis
+    if (!jaxEan && merchant?.jax_token) {
+      setJaxLoading(true);
+      setJaxError(null);
+
+      try {
+        const jaxRequest = buildJaxRequestFromExchange(exchange, merchant);
+        const jaxResponse = await createJaxExchangeColis(
+          merchant.jax_token,
+          jaxRequest,
+        );
+
+        if (jaxResponse.success && jaxResponse.ean) {
+          jaxEan = jaxResponse.ean;
+
+          // Save JAX EAN to exchange record
+          await supabase
+            .from("exchanges")
+            .update({
+              jax_ean: jaxEan,
+              jax_created_at: new Date().toISOString(),
+            })
+            .eq("id", exchange.id);
+
+          // Update local state
+          setExchange({ ...exchange, jax_ean: jaxEan });
+        } else {
+          setJaxError(
+            jaxResponse.error ||
+              jaxResponse.message ||
+              "Erreur lors de la création du colis JAX",
+          );
+          setJaxLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("JAX API Error:", error);
+        setJaxError("Erreur de connexion à JAX");
+        setJaxLoading(false);
+        return;
+      }
+
+      setJaxLoading(false);
+    }
 
     // Generate QR code URL for delivery person verification
     const verificationUrl = `https://fawzyoth.github.io/Swapp-app/#/delivery/verify/${exchange.exchange_code}`;
@@ -472,6 +541,7 @@ export default function MerchantExchangeDetail() {
               <div class="exchange-code">${exchange.exchange_code}</div>
               <div class="date">${new Date(exchange.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
             </div>
+            ${jaxEan ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #000; font-size: 12px;"><strong>JAX:</strong> <span style="font-family: 'Courier New', monospace;">${jaxEan}</span></div>` : ""}
           </div>
 
           <div class="codes-section">
@@ -481,9 +551,9 @@ export default function MerchantExchangeDetail() {
               <div class="code-label">SCAN LIVREUR</div>
             </div>
             <div class="code-box">
-              <div class="title">Code-Barres Colis</div>
-              <img src="https://barcodeapi.org/api/128/${exchange.exchange_code.slice(-8)}" alt="Barcode" width="160" height="50" />
-              <div class="code-label">${exchange.exchange_code.slice(-8)}</div>
+              <div class="title">Code-Barres JAX</div>
+              <img src="https://barcodeapi.org/api/128/${jaxEan || exchange.exchange_code.slice(-8)}" alt="Barcode" width="160" height="50" />
+              <div class="code-label">${jaxEan || exchange.exchange_code.slice(-8)}</div>
             </div>
           </div>
 
@@ -862,15 +932,59 @@ export default function MerchantExchangeDetail() {
                   <p className="text-sm font-medium text-slate-700 text-center">
                     Imprimer le bordereau
                   </p>
+
+                  {/* Show JAX EAN if already created */}
+                  {exchange.jax_ean && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                      <p className="text-xs text-emerald-700 mb-1">
+                        Code JAX créé
+                      </p>
+                      <p className="font-mono font-bold text-emerald-900">
+                        {exchange.jax_ean}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Error message */}
+                  {jaxError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                      <p className="text-sm text-red-700">{jaxError}</p>
+                      <p className="text-xs text-red-500 mt-1">
+                        Vérifiez votre token JAX dans les paramètres
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     onClick={printBordereauGo}
-                    className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    disabled={jaxLoading}
+                    className={`w-full py-3 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                      jaxLoading
+                        ? "bg-slate-400 cursor-not-allowed"
+                        : "bg-sky-600 hover:bg-sky-700"
+                    }`}
                   >
-                    <Printer className="w-5 h-5" />
-                    <span>Bordereau ALLER →</span>
+                    {jaxLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Création du colis JAX...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Printer className="w-5 h-5" />
+                        <span>
+                          {exchange.jax_ean
+                            ? "Réimprimer Bordereau"
+                            : "Créer & Imprimer Bordereau"}
+                        </span>
+                      </>
+                    )}
                   </button>
+
                   <p className="text-xs text-slate-500 text-center">
-                    Le retour sera géré par notre partenaire de livraison
+                    {merchant?.jax_token
+                      ? "Le colis sera créé automatiquement chez JAX Delivery"
+                      : "⚠️ Token JAX non configuré - Bordereau local uniquement"}
                   </p>
                 </div>
               )}

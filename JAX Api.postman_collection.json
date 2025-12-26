@@ -1,0 +1,232 @@
+{
+  "info": {
+    "_postman_id": "02ceda50-ba3a-4e09-84a8-69bbaaf1d4d8",
+    "name": "JAX Api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "10554652"
+  },
+  "item": [
+    {
+      "name": "create colis",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n\"referenceExterne\":\"\",\r\n\"nomContact\":\"test\",\r\n\"tel\":\"12345678\",\r\n\"tel2\":\"12345678\",\r\n\"adresseLivraison\":\"sousse\",\r\n\"governorat\":\"23\",\r\n\"delegation\":\"khzema\",\r\n\"description\":\"colis test\",\r\n\"cod\":\"600\",\r\n\"echange\":0,\r\n\"gouvernorat_pickup\":2,\r\n\"adresse_pickup\":\"sousse riadh\",\r\n\"expediteur_phone\":22222222,\r\n\"expediteur_name\":\"test\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/user/colis/add?token=place your token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "user", "colis", "add"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create pick up by ean",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n\"adresse\":\"sousse\",\r\n\"nbrColis\":\"1\",\r\n\"colis_statut\":\"10\",\r\n\"colis_list\":[\"SOU2215617325044\"],\r\n\"note\": \"Merci de bien emballer\",\r\n\"gouvernorat_id\":1\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/client/createByean?token=place ",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "client", "createByean"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place "
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get status  colis",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/user/colis/getstatubyean/SOU2215617325044?token=place your token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "user", "colis", "getstatubyean", "SOU2215617325044"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "All Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/statuts/?token=place your Token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "statuts", ""],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your Token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "All gouvernorat",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/gouvernorats?token=place your Token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "gouvernorats"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your Token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Many Colis By ean",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n\"list_colis\":[\"MED822593465205\",\"KAI822211012457\"]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/user/colis/AllColisByean?token=place your Token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "user", "colis", "AllColisByean"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your Token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get one colis by ean",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/user/colis/colisByean/TUN2215336695801?token=Place your token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "user", "colis", "colisByean", "TUN2215336695801"],
+          "query": [
+            {
+              "key": "token",
+              "value": "Place your token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Colis Problemes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/client/colisProbleme/MED270424485?token=place your Token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "client", "colisProbleme", "MED270424485"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your Token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "colis statut with updatedAt",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://core.jax-delivery.com/api/user/colis/getstatut_uptated/yourColisRef?token=place your Token here",
+          "protocol": "https",
+          "host": ["core", "jax-delivery", "com"],
+          "path": ["api", "user", "colis", "getstatut_uptated", "yourColisRef"],
+          "query": [
+            {
+              "key": "token",
+              "value": "place your Token here"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

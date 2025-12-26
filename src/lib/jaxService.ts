@@ -176,39 +176,48 @@ export const getJaxGouvernorats = async (token: string): Promise<any[]> => {
 // Helper to build JAX request from exchange data
 export const buildJaxRequestFromExchange = (
   exchange: {
-    exchange_code: string;
-    client_name: string;
-    client_phone: string;
+    exchange_code?: string;
+    client_name?: string;
+    client_phone?: string;
     client_address?: string;
     client_city?: string;
     product_name?: string;
-    reason: string;
+    reason?: string;
     payment_amount?: number;
   },
-  merchant: {
-    name: string;
-    phone: string;
-    business_address?: string;
-    business_city?: string;
-  },
+  merchant:
+    | {
+        name?: string;
+        phone?: string;
+        business_address?: string;
+        business_city?: string;
+      }
+    | null
+    | undefined,
 ): JaxColisRequest => {
-  const clientGovId = getGovernorateId(exchange.client_city || "");
-  const merchantGovId = getGovernorateId(merchant.business_city || "");
+  const clientGovId = getGovernorateId(exchange?.client_city || "");
+  const merchantGovId = getGovernorateId(merchant?.business_city || "");
+
+  // Safe phone number extraction
+  const clientPhone =
+    (exchange?.client_phone || "").replace(/\s/g, "") || "00000000";
+  const merchantPhone =
+    (merchant?.phone || "").replace(/\s/g, "") || "00000000";
 
   return {
-    referenceExterne: exchange.exchange_code,
-    nomContact: exchange.client_name,
-    tel: exchange.client_phone.replace(/\s/g, ""),
-    tel2: exchange.client_phone.replace(/\s/g, ""),
-    adresseLivraison: exchange.client_address || "",
+    referenceExterne: exchange?.exchange_code || "",
+    nomContact: exchange?.client_name || "Client",
+    tel: clientPhone,
+    tel2: clientPhone,
+    adresseLivraison: exchange?.client_address || "",
     governorat: clientGovId.toString(),
-    delegation: exchange.client_city || "",
-    description: `Échange: ${exchange.product_name || "Produit"} - ${exchange.reason}`,
-    cod: (exchange.payment_amount || 0).toString(),
+    delegation: exchange?.client_city || "",
+    description: `Échange: ${exchange?.product_name || "Produit"} - ${exchange?.reason || "Échange"}`,
+    cod: (exchange?.payment_amount || 0).toString(),
     echange: 1, // This is an exchange
     gouvernorat_pickup: merchantGovId,
-    adresse_pickup: merchant.business_address || "",
-    expediteur_phone: parseInt(merchant.phone.replace(/\s/g, ""), 10) || 0,
-    expediteur_name: merchant.name,
+    adresse_pickup: merchant?.business_address || "",
+    expediteur_phone: parseInt(merchantPhone, 10) || 0,
+    expediteur_name: merchant?.name || "Marchand",
   };
 };

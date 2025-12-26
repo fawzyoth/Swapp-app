@@ -34,6 +34,7 @@ import {
   createJaxExchangeColis,
   buildJaxRequestFromExchange,
   DEFAULT_JAX_TOKEN,
+  JaxValidationError,
 } from "../../lib/jaxService";
 
 export default function MerchantExchangeDetail() {
@@ -333,7 +334,11 @@ export default function MerchantExchangeDetail() {
         }
       } catch (error) {
         console.error("JAX API Error:", error);
-        setJaxError("Erreur de connexion à JAX");
+        if (error instanceof JaxValidationError) {
+          setJaxError(error.message);
+        } else {
+          setJaxError("Erreur de connexion à JAX");
+        }
         setJaxLoading(false);
         return;
       }

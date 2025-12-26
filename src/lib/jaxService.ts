@@ -173,6 +173,14 @@ export const getJaxGouvernorats = async (token: string): Promise<any[]> => {
   }
 };
 
+// Validation error for JAX request
+export class JaxValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "JaxValidationError";
+  }
+}
+
 // Helper to build JAX request from exchange data
 export const buildJaxRequestFromExchange = (
   exchange: {
@@ -195,29 +203,52 @@ export const buildJaxRequestFromExchange = (
     | null
     | undefined,
 ): JaxColisRequest => {
-  const clientGovId = getGovernorateId(exchange?.client_city || "");
-  const merchantGovId = getGovernorateId(merchant?.business_city || "");
+  // Validate required fields - throw errors instead of using fallbacks
+  if (!exchange?.exchange_code) {
+    throw new JaxValidationError("Code d'échange manquant");
+  }
+  if (!exchange?.client_name) {
+    throw new JaxValidationError("Nom du client manquant");
+  }
+  if (!exchange?.client_phone) {
+    throw new JaxValidationError("Téléphone du client manquant");
+  }
+  if (!exchange?.client_address) {
+    throw new JaxValidationError("Adresse du client manquante");
+  }
+  if (!exchange?.client_city) {
+    throw new JaxValidationError("Ville du client manquante");
+  }
+  if (!merchant?.name) {
+    throw new JaxValidationError("Nom du marchand manquant");
+  }
+  if (!merchant?.phone) {
+    throw new JaxValidationError("Téléphone du marchand manquant");
+  }
+  if (!merchant?.business_address) {
+    throw new JaxValidationError("Adresse du marchand manquante");
+  }
 
-  // Safe phone number extraction
-  const clientPhone =
-    (exchange?.client_phone || "").replace(/\s/g, "") || "00000000";
-  const merchantPhone =
-    (merchant?.phone || "").replace(/\s/g, "") || "00000000";
+  const clientGovId = getGovernorateId(exchange.client_city);
+  const merchantGovId = getGovernorateId(merchant.business_city || "");
+
+  const clientPhone = exchange.client_phone.replace(/\s/g, "");
+  const merchantPhone = merchant.phone.replace(/\s/g, "");
 
   return {
-    referenceExterne: exchange?.exchange_code || "",
-    nomContact: exchange?.client_name || "Client",
+    referenceExterne: exchange.exchange_code,
+    nomContact: exchange.client_name,
     tel: clientPhone,
     tel2: clientPhone,
-    adresseLivraison: exchange?.client_address || "",
+    adresseLivraison: exchange.client_address,
     governorat: clientGovId.toString(),
-    delegation: exchange?.client_city || "",
-    description: `Échange: ${exchange?.product_name || "Produit"} - ${exchange?.reason || "Échange"}`,
-    cod: (exchange?.payment_amount || 0).toString(),
+    delegation: exchange.client_city,
+    description: `Échange: ${exchange.product_name || "Produit"} - ${exchange.reason || "Échange"}`,
+    cod: (exchange.payment_amount || 0).toString(),
     echange: 1, // This is an exchange
     gouvernorat_pickup: merchantGovId,
-    adresse_pickup: merchant?.business_address || "",
-    expediteur_phone: parseInt(merchantPhone, 10) || 0,
-    expediteur_name: merchant?.name || "Marchand",
+    adresse_pickup: merchant.business_address,
+    expediteur_phone: parseInt(merchantPhone, 10),
+    expediteur_name: merchant.name,
   };
 };

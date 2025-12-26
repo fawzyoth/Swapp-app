@@ -3,6 +3,10 @@
 
 const JAX_API_BASE = "https://core.jax-delivery.com/api";
 
+// Default JAX token for all merchants (temporary - should be per-merchant in production)
+export const DEFAULT_JAX_TOKEN =
+  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2NvcmUuamF4LWRlbGl2ZXJ5LmNvbS9hcGkvdXRpbGlzYXRldXJzL0xvbmdUb2tlbiIsImlhdCI6MTc2Njc2NjI5MSwiZXhwIjoxODI5ODM4MjkxLCJuYmYiOjE3NjY3NjYyOTEsImp0aSI6IjY4T1RuNDB2aVN2VzdpMHQiLCJzdWIiOiIzNDIyIiwicHJ2IjoiZDA5MDViY2Y2NWE2ZDk5MmQ5MGNiZmU0NjIyNmJkMzEzYWU1MTkzZiJ9.2OZPJSLbCALAMgmrUR41u1CNk5e6Ozagc5pHFMHBj_4";
+
 // JAX Governorate mapping (city name -> JAX governorate ID)
 // You may need to adjust these IDs based on JAX API response from /api/gouvernorats
 export const GOVERNORATE_MAP: Record<string, number> = {
@@ -59,27 +63,27 @@ export const getGovernorateId = (city: string): number => {
 
 // JAX Colis creation request
 export interface JaxColisRequest {
-  referenceExterne: string;      // Your exchange code
-  nomContact: string;            // Client name
-  tel: string;                   // Client phone
-  tel2?: string;                 // Secondary phone
-  adresseLivraison: string;      // Delivery address
-  governorat: string;            // Governorate ID (as string)
-  delegation: string;            // Delegation/area
-  description: string;           // Product description
-  cod: string;                   // Cash on delivery amount (as string)
-  echange: number;               // 0 = normal, 1 = exchange
-  gouvernorat_pickup: number;    // Pickup governorate ID
-  adresse_pickup: string;        // Pickup address
-  expediteur_phone: number;      // Merchant phone
-  expediteur_name: string;       // Merchant name
+  referenceExterne: string; // Your exchange code
+  nomContact: string; // Client name
+  tel: string; // Client phone
+  tel2?: string; // Secondary phone
+  adresseLivraison: string; // Delivery address
+  governorat: string; // Governorate ID (as string)
+  delegation: string; // Delegation/area
+  description: string; // Product description
+  cod: string; // Cash on delivery amount (as string)
+  echange: number; // 0 = normal, 1 = exchange
+  gouvernorat_pickup: number; // Pickup governorate ID
+  adresse_pickup: string; // Pickup address
+  expediteur_phone: number; // Merchant phone
+  expediteur_name: string; // Merchant name
 }
 
 // JAX API Response
 export interface JaxColisResponse {
   success: boolean;
   message?: string;
-  ean?: string;           // JAX tracking code (e.g., "SOU2215617325044")
+  ean?: string; // JAX tracking code (e.g., "SOU2215617325044")
   colis_id?: number;
   error?: string;
 }
@@ -87,7 +91,7 @@ export interface JaxColisResponse {
 // Create exchange colis in JAX system
 export const createJaxExchangeColis = async (
   token: string,
-  data: JaxColisRequest
+  data: JaxColisRequest,
 ): Promise<JaxColisResponse> => {
   try {
     const response = await fetch(
@@ -98,11 +102,13 @@ export const createJaxExchangeColis = async (
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      }
+      },
     );
 
     if (!response.ok) {
-      throw new Error(`JAX API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `JAX API error: ${response.status} ${response.statusText}`,
+      );
     }
 
     const result = await response.json();
@@ -119,7 +125,7 @@ export const createJaxExchangeColis = async (
 // Get colis status from JAX
 export const getJaxColisStatus = async (
   token: string,
-  ean: string
+  ean: string,
 ): Promise<any> => {
   try {
     const response = await fetch(
@@ -129,7 +135,7 @@ export const getJaxColisStatus = async (
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -153,7 +159,7 @@ export const getJaxGouvernorats = async (token: string): Promise<any[]> => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -184,7 +190,7 @@ export const buildJaxRequestFromExchange = (
     phone: string;
     business_address?: string;
     business_city?: string;
-  }
+  },
 ): JaxColisRequest => {
   const clientGovId = getGovernorateId(exchange.client_city || "");
   const merchantGovId = getGovernorateId(merchant.business_city || "");

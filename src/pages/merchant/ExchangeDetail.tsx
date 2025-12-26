@@ -33,7 +33,7 @@ import {
 import {
   createJaxExchangeColis,
   buildJaxRequestFromExchange,
-  JaxColisResponse,
+  DEFAULT_JAX_TOKEN,
 } from "../../lib/jaxService";
 
 export default function MerchantExchangeDetail() {
@@ -295,17 +295,18 @@ export default function MerchantExchangeDetail() {
     // Check if JAX colis already created
     let jaxEan = exchange.jax_ean;
 
-    // If no JAX EAN yet and merchant has JAX token, create the colis
-    if (!jaxEan && merchant?.jax_token) {
+    // If no JAX EAN yet, create the colis using merchant token or default token
+    const jaxToken = merchant?.jax_token || DEFAULT_JAX_TOKEN;
+    if (!jaxEan && jaxToken) {
       setJaxLoading(true);
       setJaxError(null);
 
       try {
-        const jaxRequest = buildJaxRequestFromExchange(exchange, merchant);
-        const jaxResponse = await createJaxExchangeColis(
-          merchant.jax_token,
-          jaxRequest,
+        const jaxRequest = buildJaxRequestFromExchange(
+          exchange,
+          merchant || {},
         );
+        const jaxResponse = await createJaxExchangeColis(jaxToken, jaxRequest);
 
         if (jaxResponse.success && jaxResponse.ean) {
           jaxEan = jaxResponse.ean;
@@ -982,9 +983,7 @@ export default function MerchantExchangeDetail() {
                   </button>
 
                   <p className="text-xs text-slate-500 text-center">
-                    {merchant?.jax_token
-                      ? "Le colis sera créé automatiquement chez JAX Delivery"
-                      : "⚠️ Token JAX non configuré - Bordereau local uniquement"}
+                    Le colis sera créé automatiquement chez JAX Delivery
                   </p>
                 </div>
               )}

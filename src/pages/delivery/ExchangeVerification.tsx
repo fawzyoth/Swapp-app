@@ -168,6 +168,12 @@ export default function ExchangeVerification() {
   >("cash");
   const [collectionNotes, setCollectionNotes] = useState("");
 
+  // Return product verification state
+  const [returnProductStatus, setReturnProductStatus] = useState<
+    "accepted" | "rejected" | "problem"
+  >("accepted");
+  const [returnProductNotes, setReturnProductNotes] = useState("");
+
   useEffect(() => {
     if (code) {
       fetchExchangeData();
@@ -323,6 +329,10 @@ export default function ExchangeVerification() {
         .update({
           status: newStatus,
           bag_id: autoBagId,
+          return_product_status: returnProductStatus,
+          return_product_notes: returnProductNotes || null,
+          delivery_person_id: user.id,
+          completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", exchange.id);
@@ -857,6 +867,78 @@ export default function ExchangeVerification() {
                   </div>
                 </div>
 
+                {/* Return Product Verification */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Package className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900">
+                        Verification du produit retourne
+                      </h4>
+                      <p className="text-sm text-slate-600">
+                        Verifiez l'etat du produit que le client retourne
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setReturnProductStatus("accepted")}
+                      className={`flex flex-col items-center justify-center gap-2 px-4 py-4 rounded-lg border-2 transition-colors ${
+                        returnProductStatus === "accepted"
+                          ? "border-emerald-500 bg-emerald-100 text-emerald-800"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                      }`}
+                    >
+                      <CheckCircle className="w-6 h-6" />
+                      <span className="text-sm font-medium">Accepte</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReturnProductStatus("problem")}
+                      className={`flex flex-col items-center justify-center gap-2 px-4 py-4 rounded-lg border-2 transition-colors ${
+                        returnProductStatus === "problem"
+                          ? "border-orange-500 bg-orange-100 text-orange-800"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                      }`}
+                    >
+                      <Info className="w-6 h-6" />
+                      <span className="text-sm font-medium">Probleme</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReturnProductStatus("rejected")}
+                      className={`flex flex-col items-center justify-center gap-2 px-4 py-4 rounded-lg border-2 transition-colors ${
+                        returnProductStatus === "rejected"
+                          ? "border-red-500 bg-red-100 text-red-800"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                      }`}
+                    >
+                      <XCircle className="w-6 h-6" />
+                      <span className="text-sm font-medium">Refuse</span>
+                    </button>
+                  </div>
+
+                  {(returnProductStatus === "problem" ||
+                    returnProductStatus === "rejected") && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Notes sur le produit retourne *
+                      </label>
+                      <textarea
+                        value={returnProductNotes}
+                        onChange={(e) => setReturnProductNotes(e.target.value)}
+                        placeholder="Decrivez le probleme ou la raison du refus..."
+                        rows={2}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* Payment Collection Section */}
                 <div className="mb-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -870,7 +952,7 @@ export default function ExchangeVerification() {
                       <p className="text-sm text-slate-600">
                         {exchange?.payment_amount > 0
                           ? `Montant attendu: ${exchange.payment_amount.toFixed(2)} TND`
-                          : "Indiquez si vous avez encaissé un paiement"}
+                          : "Indiquez si vous avez encaisse un paiement"}
                       </p>
                     </div>
                   </div>

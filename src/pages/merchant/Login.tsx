@@ -67,7 +67,8 @@ export default function MerchantLogin() {
         }
 
         console.log("Login successful, navigating to dashboard");
-        navigate("/merchant/dashboard");
+        window.location.href = "#/merchant/dashboard";
+        window.location.reload();
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -92,7 +93,9 @@ export default function MerchantLogin() {
         business_city: "Tunis",
       }),
     );
-    navigate("/merchant/dashboard");
+    // Force full page reload to dashboard
+    window.location.href = "#/merchant/dashboard";
+    window.location.reload();
   };
 
   return (

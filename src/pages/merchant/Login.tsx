@@ -10,7 +10,7 @@ export default function MerchantLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Clear session cache and demo mode when on login page
+  // Clear session cache when on login page
   useEffect(() => {
     sessionStorage.removeItem("merchant_auth_v2");
     sessionStorage.removeItem("demo_mode");
@@ -67,7 +67,7 @@ export default function MerchantLogin() {
         }
 
         console.log("Login successful, navigating to dashboard");
-        window.location.href = "/Swapp-app/#/merchant/dashboard";
+        navigate("/merchant/dashboard");
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -77,92 +77,22 @@ export default function MerchantLogin() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setEmail("demo@merchant.com");
-    setPassword("demo123456");
-    setLoading(true);
-    setError("");
-
-    try {
-      let { data, error } = await supabase.auth.signInWithPassword({
+  const handleDemoMode = () => {
+    // Set demo mode flag in sessionStorage
+    sessionStorage.setItem("demo_mode", "true");
+    sessionStorage.setItem(
+      "demo_merchant",
+      JSON.stringify({
+        id: "demo-merchant-id",
         email: "demo@merchant.com",
-        password: "demo123456",
-      });
-
-      if (error && error.message.includes("Invalid login credentials")) {
-        const { data: signUpData, error: signUpError } =
-          await supabase.auth.signUp({
-            email: "demo@merchant.com",
-            password: "demo123456",
-            options: {
-              data: {
-                name: "Boutique Demo",
-                phone: "+216 70 000 000",
-              },
-            },
-          });
-
-        if (signUpError) throw signUpError;
-
-        if (signUpData.user) {
-          const merchantId = "11111111-1111-1111-1111-111111111111";
-
-          const { error: updateError } = await supabase
-            .from("merchants")
-            .update({ id: signUpData.user.id })
-            .eq("id", merchantId);
-
-          if (updateError) {
-            await supabase.from("merchants").insert({
-              id: signUpData.user.id,
-              email: "demo@merchant.com",
-              name: "Boutique Demo",
-              phone: "+216 70 000 000",
-            });
-          }
-
-          window.location.href = "/Swapp-app/#/merchant/dashboard";
-          return;
-        }
-      } else if (error) {
-        throw error;
-      }
-
-      if (data?.user) {
-        // Check if this email belongs to a delivery person (forbidden)
-        const { data: deliveryPerson } = await supabase
-          .from("delivery_persons")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        if (deliveryPerson) {
-          await supabase.auth.signOut();
-          throw new Error("Ce compte est un compte livreur.");
-        }
-
-        // Verify the user is a merchant by email
-        const { data: merchant, error: merchantError } = await supabase
-          .from("merchants")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        if (merchantError || !merchant) {
-          await supabase.auth.signOut();
-          throw new Error("Compte e-commerçant non trouvé.");
-        }
-
-        window.location.href = "/Swapp-app/#/merchant/dashboard";
-      }
-    } catch (err: any) {
-      setError(
-        err.message ||
-          "Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.",
-      );
-    } finally {
-      setLoading(false);
-    }
+        name: "Boutique Demo",
+        business_name: "Ma Boutique Demo",
+        phone: "+216 70 000 000",
+        business_address: "Avenue Habib Bourguiba, Tunis",
+        business_city: "Tunis",
+      }),
+    );
+    navigate("/merchant/dashboard");
   };
 
   return (
@@ -232,26 +162,7 @@ export default function MerchantLogin() {
               </button>
             </form>
 
-            <div className="mt-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500">ou</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleDemoLogin}
-                disabled={loading}
-                className="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors"
-              >
-                Connexion Demo
-              </button>
-            </div>
-
-            {/* Demo Mode - Skip Login */}
+            {/* Demo Mode Button */}
             <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl">
               <div className="flex items-center gap-2 mb-3">
                 <Play className="w-5 h-5 text-purple-600" />
@@ -264,23 +175,7 @@ export default function MerchantLogin() {
                 uniquement.
               </p>
               <button
-                onClick={() => {
-                  // Set demo mode flag in sessionStorage
-                  sessionStorage.setItem("demo_mode", "true");
-                  sessionStorage.setItem(
-                    "demo_merchant",
-                    JSON.stringify({
-                      id: "demo-merchant-id",
-                      email: "demo@merchant.com",
-                      name: "Boutique Demo",
-                      business_name: "Ma Boutique Demo",
-                      phone: "+216 70 000 000",
-                      business_address: "Avenue Habib Bourguiba, Tunis",
-                      business_city: "Tunis",
-                    }),
-                  );
-                  window.location.href = "/Swapp-app/#/merchant/dashboard";
-                }}
+                onClick={handleDemoMode}
                 className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Play className="w-4 h-4" />

@@ -93,9 +93,12 @@ export default function MerchantLogin() {
         business_city: "Tunis",
       }),
     );
-    // Force full page reload to dashboard
-    window.location.href = "#/merchant/dashboard";
-    window.location.reload();
+    // Redirect to dashboard (full URL to force reload)
+    window.location.assign(
+      window.location.origin +
+        window.location.pathname +
+        "#/merchant/dashboard",
+    );
   };
 
   return (

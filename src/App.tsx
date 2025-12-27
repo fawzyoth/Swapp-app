@@ -256,9 +256,18 @@ function PublicRoute({
   children: React.ReactNode;
   dashboardPath: string;
 }) {
-  const [shouldRedirect, setShouldRedirect] = useState(false);
+  // Check demo mode immediately - redirect if active
+  const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
+
+  const [shouldRedirect, setShouldRedirect] = useState(isDemoMode);
 
   useEffect(() => {
+    // If demo mode, redirect immediately
+    if (isDemoMode) {
+      setShouldRedirect(true);
+      return;
+    }
+
     let mounted = true;
 
     // Check if already authenticated - but don't block rendering

@@ -10,11 +10,13 @@ export default function MerchantLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Clear session cache when on login page
+  // Clear session cache when on login page (but not if demo mode is being set)
   useEffect(() => {
+    // Don't clear if demo mode is active - user might be redirecting
+    if (sessionStorage.getItem("demo_mode") === "true") {
+      return;
+    }
     sessionStorage.removeItem("merchant_auth_v2");
-    sessionStorage.removeItem("demo_mode");
-    sessionStorage.removeItem("demo_merchant");
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

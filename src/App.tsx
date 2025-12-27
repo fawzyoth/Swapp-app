@@ -189,8 +189,17 @@ function ProtectedRoute({
   );
   const [checked, setChecked] = useState(sessionChecked);
 
+  // Check for demo mode - allows bypassing auth for merchant routes
+  const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
+
   useEffect(() => {
     let mounted = true;
+
+    // If demo mode is active, skip auth check
+    if (isDemoMode) {
+      setChecked(true);
+      return;
+    }
 
     // If already checked, use cached immediately
     if (sessionChecked) {
@@ -221,10 +230,15 @@ function ProtectedRoute({
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isDemoMode]);
 
   if (!checked) {
     return <LoadingSpinner />;
+  }
+
+  // Allow access if demo mode is active OR user is authenticated
+  if (isDemoMode) {
+    return <>{children}</>;
   }
 
   if (user === null) {

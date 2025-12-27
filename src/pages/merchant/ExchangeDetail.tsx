@@ -121,8 +121,10 @@ export default function MerchantExchangeDetail() {
   const [jaxLoading, setJaxLoading] = useState(false);
   const [jaxError, setJaxError] = useState<string | null>(null);
 
-  // Test mode state
-  const [testMode, setTestMode] = useState(false);
+  // Test mode state - check sessionStorage on init
+  const [testMode, setTestMode] = useState(() => {
+    return sessionStorage.getItem("demo_mode") === "true";
+  });
 
   useEffect(() => {
     if (testMode) {

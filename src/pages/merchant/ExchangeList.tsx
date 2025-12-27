@@ -1,10 +1,59 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Play } from "lucide-react";
 import { supabase, STATUS_LABELS } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
 const PAGE_SIZE = 50;
+
+// Demo exchanges data
+const DEMO_EXCHANGES = [
+  {
+    id: "demo-1",
+    exchange_code: "EXC-DEMO-001",
+    client_name: "Ahmed Ben Ali",
+    client_phone: "+216 55 123 456",
+    reason: "Taille incorrecte",
+    status: "pending",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "demo-2",
+    exchange_code: "EXC-DEMO-002",
+    client_name: "Fatma Trabelsi",
+    client_phone: "+216 22 987 654",
+    reason: "Couleur non conforme",
+    status: "validated",
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: "demo-3",
+    exchange_code: "EXC-DEMO-003",
+    client_name: "Mohamed Kacem",
+    client_phone: "+216 98 456 123",
+    reason: "Produit défectueux",
+    status: "completed",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: "demo-4",
+    exchange_code: "EXC-DEMO-004",
+    client_name: "Sarra Bouaziz",
+    client_phone: "+216 50 789 012",
+    reason: "Ne correspond pas à la description",
+    status: "rejected",
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    id: "demo-5",
+    exchange_code: "EXC-DEMO-005",
+    client_name: "Youssef Hammami",
+    client_phone: "+216 23 456 789",
+    reason: "Changement d'avis",
+    status: "ready_for_pickup",
+    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+  },
+];
 
 export default function MerchantExchangeList() {
   const navigate = useNavigate();
@@ -14,14 +63,31 @@ export default function MerchantExchangeList() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [merchantId, setMerchantId] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
-    checkAuthAndFetch();
+    // Check for demo mode
+    const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
+    setDemoMode(isDemoMode);
+
+    if (isDemoMode) {
+      // Load demo data
+      setExchanges(DEMO_EXCHANGES);
+      setLoading(false);
+    } else {
+      checkAuthAndFetch();
+    }
   }, []);
 
   useEffect(() => {
     filterExchanges();
   }, [exchanges, searchTerm, statusFilter]);
+
+  const exitDemoMode = () => {
+    sessionStorage.removeItem("demo_mode");
+    sessionStorage.removeItem("demo_merchant");
+    navigate("/merchant/login");
+  };
 
   const checkAuthAndFetch = async () => {
     try {
@@ -116,6 +182,30 @@ export default function MerchantExchangeList() {
   return (
     <MerchantLayout>
       <div>
+        {/* Demo Mode Banner */}
+        {demoMode && (
+          <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Play className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold">Mode Démonstration</h3>
+                <p className="text-purple-100 text-sm">
+                  Vous visualisez des données fictives. Cliquez sur un échange
+                  pour voir les détails.
+                </p>
+              </div>
+              <button
+                onClick={exitDemoMode}
+                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
+              >
+                Quitter la Demo
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">
             Demandes d'échange

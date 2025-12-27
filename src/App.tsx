@@ -189,17 +189,8 @@ function ProtectedRoute({
   );
   const [checked, setChecked] = useState(sessionChecked);
 
-  // Check for demo mode - allows bypassing auth for merchant routes
-  const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
-
   useEffect(() => {
     let mounted = true;
-
-    // If demo mode is active, skip auth check
-    if (isDemoMode) {
-      setChecked(true);
-      return;
-    }
 
     // If already checked, use cached immediately
     if (sessionChecked) {
@@ -230,15 +221,10 @@ function ProtectedRoute({
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [isDemoMode]);
+  }, []);
 
   if (!checked) {
     return <LoadingSpinner />;
-  }
-
-  // Allow access if demo mode is active OR user is authenticated
-  if (isDemoMode) {
-    return <>{children}</>;
   }
 
   if (user === null) {
@@ -256,24 +242,21 @@ function PublicRoute({
   children: React.ReactNode;
   dashboardPath: string;
 }) {
-  // Check demo mode immediately - redirect if active
-  const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
-
-  const [shouldRedirect, setShouldRedirect] = useState(isDemoMode);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
-    // If demo mode, redirect immediately
-    if (isDemoMode) {
-      setShouldRedirect(true);
-      return;
-    }
-
     let mounted = true;
 
     // Check if already authenticated - but don't block rendering
     const checkAuth = async () => {
       try {
-        // Always fetch fresh session for login pages (don't trust cache)
+        // Quick check from cache first
+        if (sessionChecked && cachedSession?.user) {
+          setShouldRedirect(true);
+          return;
+        }
+
+        // Otherwise check with short timeout
         const session = (await Promise.race([
           supabase.auth.getSession(),
           new Promise((_, reject) =>
@@ -285,15 +268,9 @@ function PublicRoute({
           cachedSession = session.data.session;
           sessionChecked = true;
           setShouldRedirect(true);
-        } else {
-          // Clear cache if no session
-          cachedSession = null;
-          sessionChecked = true;
         }
       } catch {
         // On timeout or error, just show the login form
-        cachedSession = null;
-        sessionChecked = true;
       }
     };
 

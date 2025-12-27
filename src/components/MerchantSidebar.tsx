@@ -30,17 +30,9 @@ export default function MerchantSidebar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    // Clear demo mode
-    sessionStorage.removeItem("demo_mode");
-    sessionStorage.removeItem("demo_merchant");
-
-    // Sign out from Supabase (local only, don't await)
-    supabase.auth.signOut({ scope: "local" }).catch(() => {});
-
-    // Force full page reload to login (navigate doesn't work reliably)
-    window.location.href = "#/merchant/login";
-    window.location.reload();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/merchant/login");
   };
 
   return (

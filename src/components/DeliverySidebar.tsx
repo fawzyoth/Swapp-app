@@ -31,9 +31,13 @@ export default function DeliverySidebar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/delivery/login");
+  const handleLogout = () => {
+    // Clear all storage
+    sessionStorage.clear();
+    localStorage.clear();
+
+    // Redirect to login
+    window.location.href = "/Swapp-app/#/delivery/login";
   };
 
   return (

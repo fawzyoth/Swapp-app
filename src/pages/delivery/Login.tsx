@@ -10,10 +10,10 @@ export default function DeliveryLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Clear session cache when on login page
+  // Clear all session cache when on login page
   useEffect(() => {
-    // Reset the global auth cache
-    sessionStorage.removeItem("delivery_auth_v2");
+    sessionStorage.clear();
+    localStorage.removeItem("sb-xlwznudjklezjkitzqeg-auth-token");
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,7 +63,7 @@ export default function DeliveryLogin() {
           );
         }
 
-        navigate("/delivery/dashboard");
+        window.location.href = "/Swapp-app/#/delivery/dashboard";
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -110,7 +110,7 @@ export default function DeliveryLogin() {
             phone: "+216 70 000 001",
           });
 
-          navigate("/delivery/dashboard");
+          window.location.href = "/Swapp-app/#/delivery/dashboard";
           return;
         }
       } else if (error) {
@@ -142,7 +142,7 @@ export default function DeliveryLogin() {
           throw new Error("Compte livreur non trouvé.");
         }
 
-        navigate("/delivery/dashboard");
+        window.location.href = "/Swapp-app/#/delivery/dashboard";
       }
     } catch (err: any) {
       setError(

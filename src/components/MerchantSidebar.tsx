@@ -84,14 +84,12 @@ export default function MerchantSidebar() {
   }, []);
 
   const handleLogout = () => {
-    // Clear all session storage
+    // Clear all storage
     sessionStorage.clear();
-    localStorage.removeItem("sb-xlwznudjklezjkitzqeg-auth-token");
+    localStorage.clear();
 
-    // Force page reload to login
-    window.location.replace(
-      window.location.origin + window.location.pathname + "#/merchant/login",
-    );
+    // Redirect to login
+    window.location.href = "/Swapp-app/#/merchant/login";
   };
 
   return (

@@ -67,11 +67,7 @@ export default function MerchantLogin() {
         }
 
         console.log("Login successful, navigating to dashboard");
-        // Force full page reload to reset all cached state
-        window.location.href =
-          window.location.origin +
-          window.location.pathname +
-          "#/merchant/dashboard";
+        window.location.href = "/Swapp-app/#/merchant/dashboard";
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -125,11 +121,7 @@ export default function MerchantLogin() {
             });
           }
 
-          // Force full page reload to reset all cached state
-          window.location.href =
-            window.location.origin +
-            window.location.pathname +
-            "#/merchant/dashboard";
+          window.location.href = "/Swapp-app/#/merchant/dashboard";
           return;
         }
       } else if (error) {
@@ -161,11 +153,7 @@ export default function MerchantLogin() {
           throw new Error("Compte e-commerçant non trouvé.");
         }
 
-        // Force full page reload to reset all cached state
-        window.location.href =
-          window.location.origin +
-          window.location.pathname +
-          "#/merchant/dashboard";
+        window.location.href = "/Swapp-app/#/merchant/dashboard";
       }
     } catch (err: any) {
       setError(
@@ -291,11 +279,7 @@ export default function MerchantLogin() {
                       business_city: "Tunis",
                     }),
                   );
-                  // Force full page reload to reset all cached state
-                  window.location.href =
-                    window.location.origin +
-                    window.location.pathname +
-                    "#/merchant/dashboard";
+                  window.location.href = "/Swapp-app/#/merchant/dashboard";
                 }}
                 className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Package,
@@ -8,11 +8,32 @@ import {
   Clock,
   Users,
   Truck,
+  Play,
+  Info,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
+// Demo stats data
+const DEMO_STATS = {
+  total: 24,
+  pending: 3,
+  validated: 18,
+  rejected: 3,
+  completed: 15,
+  validationRate: 75,
+};
+
+const DEMO_REASONS = [
+  { reason: "Taille incorrecte", count: 8 },
+  { reason: "Couleur non conforme", count: 6 },
+  { reason: "Produit défectueux", count: 4 },
+  { reason: "Ne correspond pas à la description", count: 3 },
+  { reason: "Changement d'avis", count: 3 },
+];
+
 export default function MerchantDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -23,10 +44,28 @@ export default function MerchantDashboard() {
   });
   const [reasonsStats, setReasonsStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
-    fetchStats();
+    // Check if demo mode is active
+    const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
+    setDemoMode(isDemoMode);
+
+    if (isDemoMode) {
+      // Load demo data
+      setStats(DEMO_STATS);
+      setReasonsStats(DEMO_REASONS);
+      setLoading(false);
+    } else {
+      fetchStats();
+    }
   }, []);
+
+  const exitDemoMode = () => {
+    sessionStorage.removeItem("demo_mode");
+    sessionStorage.removeItem("demo_merchant");
+    navigate("/merchant/login");
+  };
 
   const fetchStats = async () => {
     try {
@@ -116,6 +155,30 @@ export default function MerchantDashboard() {
   return (
     <MerchantLayout>
       <div>
+        {/* Demo Mode Banner */}
+        {demoMode && (
+          <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Play className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold">Mode Démonstration</h3>
+                <p className="text-purple-100 text-sm">
+                  Vous visualisez des données fictives. Explorez librement la
+                  plateforme!
+                </p>
+              </div>
+              <button
+                onClick={exitDemoMode}
+                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
+              >
+                Quitter la Demo
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Vue d'ensemble

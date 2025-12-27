@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store, ArrowLeft } from "lucide-react";
+import { Store, ArrowLeft, Play } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 export default function MerchantLogin() {
@@ -249,15 +249,41 @@ export default function MerchantLogin() {
               </button>
             </div>
 
-            <div className="mt-6 p-4 bg-sky-50 rounded-lg">
-              <p className="text-sm text-sky-800 font-medium mb-2">
-                Compte de démonstration:
+            {/* Demo Mode - Skip Login */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Play className="w-5 h-5 text-purple-600" />
+                <p className="text-sm text-purple-800 font-bold">
+                  Mode Démonstration
+                </p>
+              </div>
+              <p className="text-xs text-purple-700 mb-3">
+                Testez la plateforme sans créer de compte. Données fictives
+                uniquement.
               </p>
-              <p className="text-xs text-sky-700">
-                Email: demo@merchant.com
-                <br />
-                Mot de passe: demo123456
-              </p>
+              <button
+                onClick={() => {
+                  // Set demo mode flag in sessionStorage
+                  sessionStorage.setItem("demo_mode", "true");
+                  sessionStorage.setItem(
+                    "demo_merchant",
+                    JSON.stringify({
+                      id: "demo-merchant-id",
+                      email: "demo@merchant.com",
+                      name: "Boutique Demo",
+                      business_name: "Ma Boutique Demo",
+                      phone: "+216 70 000 000",
+                      business_address: "Avenue Habib Bourguiba, Tunis",
+                      business_city: "Tunis",
+                    }),
+                  );
+                  navigate("/merchant/dashboard");
+                }}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Accéder à la Demo
+              </button>
             </div>
           </div>
         </div>

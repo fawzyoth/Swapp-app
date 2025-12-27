@@ -40,6 +40,60 @@ import {
 // Delivery fee constant - 9 TND per package
 const DELIVERY_FEE = 9;
 
+// Demo exchange data for test mode
+const DEMO_EXCHANGE = {
+  id: "demo-123",
+  exchange_code: "EXC-DEMO-2024",
+  client_name: "Ahmed Ben Ali",
+  client_phone: "+216 55 123 456",
+  client_address: "15 Rue de la Liberté",
+  client_city: "Tunis",
+  client_postal_code: "1000",
+  client_country: "Tunisie",
+  product_name: "T-Shirt Nike - Taille L",
+  reason: "Taille incorrecte",
+  status: "pending",
+  payment_amount: 0,
+  payment_status: "pending",
+  created_at: new Date().toISOString(),
+  video: null,
+  images: null,
+};
+
+const DEMO_MESSAGES = [
+  {
+    id: "msg-1",
+    sender_type: "client",
+    message:
+      "Bonjour, j'ai commandé une taille L mais j'ai reçu une taille M. Je voudrais échanger.",
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: "msg-2",
+    sender_type: "merchant",
+    message:
+      "Bonjour Ahmed, nous avons bien reçu votre demande. Nous allons l'examiner.",
+    created_at: new Date(Date.now() - 1800000).toISOString(),
+  },
+];
+
+const DEMO_CLIENT_HISTORY = [
+  {
+    id: "hist-1",
+    exchange_code: "EXC-ABC123",
+    reason: "Couleur non conforme",
+    status: "completed",
+    created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+  },
+  {
+    id: "hist-2",
+    exchange_code: "EXC-DEF456",
+    reason: "Produit défectueux",
+    status: "validated",
+    created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
+  },
+];
+
 export default function MerchantExchangeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -67,9 +121,51 @@ export default function MerchantExchangeDetail() {
   const [jaxLoading, setJaxLoading] = useState(false);
   const [jaxError, setJaxError] = useState<string | null>(null);
 
+  // Test mode state
+  const [testMode, setTestMode] = useState(false);
+
   useEffect(() => {
-    fetchData();
-  }, [id]);
+    if (testMode) {
+      loadDemoData();
+    } else {
+      fetchData();
+    }
+  }, [id, testMode]);
+
+  // Load demo data for test mode
+  const loadDemoData = () => {
+    setLoading(true);
+    // Simulate loading delay
+    setTimeout(() => {
+      setExchange(DEMO_EXCHANGE);
+      setMessages(DEMO_MESSAGES);
+      setClientHistory(DEMO_CLIENT_HISTORY);
+      setDeliveryAttempts([]);
+      setMerchant({
+        id: "demo-merchant",
+        name: "Boutique Demo",
+        business_name: "Ma Boutique Demo",
+        phone: "+216 70 000 000",
+        business_address: "Avenue Habib Bourguiba, Tunis",
+        business_city: "Tunis",
+      });
+      setLoading(false);
+    }, 500);
+  };
+
+  // Toggle test mode
+  const toggleTestMode = () => {
+    setTestMode(!testMode);
+    // Reset states when switching modes
+    setExchange(null);
+    setMessages([]);
+    setClientHistory([]);
+    setDeliveryAttempts([]);
+    setShowValidateModal(false);
+    setShowRejectModal(false);
+    setPaymentType("free");
+    setPaymentAmount("0");
+  };
 
   // Lazy load video and images only when user clicks to view
   const loadMedia = async () => {
@@ -182,6 +278,21 @@ export default function MerchantExchangeDetail() {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    // Demo mode - just update local state
+    if (testMode) {
+      setMessages([
+        ...messages,
+        {
+          id: `msg-demo-${Date.now()}`,
+          sender_type: "merchant",
+          message: newMessage,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setNewMessage("");
+      return;
+    }
+
     try {
       await supabase.from("messages").insert({
         exchange_id: id,
@@ -218,6 +329,32 @@ export default function MerchantExchangeDetail() {
     // For free exchanges, merchant pays the delivery fee
     // For paid exchanges, the delivery fee can be included in the client payment or paid by merchant
     const merchantDeliveryCharge = paymentType === "free" ? deliveryFee : 0;
+
+    // Demo mode - just update local state
+    if (testMode) {
+      setExchange({
+        ...exchange,
+        status: "validated",
+        payment_amount: clientPaymentAmount,
+        delivery_fee: deliveryFee,
+        merchant_delivery_charge: merchantDeliveryCharge,
+        payment_status: paymentType === "free" ? "free" : "pending",
+      });
+      setMessages([
+        ...messages,
+        {
+          id: `msg-demo-${Date.now()}`,
+          sender_type: "merchant",
+          message:
+            paymentType === "free"
+              ? "Votre échange a été validé. Aucun paiement supplémentaire requis."
+              : `Votre échange a été validé. Montant à payer: ${clientPaymentAmount.toFixed(2)} TND.`,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setShowValidateModal(false);
+      return;
+    }
 
     try {
       await supabase
@@ -276,6 +413,27 @@ export default function MerchantExchangeDetail() {
   const rejectExchange = async () => {
     if (!rejectionReason.trim()) {
       alert("Veuillez fournir une raison pour le refus");
+      return;
+    }
+
+    // Demo mode - just update local state
+    if (testMode) {
+      setExchange({
+        ...exchange,
+        status: "rejected",
+        rejection_reason: rejectionReason,
+      });
+      setMessages([
+        ...messages,
+        {
+          id: `msg-demo-${Date.now()}`,
+          sender_type: "merchant",
+          message: `Votre demande d'échange a été refusée. Raison: ${rejectionReason}`,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setShowRejectModal(false);
+      setRejectionReason("");
       return;
     }
 
@@ -791,13 +949,55 @@ export default function MerchantExchangeDetail() {
   return (
     <MerchantLayout>
       <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => navigate("/merchant/exchanges")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Retour aux échanges</span>
-        </button>
+        {/* Header with back button and test mode toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate("/merchant/exchanges")}
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Retour aux échanges</span>
+          </button>
+
+          {/* Test Mode Toggle */}
+          <button
+            onClick={toggleTestMode}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+              testMode
+                ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${testMode ? "bg-white animate-pulse" : "bg-slate-400"}`}
+            />
+            {testMode ? "Mode Demo Actif" : "Activer Mode Demo"}
+          </button>
+        </div>
+
+        {/* Demo Mode Banner */}
+        {testMode && (
+          <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Info className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold">Mode Démonstration</h3>
+                <p className="text-purple-100 text-sm">
+                  Vous visualisez des données fictives. Cliquez sur "Activer
+                  Mode Demo" pour revenir aux vraies données.
+                </p>
+              </div>
+              <button
+                onClick={toggleTestMode}
+                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
+              >
+                Voir données réelles
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

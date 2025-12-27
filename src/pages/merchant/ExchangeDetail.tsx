@@ -256,6 +256,7 @@ export default function MerchantExchangeDetail() {
   const [loading, setLoading] = useState(true);
   const [jaxLoading, setJaxLoading] = useState(false);
   const [jaxError, setJaxError] = useState<string | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Test mode state - check sessionStorage on init
   const [testMode, setTestMode] = useState(() => {
@@ -494,6 +495,7 @@ export default function MerchantExchangeDetail() {
         },
       ]);
       setShowValidateModal(false);
+      setShowPrintModal(true);
       return;
     }
 
@@ -545,6 +547,7 @@ export default function MerchantExchangeDetail() {
       }
 
       setShowValidateModal(false);
+      setShowPrintModal(true);
       fetchData();
     } catch (error) {
       console.error("Error validating exchange:", error);
@@ -2058,6 +2061,65 @@ export default function MerchantExchangeDetail() {
                     Confirmer le refus
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  Échange validé !
+                </h3>
+                <p className="text-emerald-100">{exchange?.exchange_code}</p>
+              </div>
+
+              <div className="p-6">
+                <div className="bg-sky-50 border-2 border-sky-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Printer className="w-5 h-5 text-sky-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sky-900 mb-1">
+                        Prochaine étape
+                      </h4>
+                      <p className="text-sm text-sky-700">
+                        Imprimez le bordereau pour préparer l'expédition du
+                        colis au client.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      printBordereauGo();
+                    }}
+                    className="w-full py-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Printer className="w-5 h-5" />
+                    Imprimer le bordereau
+                  </button>
+                  <button
+                    onClick={() => setShowPrintModal(false)}
+                    className="w-full py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+                  >
+                    Imprimer plus tard
+                  </button>
+                </div>
+
+                <p className="text-xs text-slate-500 text-center mt-4">
+                  Vous pourrez toujours imprimer le bordereau depuis la page de
+                  l'échange
+                </p>
               </div>
             </div>
           </div>

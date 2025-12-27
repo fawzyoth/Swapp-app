@@ -35,8 +35,8 @@ export default function MerchantLogin() {
           throw new Error("Compte e-commerçant non trouvé.");
         }
 
-        // Redirect to dashboard
-        window.location.href = "#/merchant/dashboard";
+        // Redirect to merchant dashboard
+        window.location.hash = "#/merchant/dashboard";
       }
     } catch (err: any) {
       setError(err.message || "Erreur de connexion");

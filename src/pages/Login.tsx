@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LogIn, ArrowLeft } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,57 +15,102 @@ export default function Login() {
     setLoading(true);
     setError("");
 
+    console.log("[LOGIN] Starting login process...");
+    console.log("[LOGIN] Email:", email.trim().toLowerCase());
+
     try {
       // Sign in with Supabase
+      console.log("[LOGIN] Calling supabase.auth.signInWithPassword...");
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
 
-      if (error) throw error;
+      console.log("[LOGIN] Supabase auth response:");
+      console.log("[LOGIN] - data:", data);
+      console.log("[LOGIN] - error:", error);
+      console.log("[LOGIN] - data.user:", data?.user);
+      console.log("[LOGIN] - data.session:", data?.session);
+
+      if (error) {
+        console.error("[LOGIN] Auth error:", error);
+        throw error;
+      }
 
       if (data.user) {
         const userEmail = data.user.email;
+        console.log("[LOGIN] User authenticated successfully!");
+        console.log("[LOGIN] User ID:", data.user.id);
+        console.log("[LOGIN] User email:", userEmail);
 
         // Check if user is a merchant
-        const { data: merchant } = await supabase
+        console.log("[LOGIN] Checking if user is a merchant...");
+        const { data: merchant, error: merchantError } = await supabase
           .from("merchants")
           .select("id")
           .eq("email", userEmail)
           .maybeSingle();
 
+        console.log("[LOGIN] Merchant query result:");
+        console.log("[LOGIN] - merchant:", merchant);
+        console.log("[LOGIN] - merchantError:", merchantError);
+
         if (merchant) {
-          // User is a merchant - redirect to merchant dashboard
-          window.location.href = "#/merchant/dashboard";
+          console.log(
+            "[LOGIN] User is a MERCHANT! Redirecting to /merchant/dashboard...",
+          );
+          console.log("[LOGIN] navigate function:", navigate);
+          console.log("[LOGIN] Calling navigate now...");
+          navigate("/merchant/dashboard", { replace: true });
+          console.log("[LOGIN] navigate() called, should have redirected");
           return;
         }
 
         // Check if user is a delivery person
-        const { data: deliveryPerson } = await supabase
+        console.log(
+          "[LOGIN] User is not a merchant. Checking if delivery person...",
+        );
+        const { data: deliveryPerson, error: deliveryError } = await supabase
           .from("delivery_persons")
           .select("id")
           .eq("email", userEmail)
           .maybeSingle();
 
+        console.log("[LOGIN] Delivery person query result:");
+        console.log("[LOGIN] - deliveryPerson:", deliveryPerson);
+        console.log("[LOGIN] - deliveryError:", deliveryError);
+
         if (deliveryPerson) {
-          // User is a delivery person - redirect to delivery dashboard
-          window.location.href = "#/delivery/dashboard";
+          console.log(
+            "[LOGIN] User is a DELIVERY PERSON! Redirecting to /delivery/dashboard...",
+          );
+          navigate("/delivery/dashboard", { replace: true });
+          console.log("[LOGIN] navigate() called, should have redirected");
           return;
         }
 
         // User not found in either table
+        console.log(
+          "[LOGIN] User not found in merchants or delivery_persons tables!",
+        );
+        console.log("[LOGIN] Signing out user...");
         await supabase.auth.signOut();
         throw new Error("Compte non trouvé. Contactez l'administrateur.");
+      } else {
+        console.log("[LOGIN] No user in response data");
       }
     } catch (err: any) {
+      console.error("[LOGIN] Caught error:", err);
+      console.error("[LOGIN] Error message:", err.message);
       setError(err.message || "Erreur de connexion");
     } finally {
+      console.log("[LOGIN] Login process finished. Loading:", false);
       setLoading(false);
     }
   };
 
   const goHome = () => {
-    window.location.href = "#/";
+    navigate("/");
   };
 
   return (

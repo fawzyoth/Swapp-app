@@ -44,13 +44,13 @@ const MerchantClientList = lazy(() => import("./pages/merchant/ClientList"));
 const MerchantClientDetail = lazy(
   () => import("./pages/merchant/ClientDetail"),
 );
-const MerchantSimulation = lazy(() => import("./pages/merchant/Simulation"));
+
 const MerchantChat = lazy(() => import("./pages/merchant/Chat"));
-const MerchantPrintBordereau = lazy(
-  () => import("./pages/merchant/PrintBordereau"),
-);
 const MerchantBrandingSettings = lazy(
   () => import("./pages/merchant/BrandingSettings"),
+);
+const MerchantPickupManagement = lazy(
+  () => import("./pages/merchant/PickupManagement"),
 );
 const MerchantPaymentHistory = lazy(
   () => import("./pages/merchant/PaymentHistory"),
@@ -137,7 +137,46 @@ function ClientRoutes() {
   );
 }
 
-// Protected route component - checks auth inline
+// Session cache for faster auth checks
+let cachedSession: any = null;
+let sessionChecked = false;
+let authPromise: Promise<any> | null = null;
+
+// Single auth check function - returns cached or fetches once
+const getAuthSession = async () => {
+  if (sessionChecked) {
+    return cachedSession;
+  }
+
+  // If already fetching, wait for that promise
+  if (authPromise) {
+    return authPromise;
+  }
+
+  // Start fetch with timeout
+  authPromise = Promise.race([
+    supabase.auth.getSession(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 3000),
+    ),
+  ])
+    .then((result: any) => {
+      cachedSession = result?.data?.session ?? null;
+      sessionChecked = true;
+      authPromise = null;
+      return cachedSession;
+    })
+    .catch((err) => {
+      console.error("Session error:", err);
+      cachedSession = null;
+      sessionChecked = true;
+      authPromise = null;
+      return null;
+    });
+
+  return authPromise;
+};
+
 function ProtectedRoute({
   children,
   loginPath,
@@ -145,37 +184,33 @@ function ProtectedRoute({
   children: React.ReactNode;
   loginPath: string;
 }) {
-  const [user, setUser] = useState<any>(undefined);
-  const [checked, setChecked] = useState(false);
+  const [user, setUser] = useState<any>(
+    sessionChecked ? (cachedSession?.user ?? null) : undefined,
+  );
+  const [checked, setChecked] = useState(sessionChecked);
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session immediately
-    const checkSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (mounted) {
-          setUser(session?.user ?? null);
-          setChecked(true);
-        }
-      } catch (err) {
-        console.error("Session error:", err);
-        if (mounted) {
-          setUser(null);
-          setChecked(true);
-        }
+    // If already checked, use cached immediately
+    if (sessionChecked) {
+      setUser(cachedSession?.user ?? null);
+      setChecked(true);
+      return;
+    }
+
+    getAuthSession().then((session) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
+        setChecked(true);
       }
-    };
+    });
 
-    checkSession();
-
-    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      cachedSession = session;
+      sessionChecked = true;
       if (mounted) {
         setUser(session?.user ?? null);
         setChecked(true);
@@ -199,7 +234,7 @@ function ProtectedRoute({
   return <>{children}</>;
 }
 
-// Public route - redirects to dashboard if already logged in
+// Public route - shows login form immediately, redirects if already logged in
 function PublicRoute({
   children,
   dashboardPath,
@@ -207,57 +242,50 @@ function PublicRoute({
   children: React.ReactNode;
   dashboardPath: string;
 }) {
-  const [user, setUser] = useState<any>(undefined);
-  const [checked, setChecked] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session immediately
-    const checkSession = async () => {
+    // Check if already authenticated - but don't block rendering
+    const checkAuth = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (mounted) {
-          setUser(session?.user ?? null);
-          setChecked(true);
+        // Quick check from cache first
+        if (sessionChecked && cachedSession?.user) {
+          setShouldRedirect(true);
+          return;
         }
-      } catch (err) {
-        console.error("Session error:", err);
-        if (mounted) {
-          setUser(null);
-          setChecked(true);
+
+        // Otherwise check with short timeout
+        const session = (await Promise.race([
+          supabase.auth.getSession(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("timeout")), 1500),
+          ),
+        ])) as any;
+
+        if (mounted && session?.data?.session?.user) {
+          cachedSession = session.data.session;
+          sessionChecked = true;
+          setShouldRedirect(true);
         }
+      } catch {
+        // On timeout or error, just show the login form
       }
     };
 
-    checkSession();
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setUser(session?.user ?? null);
-        setChecked(true);
-      }
-    });
+    checkAuth();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
-  if (!checked) {
-    return <LoadingSpinner />;
-  }
-
-  if (user) {
+  if (shouldRedirect) {
     return <Navigate to={dashboardPath} />;
   }
 
+  // Always show children (login form) immediately
   return <>{children}</>;
 }
 
@@ -380,27 +408,20 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/merchant/simulation"
-            element={
-              <ProtectedRoute loginPath="/merchant/login">
-                <MerchantSimulation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/merchant/print-bordereau"
-            element={
-              <ProtectedRoute loginPath="/merchant/login">
-                <MerchantPrintBordereau />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/merchant/branding"
             element={
               <ProtectedRoute loginPath="/merchant/login">
                 <MerchantBrandingSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/pickups"
+            element={
+              <ProtectedRoute loginPath="/merchant/login">
+                <MerchantPickupManagement />
               </ProtectedRoute>
             }
           />

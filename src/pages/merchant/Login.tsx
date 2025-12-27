@@ -10,12 +10,9 @@ export default function MerchantLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Sign out any existing session when login page loads
+  // Clear session cache when on login page
   useEffect(() => {
-    const signOutExisting = async () => {
-      await supabase.auth.signOut();
-    };
-    signOutExisting();
+    sessionStorage.removeItem("merchant_auth_v2");
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

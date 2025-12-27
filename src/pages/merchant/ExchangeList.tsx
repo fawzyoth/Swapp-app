@@ -148,6 +148,7 @@ export default function MerchantExchangeList() {
                 <option value="all">Tous les statuts</option>
                 <option value="pending">En attente</option>
                 <option value="validated">Validé</option>
+                <option value="ready_for_pickup">Prêt pour ramassage</option>
                 <option value="preparing">En préparation</option>
                 <option value="in_transit">En route</option>
                 <option value="completed">Complété</option>

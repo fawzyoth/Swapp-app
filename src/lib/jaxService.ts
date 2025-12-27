@@ -1,7 +1,14 @@
 // JAX Delivery API Service
 // Documentation: https://core.jax-delivery.com/api
+//
+// Flow:
+// 1. Create colis (/user/colis/add) - when merchant prints bordereau
+// 2. Create pickup (/client/createByean) - scheduled for Wednesday/Sunday only
 
 const JAX_API_BASE = "https://core.jax-delivery.com/api";
+
+// Pickup days: Wednesday (3) and Sunday (0)
+const PICKUP_DAYS = [0, 3]; // Sunday = 0, Wednesday = 3
 
 // Default JAX token for all merchants (temporary - should be per-merchant in production)
 export const DEFAULT_JAX_TOKEN =
@@ -81,11 +88,13 @@ export interface JaxColisRequest {
 
 // JAX API Response
 export interface JaxColisResponse {
-  success: boolean;
+  success?: boolean;
   message?: string;
-  ean?: string; // JAX tracking code (e.g., "SOU2215617325044")
+  code?: string; // JAX tracking code (e.g., "TUN3043305243138")
+  ean?: string; // Alternative field name for tracking code
   colis_id?: number;
   error?: string;
+  referenceExterne?: string;
 }
 
 // Create exchange colis in JAX system
@@ -94,25 +103,34 @@ export const createJaxExchangeColis = async (
   data: JaxColisRequest,
 ): Promise<JaxColisResponse> => {
   try {
-    const response = await fetch(
-      `${JAX_API_BASE}/user/colis/add?token=${encodeURIComponent(token)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+    const response = await fetch(`${JAX_API_BASE}/user/colis/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `JAX API error: ${response.status} ${response.statusText}`,
-      );
-    }
+      body: JSON.stringify(data),
+    });
 
     const result = await response.json();
-    return result;
+
+    // Log the response for debugging
+    console.log("JAX API Response:", result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.message || `JAX API error: ${response.status}`,
+      };
+    }
+
+    // JAX API returns 'code' field for the tracking number
+    // Normalize response to include success flag and ean field
+    return {
+      ...result,
+      success: true,
+      ean: result.code || result.ean, // Use 'code' field as 'ean'
+    };
   } catch (error) {
     console.error("JAX API Error:", error);
     return {
@@ -173,6 +191,146 @@ export const getJaxGouvernorats = async (token: string): Promise<any[]> => {
   }
 };
 
+// ============================================
+// PICKUP SCHEDULING (Wednesday & Sunday only)
+// ============================================
+
+// JAX Pickup Request
+export interface JaxPickupRequest {
+  adresse: string; // Pickup address
+  nbrColis: string; // Number of colis
+  colis_statut: string; // Status (10 = ready for pickup)
+  colis_list: string[]; // List of EAN codes
+  note?: string; // Optional note
+  gouvernorat_id: number; // Pickup governorate
+}
+
+// JAX Pickup Response
+export interface JaxPickupResponse {
+  success?: boolean;
+  message?: string;
+  pickup_id?: number;
+  error?: string;
+}
+
+// Check if today is a pickup day (Wednesday or Sunday)
+export const isPickupDay = (): boolean => {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  return PICKUP_DAYS.includes(dayOfWeek);
+};
+
+// Get next pickup date (Wednesday or Sunday)
+export const getNextPickupDate = (): Date => {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+
+  // Calculate days until next Wednesday (3) and Sunday (0)
+  let daysUntilWednesday = (3 - dayOfWeek + 7) % 7;
+  let daysUntilSunday = (0 - dayOfWeek + 7) % 7;
+
+  // If today is the pickup day and it's before cutoff, use today
+  if (daysUntilWednesday === 0) daysUntilWednesday = 0;
+  if (daysUntilSunday === 0) daysUntilSunday = 0;
+
+  // If both are 0 (today is a pickup day), return today
+  // Otherwise pick the closest future day
+  let daysToAdd: number;
+  if (daysUntilWednesday === 0) {
+    daysToAdd = 0;
+  } else if (daysUntilSunday === 0) {
+    daysToAdd = 0;
+  } else {
+    daysToAdd = Math.min(daysUntilWednesday, daysUntilSunday);
+  }
+
+  const pickupDate = new Date(today);
+  pickupDate.setDate(today.getDate() + daysToAdd);
+  return pickupDate;
+};
+
+// Format date for display
+export const formatPickupDate = (date: Date): string => {
+  const days = [
+    "Dimanche",
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+  ];
+  const dayName = days[date.getDay()];
+  const dateStr = date.toLocaleDateString("fr-TN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return `${dayName} ${dateStr}`;
+};
+
+// Create pickup request in JAX (schedules actual pickup)
+export const createJaxPickup = async (
+  token: string,
+  data: JaxPickupRequest,
+): Promise<JaxPickupResponse> => {
+  try {
+    const response = await fetch(`${JAX_API_BASE}/client/createByean`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    console.log("JAX Pickup Response:", result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.message || `JAX API error: ${response.status}`,
+      };
+    }
+
+    return {
+      ...result,
+      success: true,
+    };
+  } catch (error) {
+    console.error("JAX Pickup Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+// Create pickup for multiple colis
+export const schedulePickupForColis = async (
+  token: string,
+  eanList: string[],
+  pickupAddress: string,
+  gouvernoratId: number,
+  note?: string,
+): Promise<JaxPickupResponse> => {
+  if (eanList.length === 0) {
+    return { success: false, error: "Aucun colis à ramasser" };
+  }
+
+  const pickupRequest: JaxPickupRequest = {
+    adresse: pickupAddress,
+    nbrColis: eanList.length.toString(),
+    colis_statut: "10", // Ready for pickup
+    colis_list: eanList,
+    note: note || "Pickup scheduled via SWAPP",
+    gouvernorat_id: gouvernoratId,
+  };
+
+  return createJaxPickup(token, pickupRequest);
+};
+
 // Validation error for JAX request
 export class JaxValidationError extends Error {
   constructor(message: string) {
@@ -188,7 +346,10 @@ export const buildJaxRequestFromExchange = (
     client_name?: string;
     client_phone?: string;
     client_address?: string;
-    client_city?: string;
+    client_governorate_id?: number;
+    client_city?: string; // Governorate name (for backward compatibility)
+    client_delegation?: string;
+    client_postal_code?: string; // Fallback for delegation (when client_delegation column doesn't exist)
     product_name?: string;
     reason?: string;
     payment_amount?: number;
@@ -217,8 +378,15 @@ export const buildJaxRequestFromExchange = (
   if (!exchange?.client_address) {
     throw new JaxValidationError("Adresse du client manquante");
   }
-  if (!exchange?.client_city) {
-    throw new JaxValidationError("Ville du client manquante");
+  if (!exchange?.client_governorate_id && !exchange?.client_city) {
+    throw new JaxValidationError("Gouvernorat du client manquant");
+  }
+
+  // Check for delegation - can be in client_delegation or client_postal_code (fallback)
+  const clientDelegation =
+    exchange?.client_delegation || exchange?.client_postal_code;
+  if (!clientDelegation) {
+    throw new JaxValidationError("Délégation du client manquante");
   }
 
   // Use business_name (Nom commercial) or fallback to name
@@ -237,7 +405,10 @@ export const buildJaxRequestFromExchange = (
     );
   }
 
-  const clientGovId = getGovernorateId(exchange.client_city);
+  // Use governorate_id if available, otherwise try to get it from city name
+  const clientGovId =
+    exchange.client_governorate_id ||
+    getGovernorateId(exchange.client_city || "");
   const merchantGovId = getGovernorateId(merchant.business_city || "");
 
   const clientPhone = exchange.client_phone.replace(/\s/g, "");
@@ -250,7 +421,7 @@ export const buildJaxRequestFromExchange = (
     tel2: clientPhone,
     adresseLivraison: exchange.client_address,
     governorat: clientGovId.toString(),
-    delegation: exchange.client_city,
+    delegation: clientDelegation,
     description: `Échange: ${exchange.product_name || "Produit"} - ${exchange.reason || "Échange"}`,
     cod: (exchange.payment_amount || 0).toString(),
     echange: 1, // This is an exchange

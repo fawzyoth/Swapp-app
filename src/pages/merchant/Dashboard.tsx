@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   BarChart3,
   Package,
@@ -8,13 +8,11 @@ import {
   Clock,
   Users,
   Truck,
-  MapPin,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
 export default function MerchantDashboard() {
-  const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -27,26 +25,18 @@ export default function MerchantDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
     fetchStats();
   }, []);
 
-  const checkAuth = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/merchant/login");
-    }
-  };
-
   const fetchStats = async () => {
     try {
-      // Get merchant ID first
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
       const { data: merchantData } = await supabase
         .from("merchants")
@@ -54,9 +44,12 @@ export default function MerchantDashboard() {
         .eq("email", session.user.email)
         .maybeSingle();
 
-      if (!merchantData) return;
+      if (!merchantData) {
+        setLoading(false);
+        return;
+      }
 
-      // Only fetch status and reason - NO video, NO images
+      // Fetch only status and reason - lightweight query
       const { data: exchanges } = await supabase
         .from("exchanges")
         .select("status, reason")
@@ -68,6 +61,7 @@ export default function MerchantDashboard() {
         const validated = exchanges.filter(
           (e) =>
             e.status === "validated" ||
+            e.status === "ready_for_pickup" ||
             e.status === "preparing" ||
             e.status === "in_transit" ||
             e.status === "completed",
@@ -90,14 +84,16 @@ export default function MerchantDashboard() {
           validationRate,
         });
 
-        const reasonsCount: any = {};
+        // Calculate reasons
+        const reasonsCount: Record<string, number> = {};
         exchanges.forEach((e) => {
           reasonsCount[e.reason] = (reasonsCount[e.reason] || 0) + 1;
         });
         const reasonsArray = Object.entries(reasonsCount)
           .map(([reason, count]) => ({ reason, count }))
-          .sort((a: any, b: any) => b.count - a.count)
+          .sort((a, b) => b.count - a.count)
           .slice(0, 5);
+
         setReasonsStats(reasonsArray);
       }
     } catch (error) {
@@ -111,7 +107,7 @@ export default function MerchantDashboard() {
     return (
       <MerchantLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600"></div>
         </div>
       </MerchantLayout>
     );
@@ -270,12 +266,12 @@ export default function MerchantDashboard() {
                 </span>
               </Link>
               <Link
-                to="/merchant/simulation"
+                to="/merchant/pickups"
                 className="flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <BarChart3 className="w-5 h-5 text-slate-600" />
+                <Truck className="w-5 h-5 text-slate-600" />
                 <span className="font-medium text-slate-900">
-                  Mode simulation
+                  Gestion des ramassages
                 </span>
               </Link>
             </div>

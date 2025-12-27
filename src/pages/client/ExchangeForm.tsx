@@ -12,6 +12,11 @@ import {
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import {
+  TUNISIA_GOVERNORATES,
+  getDelegationsForGovernorate,
+  Delegation,
+} from "../../lib/tunisiaData";
 
 export default function ClientExchangeForm() {
   const [searchParams] = useSearchParams();
@@ -39,12 +44,13 @@ export default function ClientExchangeForm() {
     clientName: "",
     clientPhone: "",
     clientAddress: "",
-    clientCity: "",
-    clientPostalCode: "",
+    clientGovernorateId: 0,
+    clientDelegation: "",
     clientCountry: "Tunisia",
     productName: "",
     reason: "",
   });
+  const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [video, setVideo] = useState<string | null>(null);
   const [extractedImages, setExtractedImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +75,12 @@ export default function ClientExchangeForm() {
   const MAX_RECORDING_TIME = 60; // 1 minute max
 
   useEffect(() => {
+    console.log(
+      "ExchangeForm - merchantId:",
+      merchantId,
+      "bordereauCode:",
+      bordereauCode,
+    );
     if (bordereauCode) {
       loadFromBordereau();
     } else if (merchantId) {
@@ -144,6 +156,7 @@ export default function ClientExchangeForm() {
   }, []);
 
   const loadMerchant = async () => {
+    console.log("Loading merchant with ID:", merchantId);
     try {
       const { data, error } = await supabase
         .from("merchants")
@@ -151,6 +164,7 @@ export default function ClientExchangeForm() {
         .eq("id", merchantId)
         .single();
 
+      console.log("Merchant query result:", { data, error });
       if (error) throw error;
       setMerchant(data);
     } catch (err) {
@@ -173,16 +187,21 @@ export default function ClientExchangeForm() {
 
       if (exchanges && exchanges.length > 0) {
         const lastExchange = exchanges[0];
+        const govId = lastExchange.client_governorate_id || 0;
         setFormData({
           clientName: lastExchange.client_name || "",
           clientPhone: phone,
           clientAddress: lastExchange.client_address || "",
-          clientCity: lastExchange.client_city || "",
-          clientPostalCode: lastExchange.client_postal_code || "",
+          clientGovernorateId: govId,
+          clientDelegation: lastExchange.client_delegation || "",
           clientCountry: lastExchange.client_country || "Tunisia",
           productName: "",
           reason: "",
         });
+        // Update delegations if governorate was found
+        if (govId > 0) {
+          setDelegations(getDelegationsForGovernorate(govId));
+        }
         setPreviousDataFound(true);
       }
     } catch (err) {
@@ -198,6 +217,15 @@ export default function ClientExchangeForm() {
     if (phone.length >= 8) {
       loadPreviousData(phone);
     }
+  };
+
+  const handleGovernorateChange = (governorateId: number) => {
+    setFormData({
+      ...formData,
+      clientGovernorateId: governorateId,
+      clientDelegation: "", // Reset delegation when governorate changes
+    });
+    setDelegations(getDelegationsForGovernorate(governorateId));
   };
 
   const startCamera = async () => {
@@ -450,18 +478,44 @@ export default function ClientExchangeForm() {
     try {
       const exchangeCode = generateExchangeCode();
 
-      // Try to insert with bordereau_code first
       let exchange: any = null;
       let insertError: any = null;
 
-      const baseData = {
+      // Get governorate name from ID
+      const selectedGovernorate = TUNISIA_GOVERNORATES.find(
+        (g) => g.id === formData.clientGovernorateId,
+      );
+
+      // Base data with new governorate/delegation fields
+      const fullData = {
         exchange_code: exchangeCode,
         merchant_id: merchant?.id || merchantId,
         client_name: formData.clientName,
         client_phone: formData.clientPhone,
         client_address: formData.clientAddress,
-        client_city: formData.clientCity,
-        client_postal_code: formData.clientPostalCode,
+        client_governorate_id: formData.clientGovernorateId,
+        client_city: selectedGovernorate?.name || "",
+        client_delegation: formData.clientDelegation,
+        client_country: formData.clientCountry,
+        product_name: formData.productName,
+        reason: formData.reason,
+        video: video,
+        images: extractedImages.length > 0 ? extractedImages : null,
+        status: "pending",
+        payment_status: "pending",
+        payment_amount: 0,
+        bordereau_code: bordereauCode || null,
+      };
+
+      // Fallback data without new columns (for backward compatibility)
+      const fallbackData = {
+        exchange_code: exchangeCode,
+        merchant_id: merchant?.id || merchantId,
+        client_name: formData.clientName,
+        client_phone: formData.clientPhone,
+        client_address: formData.clientAddress,
+        client_city: selectedGovernorate?.name || "",
+        client_postal_code: formData.clientDelegation, // Store delegation in postal_code temporarily
         client_country: formData.clientCountry,
         product_name: formData.productName,
         reason: formData.reason,
@@ -472,28 +526,34 @@ export default function ClientExchangeForm() {
         payment_amount: 0,
       };
 
-      // Try with bordereau_code
+      // Try with all new columns first
       const result = await supabase
         .from("exchanges")
-        .insert({
-          ...baseData,
-          bordereau_code: bordereauCode || null,
-        })
+        .insert(fullData)
         .select()
         .single();
 
-      if (result.error && result.error.message?.includes("bordereau_code")) {
-        // Column doesn't exist, try without it
-        const fallbackResult = await supabase
-          .from("exchanges")
-          .insert(baseData)
-          .select()
-          .single();
-        exchange = fallbackResult.data;
-        insertError = fallbackResult.error;
+      if (result.error) {
+        // If error mentions missing columns, try fallback
+        const errorMsg = result.error.message || "";
+        if (
+          errorMsg.includes("client_governorate_id") ||
+          errorMsg.includes("client_delegation") ||
+          errorMsg.includes("bordereau_code")
+        ) {
+          console.log("Using fallback insert without new columns");
+          const fallbackResult = await supabase
+            .from("exchanges")
+            .insert(fallbackData)
+            .select()
+            .single();
+          exchange = fallbackResult.data;
+          insertError = fallbackResult.error;
+        } else {
+          insertError = result.error;
+        }
       } else {
         exchange = result.data;
-        insertError = result.error;
       }
 
       if (insertError) throw insertError;
@@ -688,41 +748,60 @@ export default function ClientExchangeForm() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
-                        {t("city")} *
+                        {lang === "ar" ? "الولاية" : "Gouvernorat"} *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={formData.clientCity}
+                        value={formData.clientGovernorateId}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            clientCity: e.target.value,
-                          })
+                          handleGovernorateChange(parseInt(e.target.value))
                         }
-                        placeholder={t("city")}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      />
+                      >
+                        <option value={0}>
+                          {lang === "ar"
+                            ? "اختر الولاية"
+                            : "Sélectionner le gouvernorat"}
+                        </option>
+                        {TUNISIA_GOVERNORATES.map((gov) => (
+                          <option key={gov.id} value={gov.id}>
+                            {gov.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
-                        {t("postalCode")} *
+                        {lang === "ar" ? "المعتمدية" : "Délégation"} *
                       </label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={formData.clientPostalCode}
+                        value={formData.clientDelegation}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            clientPostalCode: e.target.value,
+                            clientDelegation: e.target.value,
                           })
                         }
-                        placeholder="1000"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        dir="ltr"
-                      />
+                        disabled={delegations.length === 0}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {delegations.length === 0
+                            ? lang === "ar"
+                              ? "اختر الولاية أولاً"
+                              : "Sélectionner d'abord le gouvernorat"
+                            : lang === "ar"
+                              ? "اختر المعتمدية"
+                              : "Sélectionner la délégation"}
+                        </option>
+                        {delegations.map((del) => (
+                          <option key={del.id} value={del.name}>
+                            {del.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -733,14 +812,9 @@ export default function ClientExchangeForm() {
                     <input
                       type="text"
                       required
+                      readOnly
                       value={formData.clientCountry}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          clientCountry: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 cursor-not-allowed"
                     />
                   </div>
                 </div>

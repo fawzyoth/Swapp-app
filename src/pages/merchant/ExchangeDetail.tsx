@@ -90,6 +90,14 @@ export default function MerchantExchangeDetail() {
 
   const fetchData = async () => {
     try {
+      // Get the current session to fetch merchant by email
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // Debug: Log session info
+      console.log("Session email:", session?.user?.email);
+
       // Fetch exchange - use * for compatibility, video/images loaded separately on demand
       const { data: exchangeData } = await supabase
         .from("exchanges")
@@ -101,6 +109,9 @@ export default function MerchantExchangeDetail() {
         setLoading(false);
         return;
       }
+
+      // Debug: Log exchange merchant_id
+      console.log("Exchange merchant_id:", exchangeData.merchant_id);
 
       setExchange(exchangeData);
 
@@ -128,22 +139,28 @@ export default function MerchantExchangeDetail() {
           .neq("id", id)
           .order("created_at", { ascending: false })
           .limit(5),
+        // delivery_attempts table may not exist yet - handle gracefully
         supabase
           .from("delivery_attempts")
-          .select(
-            "id, attempt_number, status, scheduled_date, notes, created_at",
-          )
+          .select("*")
           .eq("exchange_id", id)
-          .order("attempt_number", { ascending: true }),
-        // Fetch merchant info for JAX API
-        supabase
-          .from("merchants")
-          .select(
-            "id, name, business_name, phone, business_address, business_city, jax_token",
-          )
-          .eq("id", exchangeData.merchant_id)
-          .maybeSingle(),
+          .order("attempt_number", { ascending: true })
+          .then((res) => (res.error ? { data: [] } : res))
+          .catch(() => ({ data: [] })),
+        // Fetch merchant info for JAX API - use session email (more reliable)
+        session?.user?.email
+          ? supabase
+              .from("merchants")
+              .select(
+                "id, name, business_name, phone, business_address, business_city",
+              )
+              .eq("email", session.user.email)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
+
+      // Debug: Log merchant query result
+      console.log("Merchant query result:", merchantRes);
 
       setMessages(messagesRes.data || []);
       setTransporters(transportersRes.data || []);
@@ -298,8 +315,40 @@ export default function MerchantExchangeDetail() {
     // Check if JAX colis already created
     let jaxEan = exchange.jax_ean;
 
-    // If no JAX EAN yet, create the colis using merchant token or default token
-    const jaxToken = merchant?.jax_token || DEFAULT_JAX_TOKEN;
+    // Fetch merchant data directly here to ensure we have it
+    let merchantData = merchant;
+    if (!merchantData) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log("Fetching merchant for email:", session?.user?.email);
+
+      if (session?.user?.email) {
+        const { data: freshMerchant, error: merchantError } = await supabase
+          .from("merchants")
+          .select(
+            "id, name, business_name, phone, business_address, business_city",
+          )
+          .eq("email", session.user.email)
+          .maybeSingle();
+
+        console.log("Fresh merchant data:", freshMerchant);
+        console.log("Merchant query error:", merchantError);
+
+        if (freshMerchant) {
+          merchantData = freshMerchant;
+          setMerchant(freshMerchant);
+        }
+      }
+    }
+
+    // Debug: Log merchant data
+    console.log("Merchant data for JAX:", merchantData);
+    console.log("business_name:", merchantData?.business_name);
+    console.log("name:", merchantData?.name);
+
+    // If no JAX EAN yet, create the colis using default token (jax_token column doesn't exist yet)
+    const jaxToken = DEFAULT_JAX_TOKEN;
     if (!jaxEan && jaxToken) {
       setJaxLoading(true);
       setJaxError(null);
@@ -307,24 +356,55 @@ export default function MerchantExchangeDetail() {
       try {
         const jaxRequest = buildJaxRequestFromExchange(
           exchange,
-          merchant || {},
+          merchantData || {},
         );
         const jaxResponse = await createJaxExchangeColis(jaxToken, jaxRequest);
 
         if (jaxResponse.success && jaxResponse.ean) {
           jaxEan = jaxResponse.ean;
 
-          // Save JAX EAN to exchange record
-          await supabase
-            .from("exchanges")
-            .update({
-              jax_ean: jaxEan,
-              jax_created_at: new Date().toISOString(),
-            })
-            .eq("id", exchange.id);
+          // Save JAX EAN to exchange record and update status to ready_for_pickup
+          try {
+            console.log(
+              "Saving JAX EAN to database:",
+              jaxEan,
+              "for exchange:",
+              exchange.id,
+            );
+            const updateResult = await supabase
+              .from("exchanges")
+              .update({
+                jax_ean: jaxEan,
+                jax_created_at: new Date().toISOString(),
+                status: "ready_for_pickup", // Update status when bordereau is printed
+              })
+              .eq("id", exchange.id);
 
-          // Update local state
-          setExchange({ ...exchange, jax_ean: jaxEan });
+            console.log("JAX EAN update result:", updateResult);
+
+            if (updateResult.error) {
+              console.error(
+                "Could not save jax_ean to database:",
+                updateResult.error.message,
+              );
+            } else {
+              console.log("JAX EAN saved successfully!");
+              // Also add to status history
+              await supabase.from("status_history").insert({
+                exchange_id: exchange.id,
+                status: "ready_for_pickup",
+              });
+            }
+          } catch (err) {
+            console.error("Error saving jax_ean:", err);
+          }
+
+          // Update local state regardless of DB save
+          setExchange({
+            ...exchange,
+            jax_ean: jaxEan,
+            status: "ready_for_pickup",
+          });
         } else {
           setJaxError(
             jaxResponse.error ||

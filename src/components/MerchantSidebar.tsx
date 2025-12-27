@@ -3,15 +3,14 @@ import {
   LayoutDashboard,
   Package,
   Users,
-  TestTube,
   MessageSquare,
   LogOut,
   Store,
   Menu,
   X,
-  Printer,
   Palette,
   Banknote,
+  Truck,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -19,16 +18,11 @@ import { supabase } from "../lib/supabase";
 const menuItems = [
   { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/merchant/exchanges", icon: Package, label: "Échanges" },
+  { path: "/merchant/pickups", icon: Truck, label: "Ramassages" },
   { path: "/merchant/clients", icon: Users, label: "Clients" },
   { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
-  {
-    path: "/merchant/print-bordereau",
-    icon: Printer,
-    label: "Imprimer Bordereaux",
-  },
   { path: "/merchant/branding", icon: Palette, label: "Ma Marque" },
   { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie" },
-  { path: "/merchant/simulation", icon: TestTube, label: "Simulation" },
 ];
 
 export default function MerchantSidebar() {

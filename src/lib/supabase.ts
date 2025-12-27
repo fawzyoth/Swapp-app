@@ -3,7 +3,21 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  },
+  global: {
+    headers: {
+      "x-client-info": "swapp-web",
+    },
+  },
+  db: {
+    schema: "public",
+  },
+});
 
 export type Merchant = {
   id: string;
@@ -272,6 +286,7 @@ export const EXCHANGE_STATUSES = {
 export const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   validated: "Validé",
+  ready_for_pickup: "Prêt pour ramassage",
   preparing: "Préparation mini-dépôt",
   in_transit: "En route",
   delivery_verified: "Vérifié par livreur",

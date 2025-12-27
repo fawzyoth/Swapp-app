@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -27,13 +27,13 @@ const menuItems = [
 
 export default function MerchantSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    // Sign out locally (no server call to avoid CORS)
+    supabase.auth.signOut({ scope: "local" });
+    // Redirect to login
     window.location.href = "#/merchant/login";
-    window.location.reload();
   };
 
   return (

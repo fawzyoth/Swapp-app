@@ -1,19 +1,12 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Store, ArrowLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 export default function MerchantLogin() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Clear session cache when on login page
-  useEffect(() => {
-    sessionStorage.removeItem("merchant_auth_v2");
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,127 +14,16 @@ export default function MerchantLogin() {
     setError("");
 
     try {
-      console.log("Attempting login with:", email);
+      // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("Login response:", { data, error });
-
       if (error) throw error;
 
       if (data.user) {
-        console.log("User authenticated:", data.user.email);
-
-        // Check if this email belongs to a delivery person (forbidden)
-        const { data: deliveryPerson } = await supabase
-          .from("delivery_persons")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        if (deliveryPerson) {
-          await supabase.auth.signOut();
-          throw new Error(
-            "Ce compte est un compte livreur. Veuillez utiliser le portail livreur.",
-          );
-        }
-
-        // Verify the user is a merchant by email
-        const { data: merchant, error: merchantError } = await supabase
-          .from("merchants")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        console.log("Merchant lookup:", { merchant, merchantError });
-
-        if (merchantError || !merchant) {
-          await supabase.auth.signOut();
-          throw new Error(
-            `Compte e-commerçant non trouvé pour ${data.user.email}. Veuillez contacter l'administrateur.`,
-          );
-        }
-
-        console.log("Login successful, redirecting to dashboard");
-        window.location.href = "#/merchant/dashboard";
-        window.location.reload();
-      }
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Erreur de connexion");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setEmail("demo@merchant.com");
-    setPassword("demo123456");
-    setLoading(true);
-    setError("");
-
-    try {
-      let { data, error } = await supabase.auth.signInWithPassword({
-        email: "demo@merchant.com",
-        password: "demo123456",
-      });
-
-      if (error && error.message.includes("Invalid login credentials")) {
-        const { data: signUpData, error: signUpError } =
-          await supabase.auth.signUp({
-            email: "demo@merchant.com",
-            password: "demo123456",
-            options: {
-              data: {
-                name: "Boutique Demo",
-                phone: "+216 70 000 000",
-              },
-            },
-          });
-
-        if (signUpError) throw signUpError;
-
-        if (signUpData.user) {
-          const merchantId = "11111111-1111-1111-1111-111111111111";
-
-          const { error: updateError } = await supabase
-            .from("merchants")
-            .update({ id: signUpData.user.id })
-            .eq("id", merchantId);
-
-          if (updateError) {
-            await supabase.from("merchants").insert({
-              id: signUpData.user.id,
-              email: "demo@merchant.com",
-              name: "Boutique Demo",
-              phone: "+216 70 000 000",
-            });
-          }
-
-          window.location.href = "#/merchant/dashboard";
-          window.location.reload();
-          return;
-        }
-      } else if (error) {
-        throw error;
-      }
-
-      if (data?.user) {
-        // Check if this email belongs to a delivery person (forbidden)
-        const { data: deliveryPerson } = await supabase
-          .from("delivery_persons")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        if (deliveryPerson) {
-          await supabase.auth.signOut();
-          throw new Error("Ce compte est un compte livreur.");
-        }
-
-        // Verify the user is a merchant by email
+        // Check if user is a merchant
         const { data: merchant, error: merchantError } = await supabase
           .from("merchants")
           .select("id")
@@ -153,24 +35,25 @@ export default function MerchantLogin() {
           throw new Error("Compte e-commerçant non trouvé.");
         }
 
+        // Redirect to dashboard
         window.location.href = "#/merchant/dashboard";
-        window.location.reload();
       }
     } catch (err: any) {
-      setError(
-        err.message ||
-          "Erreur de connexion. Veuillez créer le compte via Supabase Dashboard.",
-      );
+      setError(err.message || "Erreur de connexion");
     } finally {
       setLoading(false);
     }
+  };
+
+  const goHome = () => {
+    window.location.href = "#/";
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50">
       <div className="container mx-auto px-4 py-8">
         <button
-          onClick={() => navigate("/")}
+          onClick={goHome}
           className="flex items-center text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -232,36 +115,6 @@ export default function MerchantLogin() {
                 {loading ? "Connexion..." : "Se connecter"}
               </button>
             </form>
-
-            <div className="mt-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500">ou</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleDemoLogin}
-                disabled={loading}
-                className="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors"
-              >
-                Connexion Demo
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 bg-sky-50 rounded-lg">
-              <p className="text-sm text-sky-800 font-medium mb-2">
-                Compte de démonstration:
-              </p>
-              <p className="text-xs text-sky-700">
-                Email: demo@merchant.com
-                <br />
-                Mot de passe: demo123456
-              </p>
-            </div>
           </div>
         </div>
       </div>

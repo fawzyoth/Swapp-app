@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ScanLine,
@@ -28,13 +28,17 @@ const menuItems = [
 
 export default function DeliverySidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    // Sign out locally (no server call to avoid CORS)
+    supabase.auth.signOut({ scope: "local" });
+    // Redirect to login
     window.location.href = "#/delivery/login";
-    window.location.reload();
+  };
+
+  const goHome = () => {
+    window.location.href = "#/";
   };
 
   return (
@@ -98,7 +102,7 @@ export default function DeliverySidebar() {
 
           <div className="p-4 border-t border-slate-200 space-y-2">
             <button
-              onClick={() => navigate("/")}
+              onClick={goHome}
               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 w-full transition-colors"
             >
               <Home className="w-5 h-5" />

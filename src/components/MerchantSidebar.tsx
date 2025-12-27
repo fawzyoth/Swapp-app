@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -11,8 +11,9 @@ import {
   Palette,
   Banknote,
   Truck,
+  User,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
 const menuItems = [
@@ -27,25 +28,70 @@ const menuItems = [
 
 export default function MerchantSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [merchantInfo, setMerchantInfo] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
-  const handleLogout = async () => {
-    // Clear all session storage first
-    sessionStorage.removeItem("demo_mode");
-    sessionStorage.removeItem("demo_merchant");
-    sessionStorage.removeItem("merchant_auth_v2");
+  useEffect(() => {
+    // Check if demo mode
+    const demoMode = sessionStorage.getItem("demo_mode") === "true";
+    setIsDemoMode(demoMode);
 
-    // Try to sign out from Supabase (but don't block on errors)
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch (err) {
-      console.log("Supabase signOut error (ignored):", err);
+    if (demoMode) {
+      // Get demo merchant info
+      const demoMerchant = sessionStorage.getItem("demo_merchant");
+      if (demoMerchant) {
+        const parsed = JSON.parse(demoMerchant);
+        setMerchantInfo({
+          name: parsed.name || "Boutique Demo",
+          email: parsed.email || "demo@merchant.com",
+        });
+      } else {
+        setMerchantInfo({ name: "Boutique Demo", email: "demo@merchant.com" });
+      }
+    } else {
+      // Get real merchant info from Supabase
+      const fetchMerchant = async () => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            const { data: merchant } = await supabase
+              .from("merchants")
+              .select("name, email, business_name")
+              .eq("email", session.user.email)
+              .maybeSingle();
+
+            if (merchant) {
+              setMerchantInfo({
+                name: merchant.business_name || merchant.name || "Marchand",
+                email: merchant.email,
+              });
+            } else {
+              setMerchantInfo({ name: "Marchand", email: session.user.email });
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching merchant:", err);
+        }
+      };
+      fetchMerchant();
     }
+  }, []);
 
-    // Force page reload to clear all state and redirect to login
-    window.location.href =
-      window.location.origin + window.location.pathname + "#/merchant/login";
+  const handleLogout = () => {
+    // Clear all session storage
+    sessionStorage.clear();
+    localStorage.removeItem("sb-xlwznudjklezjkitzqeg-auth-token");
+
+    // Force page reload to login
+    window.location.replace(
+      window.location.origin + window.location.pathname + "#/merchant/login",
+    );
   };
 
   return (
@@ -69,14 +115,31 @@ export default function MerchantSidebar() {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-sky-600" />
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDemoMode ? "bg-purple-100" : "bg-sky-100"}`}
+              >
+                {isDemoMode ? (
+                  <User className="w-6 h-6 text-purple-600" />
+                ) : (
+                  <Store className="w-6 h-6 text-sky-600" />
+                )}
               </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">E-Commerçant</h2>
-                <p className="text-xs text-slate-500">Espace Pro</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-slate-900 truncate">
+                  {merchantInfo?.name || "Chargement..."}
+                </h2>
+                <p className="text-xs text-slate-500 truncate">
+                  {merchantInfo?.email || ""}
+                </p>
               </div>
             </div>
+            {isDemoMode && (
+              <div className="mt-3 px-2 py-1 bg-purple-100 rounded-lg">
+                <p className="text-xs text-purple-700 font-medium text-center">
+                  Mode Demo
+                </p>
+              </div>
+            )}
           </div>
 
           <nav className="flex-1 p-4">

@@ -67,6 +67,31 @@ export default function MerchantDashboard() {
     navigate("/merchant/login");
   };
 
+  const toggleDemoMode = () => {
+    if (demoMode) {
+      // Exit demo mode
+      sessionStorage.removeItem("demo_mode");
+      sessionStorage.removeItem("demo_merchant");
+      setDemoMode(false);
+      setLoading(true);
+      fetchStats();
+    } else {
+      // Enter demo mode
+      sessionStorage.setItem("demo_mode", "true");
+      sessionStorage.setItem(
+        "demo_merchant",
+        JSON.stringify({
+          id: "demo-merchant-id",
+          email: "demo@merchant.com",
+          name: "Boutique Demo",
+        }),
+      );
+      setDemoMode(true);
+      setStats(DEMO_STATS);
+      setReasonsStats(DEMO_REASONS);
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const {
@@ -179,13 +204,30 @@ export default function MerchantDashboard() {
           </div>
         )}
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Vue d'ensemble
-          </h2>
-          <p className="text-slate-600">
-            Statistiques et métriques de vos échanges
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Vue d'ensemble
+            </h2>
+            <p className="text-slate-600">
+              Statistiques et métriques de vos échanges
+            </p>
+          </div>
+
+          {/* Test Mode Toggle Button */}
+          <button
+            onClick={toggleDemoMode}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+              demoMode
+                ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${demoMode ? "bg-white animate-pulse" : "bg-slate-400"}`}
+            />
+            {demoMode ? "Mode Demo Actif" : "Activer Mode Demo"}
+          </button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

@@ -31,13 +31,21 @@ export default function MerchantSidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    // Clear demo mode session storage
+    // Clear all session storage first
     sessionStorage.removeItem("demo_mode");
     sessionStorage.removeItem("demo_merchant");
-    // Sign out from Supabase
-    await supabase.auth.signOut();
-    // Navigate to login
-    navigate("/merchant/login");
+    sessionStorage.removeItem("merchant_auth_v2");
+
+    // Try to sign out from Supabase (but don't block on errors)
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch (err) {
+      console.log("Supabase signOut error (ignored):", err);
+    }
+
+    // Force page reload to clear all state and redirect to login
+    window.location.href =
+      window.location.origin + window.location.pathname + "#/merchant/login";
   };
 
   return (

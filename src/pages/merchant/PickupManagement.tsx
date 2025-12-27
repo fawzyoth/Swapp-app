@@ -12,7 +12,11 @@ import {
   Send,
   Printer,
   FileText,
+  DollarSign,
 } from "lucide-react";
+
+// Delivery fee constant - 9 TND per package
+const DELIVERY_FEE = 9;
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 import {
@@ -36,6 +40,9 @@ interface ExchangeWithJax {
   jax_pickup_scheduled: boolean;
   created_at: string;
   payment_amount: number;
+  delivery_fee: number;
+  merchant_delivery_charge: number;
+  payment_status: string;
 }
 
 interface ScheduledPickup {
@@ -43,6 +50,8 @@ interface ScheduledPickup {
   date: string;
   colis: ExchangeWithJax[];
   totalAmount: number;
+  totalDeliveryFees: number;
+  totalMerchantCharge: number;
 }
 
 interface PickupHistoryItem {
@@ -50,6 +59,8 @@ interface PickupHistoryItem {
   date: string;
   colisCount: number;
   totalAmount: number;
+  totalDeliveryFees: number;
+  totalMerchantCharge: number;
   colis: ExchangeWithJax[];
 }
 
@@ -134,6 +145,11 @@ export default function PickupManagement() {
           jax_pickup_scheduled: false, // Default to false since column doesn't exist
           created_at: e.created_at,
           payment_amount: e.payment_amount || 0,
+          delivery_fee: e.delivery_fee || DELIVERY_FEE, // Default to 9 TND if not set
+          merchant_delivery_charge:
+            e.merchant_delivery_charge ||
+            (e.payment_status === "free" ? DELIVERY_FEE : 0),
+          payment_status: e.payment_status || "pending",
         }));
 
       setExchanges(exchangesWithJax);
@@ -357,8 +373,12 @@ export default function PickupManagement() {
             <div class="label">COLIS TOTAL</div>
           </div>
           <div class="summary-item">
-            <div class="number">${pickup.totalAmount.toFixed(3)}</div>
-            <div class="label">MONTANT TOTAL (TND)</div>
+            <div class="number">${pickup.totalDeliveryFees.toFixed(3)}</div>
+            <div class="label">FRAIS LIVRAISON (TND)</div>
+          </div>
+          <div class="summary-item" style="background: #991b1b;">
+            <div class="number">${pickup.totalMerchantCharge.toFixed(3)}</div>
+            <div class="label">À VOTRE CHARGE (TND)</div>
           </div>
         </div>
 
@@ -370,8 +390,9 @@ export default function PickupManagement() {
               <th>REFERENCE</th>
               <th>DESTINATAIRE</th>
               <th>VILLE</th>
-              <th>PRODUIT</th>
-              <th style="text-align: right;">MONTANT</th>
+              <th style="text-align: center;">TYPE</th>
+              <th style="text-align: right;">LIVRAISON</th>
+              <th style="text-align: right;">À CHARGE</th>
             </tr>
           </thead>
           <tbody>
@@ -384,15 +405,26 @@ export default function PickupManagement() {
                 <td>${colis.exchange_code}</td>
                 <td>${colis.client_name}</td>
                 <td>${colis.client_city || "-"}</td>
-                <td>${colis.product_name || "-"}</td>
-                <td class="amount">${colis.payment_amount.toFixed(3)} TND</td>
+                <td style="text-align: center;">
+                  <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; ${colis.payment_status === "free" ? "background: #fee2e2; color: #991b1b;" : "background: #d1fae5; color: #065f46;"}">
+                    ${colis.payment_status === "free" ? "GRATUIT" : "PAYANT"}
+                  </span>
+                </td>
+                <td class="amount">${(colis.delivery_fee || 9).toFixed(3)} TND</td>
+                <td class="amount" style="${colis.merchant_delivery_charge > 0 ? "color: #dc2626; font-weight: bold;" : ""}">${(colis.merchant_delivery_charge || 0).toFixed(3)} TND</td>
               </tr>
             `,
               )
               .join("")}
             <tr class="total-row">
-              <td colspan="6" style="text-align: right;">TOTAL:</td>
-              <td class="amount">${pickup.totalAmount.toFixed(3)} TND</td>
+              <td colspan="6" style="text-align: right;">TOTAL FRAIS DE LIVRAISON:</td>
+              <td class="amount">${pickup.totalDeliveryFees.toFixed(3)} TND</td>
+              <td></td>
+            </tr>
+            <tr class="total-row" style="background: #fef2f2 !important;">
+              <td colspan="6" style="text-align: right; color: #991b1b;">TOTAL À VOTRE CHARGE:</td>
+              <td></td>
+              <td class="amount" style="color: #dc2626; font-weight: bold;">${pickup.totalMerchantCharge.toFixed(3)} TND</td>
             </tr>
           </tbody>
         </table>
@@ -463,9 +495,17 @@ export default function PickupManagement() {
           (e) => e.jax_ean && selectedEans.includes(e.jax_ean),
         );
 
-        // Calculate total amount
+        // Calculate totals
         const totalAmount = scheduledColis.reduce(
           (sum, colis) => sum + (colis.payment_amount || 0),
+          0,
+        );
+        const totalDeliveryFees = scheduledColis.reduce(
+          (sum, colis) => sum + (colis.delivery_fee || DELIVERY_FEE),
+          0,
+        );
+        const totalMerchantCharge = scheduledColis.reduce(
+          (sum, colis) => sum + (colis.merchant_delivery_charge || 0),
           0,
         );
 
@@ -476,6 +516,8 @@ export default function PickupManagement() {
           date: new Date().toISOString(),
           colis: scheduledColis,
           totalAmount,
+          totalDeliveryFees,
+          totalMerchantCharge,
         };
 
         setLastScheduledPickup(pickup);
@@ -486,6 +528,8 @@ export default function PickupManagement() {
           date: new Date().toISOString(),
           colisCount: scheduledColis.length,
           totalAmount,
+          totalDeliveryFees,
+          totalMerchantCharge,
           colis: scheduledColis,
         };
 
@@ -500,8 +544,12 @@ export default function PickupManagement() {
           );
         }
 
+        const chargeMessage =
+          totalMerchantCharge > 0
+            ? ` Frais à votre charge: ${formatAmount(totalMerchantCharge)}`
+            : "";
         setSuccess(
-          `Ramassage programme avec succes pour ${selectedEans.length} colis (${formatAmount(totalAmount)})! Vous pouvez imprimer le bordereau de sortie.`,
+          `Ramassage programmé avec succès pour ${selectedEans.length} colis!${chargeMessage} Vous pouvez imprimer le bordereau de sortie.`,
         );
         setSelectedEans([]);
 
@@ -822,14 +870,29 @@ export default function PickupManagement() {
                         </div>
                       </div>
 
-                      {/* Amount & Product */}
+                      {/* Type & Fees */}
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-emerald-600">
-                          {formatAmount(exchange.payment_amount)}
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-1 ${
+                            exchange.payment_status === "free"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}
+                        >
+                          {exchange.payment_status === "free"
+                            ? "Gratuit"
+                            : "Payant"}
+                        </span>
+                        <p className="text-xs text-slate-500">
+                          Livraison:{" "}
+                          {formatAmount(exchange.delivery_fee || DELIVERY_FEE)}
                         </p>
-                        <p className="text-xs text-slate-500 truncate max-w-[150px]">
-                          {exchange.product_name}
-                        </p>
+                        {exchange.merchant_delivery_charge > 0 && (
+                          <p className="text-xs font-medium text-red-600">
+                            À charge:{" "}
+                            {formatAmount(exchange.merchant_delivery_charge)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -840,23 +903,59 @@ export default function PickupManagement() {
               {pendingPickupExchanges.length > 0 && (
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
                   {/* Selected total */}
-                  {selectedEans.length > 0 && (
-                    <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
-                      <span className="text-sm text-emerald-700">
-                        {selectedEans.length} colis sélectionné(s)
-                      </span>
-                      <span className="text-lg font-bold text-emerald-700">
-                        {formatAmount(
-                          pendingPickupExchanges
-                            .filter(
-                              (e) =>
-                                e.jax_ean && selectedEans.includes(e.jax_ean),
-                            )
-                            .reduce((sum, e) => sum + e.payment_amount, 0),
-                        )}
-                      </span>
-                    </div>
-                  )}
+                  {selectedEans.length > 0 &&
+                    (() => {
+                      const selectedColis = pendingPickupExchanges.filter(
+                        (e) => e.jax_ean && selectedEans.includes(e.jax_ean),
+                      );
+                      const totalDeliveryFees = selectedColis.reduce(
+                        (sum, e) => sum + (e.delivery_fee || DELIVERY_FEE),
+                        0,
+                      );
+                      const totalMerchantCharge = selectedColis.reduce(
+                        (sum, e) => sum + (e.merchant_delivery_charge || 0),
+                        0,
+                      );
+                      const freeCount = selectedColis.filter(
+                        (e) => e.payment_status === "free",
+                      ).length;
+
+                      return (
+                        <div className="mb-3 space-y-2">
+                          <div className="p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-sky-800">
+                                {selectedEans.length} colis sélectionné(s)
+                              </span>
+                              <span className="text-sm text-sky-700">
+                                Frais livraison:{" "}
+                                {formatAmount(totalDeliveryFees)}
+                              </span>
+                            </div>
+                            {freeCount > 0 && (
+                              <div className="text-xs text-sky-600">
+                                {freeCount} échange(s) gratuit(s) •{" "}
+                                {selectedEans.length - freeCount} échange(s)
+                                payant(s)
+                              </div>
+                            )}
+                          </div>
+                          {totalMerchantCharge > 0 && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-red-600" />
+                                <span className="text-sm font-medium text-red-800">
+                                  À votre charge (échanges gratuits)
+                                </span>
+                              </div>
+                              <span className="text-lg font-bold text-red-700">
+                                {formatAmount(totalMerchantCharge)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   <button
                     onClick={handleSchedulePickup}
                     disabled={

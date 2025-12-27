@@ -37,6 +37,9 @@ import {
   JaxValidationError,
 } from "../../lib/jaxService";
 
+// Delivery fee constant - 9 TND per package
+const DELIVERY_FEE = 9;
+
 export default function MerchantExchangeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -204,15 +207,26 @@ export default function MerchantExchangeDetail() {
   };
 
   const validateExchange = async () => {
-    const finalPaymentAmount =
+    // For free exchanges: client pays 0, but delivery fee (9 DT) is charged to merchant
+    // For paid exchanges: client pays the specified amount
+    const clientPaymentAmount =
       paymentType === "free" ? 0 : parseFloat(paymentAmount);
+
+    // Delivery fee is always 9 DT per package
+    const deliveryFee = DELIVERY_FEE;
+
+    // For free exchanges, merchant pays the delivery fee
+    // For paid exchanges, the delivery fee can be included in the client payment or paid by merchant
+    const merchantDeliveryCharge = paymentType === "free" ? deliveryFee : 0;
 
     try {
       await supabase
         .from("exchanges")
         .update({
           status: "validated",
-          payment_amount: finalPaymentAmount,
+          payment_amount: clientPaymentAmount,
+          delivery_fee: deliveryFee,
+          merchant_delivery_charge: merchantDeliveryCharge,
           payment_status: paymentType === "free" ? "free" : "pending",
           updated_at: new Date().toISOString(),
         })
@@ -226,7 +240,7 @@ export default function MerchantExchangeDetail() {
       const paymentMessage =
         paymentType === "free"
           ? "Votre échange a été validé. Aucun paiement supplémentaire requis."
-          : `Votre échange a été validé. Montant à payer: ${finalPaymentAmount.toFixed(2)} TND.`;
+          : `Votre échange a été validé. Montant à payer: ${clientPaymentAmount.toFixed(2)} TND.`;
 
       await supabase.from("messages").insert({
         exchange_id: id,
@@ -1411,6 +1425,22 @@ export default function MerchantExchangeDetail() {
                   Valider l'échange
                 </h3>
 
+                {/* Delivery Fee Info */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Truck className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-amber-900 mb-1">
+                        Frais de livraison: {DELIVERY_FEE} TND
+                      </h4>
+                      <p className="text-sm text-amber-700">
+                        Chaque colis d'échange coûte {DELIVERY_FEE} TND de frais
+                        de livraison.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
                   <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -1421,7 +1451,13 @@ export default function MerchantExchangeDetail() {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-300 cursor-pointer hover:border-sky-500 transition-colors">
+                      <label
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          paymentType === "free"
+                            ? "bg-red-50 border-red-300"
+                            : "bg-white border-slate-300 hover:border-sky-500"
+                        }`}
+                      >
                         <input
                           type="radio"
                           name="paymentType"
@@ -1430,19 +1466,38 @@ export default function MerchantExchangeDetail() {
                           onChange={(e) =>
                             setPaymentType(e.target.value as "free")
                           }
-                          className="w-4 h-4 text-sky-600"
+                          className="w-4 h-4 text-sky-600 mt-1"
                         />
-                        <div>
+                        <div className="flex-1">
                           <div className="font-medium text-slate-900">
-                            Échange gratuit
+                            Échange gratuit pour le client
                           </div>
-                          <div className="text-sm text-slate-600">
-                            Pas de frais supplémentaires
+                          <div className="text-sm text-slate-600 mb-2">
+                            Le client ne paie rien
                           </div>
+                          {paymentType === "free" && (
+                            <div className="bg-red-100 border border-red-300 rounded-lg p-3 mt-2">
+                              <div className="flex items-center gap-2 text-red-800">
+                                <AlertTriangle className="w-4 h-4" />
+                                <span className="font-semibold text-sm">
+                                  {DELIVERY_FEE} TND sera déduit de votre compte
+                                </span>
+                              </div>
+                              <p className="text-xs text-red-700 mt-1">
+                                Les frais de livraison seront à votre charge
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </label>
 
-                      <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-300 cursor-pointer hover:border-sky-500 transition-colors">
+                      <label
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          paymentType === "paid"
+                            ? "bg-emerald-50 border-emerald-300"
+                            : "bg-white border-slate-300 hover:border-sky-500"
+                        }`}
+                      >
                         <input
                           type="radio"
                           name="paymentType"
@@ -1454,32 +1509,82 @@ export default function MerchantExchangeDetail() {
                           className="w-4 h-4 text-sky-600 mt-1"
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-slate-900 mb-2">
+                          <div className="font-medium text-slate-900 mb-1">
                             Échange payant
                           </div>
+                          <div className="text-sm text-slate-600 mb-2">
+                            Le client paie un montant que vous définissez
+                          </div>
                           {paymentType === "paid" && (
-                            <div className="space-y-2">
-                              <label className="text-sm text-slate-700">
-                                Montant à payer (TND)
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={paymentAmount}
-                                onChange={(e) =>
-                                  setPaymentAmount(e.target.value)
-                                }
-                                placeholder="0.00"
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                              />
-                              <p className="text-xs text-slate-600">
-                                Pour différence de prix ou frais de livraison
-                              </p>
+                            <div className="space-y-3 mt-2">
+                              <div>
+                                <label className="text-sm font-medium text-slate-700">
+                                  Montant à payer par le client (TND)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={paymentAmount}
+                                  onChange={(e) =>
+                                    setPaymentAmount(e.target.value)
+                                  }
+                                  placeholder="0.00"
+                                  className="w-full mt-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                />
+                              </div>
+                              <div className="bg-emerald-100 border border-emerald-300 rounded-lg p-3">
+                                <p className="text-sm text-emerald-800">
+                                  <span className="font-semibold">
+                                    Conseil:
+                                  </span>{" "}
+                                  Incluez les {DELIVERY_FEE} TND de frais de
+                                  livraison dans le montant pour ne pas les
+                                  payer vous-même.
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>
                       </label>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-slate-100 rounded-xl p-4">
+                    <h4 className="font-semibold text-slate-900 mb-3">
+                      Résumé
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">
+                          Frais de livraison
+                        </span>
+                        <span className="font-medium">{DELIVERY_FEE} TND</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">
+                          Payé par le client
+                        </span>
+                        <span className="font-medium">
+                          {paymentType === "free" ? "0" : paymentAmount || "0"}{" "}
+                          TND
+                        </span>
+                      </div>
+                      <div className="border-t border-slate-300 pt-2 mt-2">
+                        <div className="flex justify-between">
+                          <span
+                            className={`font-semibold ${paymentType === "free" ? "text-red-700" : "text-slate-900"}`}
+                          >
+                            À votre charge
+                          </span>
+                          <span
+                            className={`font-bold ${paymentType === "free" ? "text-red-700" : "text-emerald-700"}`}
+                          >
+                            {paymentType === "free" ? DELIVERY_FEE : "0"} TND
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

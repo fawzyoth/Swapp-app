@@ -63,7 +63,8 @@ export default function DeliveryLogin() {
           );
         }
 
-        navigate("/delivery/dashboard");
+        window.location.href = "#/delivery/dashboard";
+        window.location.reload();
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -110,7 +111,8 @@ export default function DeliveryLogin() {
             phone: "+216 70 000 001",
           });
 
-          navigate("/delivery/dashboard");
+          window.location.href = "#/delivery/dashboard";
+          window.location.reload();
           return;
         }
       } else if (error) {
@@ -142,7 +144,8 @@ export default function DeliveryLogin() {
           throw new Error("Compte livreur non trouvé.");
         }
 
-        navigate("/delivery/dashboard");
+        window.location.href = "#/delivery/dashboard";
+        window.location.reload();
       }
     } catch (err: any) {
       setError(

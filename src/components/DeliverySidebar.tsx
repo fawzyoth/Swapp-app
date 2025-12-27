@@ -31,9 +31,10 @@ export default function DeliverySidebar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/delivery/login");
+  const handleLogout = () => {
+    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    window.location.href = "#/delivery/login";
+    window.location.reload();
   };
 
   return (

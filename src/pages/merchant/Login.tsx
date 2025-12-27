@@ -64,8 +64,9 @@ export default function MerchantLogin() {
           );
         }
 
-        console.log("Login successful, navigating to dashboard");
-        navigate("/merchant/dashboard");
+        console.log("Login successful, redirecting to dashboard");
+        window.location.href = "#/merchant/dashboard";
+        window.location.reload();
       }
     } catch (err: any) {
       console.error("Login error:", err);
@@ -119,7 +120,8 @@ export default function MerchantLogin() {
             });
           }
 
-          navigate("/merchant/dashboard");
+          window.location.href = "#/merchant/dashboard";
+          window.location.reload();
           return;
         }
       } else if (error) {
@@ -151,7 +153,8 @@ export default function MerchantLogin() {
           throw new Error("Compte e-commerçant non trouvé.");
         }
 
-        navigate("/merchant/dashboard");
+        window.location.href = "#/merchant/dashboard";
+        window.location.reload();
       }
     } catch (err: any) {
       setError(

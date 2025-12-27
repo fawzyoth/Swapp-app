@@ -33,7 +33,7 @@ export default function DeliverySidebar() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch (e) {
       // Ignore errors
     }

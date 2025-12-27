@@ -35,9 +35,9 @@ export default function MerchantSidebar() {
     sessionStorage.removeItem("demo_mode");
     sessionStorage.removeItem("demo_merchant");
 
-    // Sign out from Supabase
+    // Sign out from Supabase (local only to avoid CORS 403 error)
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch (e) {
       // Ignore errors
     }

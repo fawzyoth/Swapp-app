@@ -14,22 +14,23 @@ import {
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
-// Demo stats data
+// Demo stats data - matches the 15 exchanges in ExchangeList
 const DEMO_STATS = {
-  total: 24,
+  total: 15,
   pending: 3,
-  validated: 18,
-  rejected: 3,
-  completed: 15,
-  validationRate: 75,
+  validated: 4, // 2 validated + 2 ready_for_pickup
+  rejected: 2,
+  completed: 5,
+  validationRate: 80,
 };
 
 const DEMO_REASONS = [
-  { reason: "Taille incorrecte", count: 8 },
-  { reason: "Couleur non conforme", count: 6 },
-  { reason: "Produit défectueux", count: 4 },
-  { reason: "Ne correspond pas à la description", count: 3 },
-  { reason: "Changement d'avis", count: 3 },
+  { reason: "Taille incorrecte", count: 3 },
+  { reason: "Couleur non conforme", count: 2 },
+  { reason: "Produit defectueux", count: 4 },
+  { reason: "Ne correspond pas a la description", count: 3 },
+  { reason: "Changement d'avis", count: 2 },
+  { reason: "Ecran defectueux", count: 1 },
 ];
 
 export default function MerchantDashboard() {

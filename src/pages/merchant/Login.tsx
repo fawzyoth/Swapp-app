@@ -10,9 +10,11 @@ export default function MerchantLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Clear session cache when on login page
+  // Clear session cache and demo mode when on login page
   useEffect(() => {
     sessionStorage.removeItem("merchant_auth_v2");
+    sessionStorage.removeItem("demo_mode");
+    sessionStorage.removeItem("demo_merchant");
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

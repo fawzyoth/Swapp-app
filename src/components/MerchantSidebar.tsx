@@ -31,7 +31,12 @@ export default function MerchantSidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
+    // Clear demo mode session storage
+    sessionStorage.removeItem("demo_mode");
+    sessionStorage.removeItem("demo_merchant");
+    // Sign out from Supabase
     await supabase.auth.signOut();
+    // Navigate to login
     navigate("/merchant/login");
   };
 

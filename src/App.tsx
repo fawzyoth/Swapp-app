@@ -264,13 +264,7 @@ function PublicRoute({
     // Check if already authenticated - but don't block rendering
     const checkAuth = async () => {
       try {
-        // Quick check from cache first
-        if (sessionChecked && cachedSession?.user) {
-          setShouldRedirect(true);
-          return;
-        }
-
-        // Otherwise check with short timeout
+        // Always fetch fresh session for login pages (don't trust cache)
         const session = (await Promise.race([
           supabase.auth.getSession(),
           new Promise((_, reject) =>
@@ -282,9 +276,15 @@ function PublicRoute({
           cachedSession = session.data.session;
           sessionChecked = true;
           setShouldRedirect(true);
+        } else {
+          // Clear cache if no session
+          cachedSession = null;
+          sessionChecked = true;
         }
       } catch {
         // On timeout or error, just show the login form
+        cachedSession = null;
+        sessionChecked = true;
       }
     };
 

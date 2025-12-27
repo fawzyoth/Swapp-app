@@ -17,6 +17,7 @@ const LoadingSpinner = () => (
 
 // Lazy load all pages
 const HomePage = lazy(() => import("./pages/Home"));
+const UnifiedLogin = lazy(() => import("./pages/Login"));
 
 // Client pages
 const ClientScanner = lazy(() => import("./pages/client/Scanner"));
@@ -307,6 +308,7 @@ function App() {
         <Routes>
           {/* Public routes - no auth check needed */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<UnifiedLogin />} />
           <Route path="/client/*" element={<ClientRoutes />} />
 
           {/* Admin routes - no auth for demo */}
@@ -354,16 +356,12 @@ function App() {
           {/* Merchant routes */}
           <Route
             path="/merchant/login"
-            element={
-              <PublicRoute dashboardPath="/merchant/dashboard">
-                <MerchantLogin />
-              </PublicRoute>
-            }
+            element={<Navigate to="/login" replace />}
           />
           <Route
             path="/merchant/dashboard"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantDashboard />
               </ProtectedRoute>
             }
@@ -371,7 +369,7 @@ function App() {
           <Route
             path="/merchant/exchanges"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantExchangeList />
               </ProtectedRoute>
             }
@@ -379,7 +377,7 @@ function App() {
           <Route
             path="/merchant/exchange/:id"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantExchangeDetail />
               </ProtectedRoute>
             }
@@ -387,7 +385,7 @@ function App() {
           <Route
             path="/merchant/clients"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantClientList />
               </ProtectedRoute>
             }
@@ -395,7 +393,7 @@ function App() {
           <Route
             path="/merchant/client/:phone"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantClientDetail />
               </ProtectedRoute>
             }
@@ -403,7 +401,7 @@ function App() {
           <Route
             path="/merchant/chat"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantChat />
               </ProtectedRoute>
             }
@@ -412,7 +410,7 @@ function App() {
           <Route
             path="/merchant/branding"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantBrandingSettings />
               </ProtectedRoute>
             }
@@ -420,7 +418,7 @@ function App() {
           <Route
             path="/merchant/pickups"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantPickupManagement />
               </ProtectedRoute>
             }
@@ -428,7 +426,7 @@ function App() {
           <Route
             path="/merchant/payments"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantPaymentHistory />
               </ProtectedRoute>
             }
@@ -436,7 +434,7 @@ function App() {
           <Route
             path="/merchant/payments/:id"
             element={
-              <ProtectedRoute loginPath="/merchant/login">
+              <ProtectedRoute loginPath="/login">
                 <MerchantPaymentDetail />
               </ProtectedRoute>
             }
@@ -445,16 +443,12 @@ function App() {
           {/* Delivery routes */}
           <Route
             path="/delivery/login"
-            element={
-              <PublicRoute dashboardPath="/delivery/dashboard">
-                <DeliveryLogin />
-              </PublicRoute>
-            }
+            element={<Navigate to="/login" replace />}
           />
           <Route
             path="/delivery/dashboard"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryDashboard />
               </ProtectedRoute>
             }
@@ -462,7 +456,7 @@ function App() {
           <Route
             path="/delivery/scan"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryBordereauScanner />
               </ProtectedRoute>
             }
@@ -470,7 +464,7 @@ function App() {
           <Route
             path="/delivery/verify/:code"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryExchangeVerification />
               </ProtectedRoute>
             }
@@ -478,7 +472,7 @@ function App() {
           <Route
             path="/delivery/verifications"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryVerificationList />
               </ProtectedRoute>
             }
@@ -486,7 +480,7 @@ function App() {
           <Route
             path="/delivery/finances"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryFinancialDashboard />
               </ProtectedRoute>
             }
@@ -494,7 +488,7 @@ function App() {
           <Route
             path="/delivery/wallet"
             element={
-              <ProtectedRoute loginPath="/delivery/login">
+              <ProtectedRoute loginPath="/login">
                 <DeliveryWallet />
               </ProtectedRoute>
             }

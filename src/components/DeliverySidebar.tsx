@@ -33,8 +33,8 @@ export default function DeliverySidebar() {
   const handleLogout = () => {
     // Sign out locally (no server call to avoid CORS)
     supabase.auth.signOut({ scope: "local" });
-    // Redirect to login
-    window.location.href = "#/delivery/login";
+    // Redirect to unified login
+    window.location.href = "#/login";
   };
 
   const goHome = () => {

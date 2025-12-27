@@ -31,13 +31,13 @@ export default function DeliverySidebar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch (e) {
-      // Ignore errors
-    }
-    navigate("/delivery/login");
+  const handleLogout = () => {
+    // Sign out from Supabase (local only, don't await)
+    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+
+    // Force full page reload to login
+    window.location.href = "#/delivery/login";
+    window.location.reload();
   };
 
   return (

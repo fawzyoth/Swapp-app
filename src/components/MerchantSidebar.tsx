@@ -30,20 +30,17 @@ export default function MerchantSidebar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     // Clear demo mode
     sessionStorage.removeItem("demo_mode");
     sessionStorage.removeItem("demo_merchant");
 
-    // Sign out from Supabase (local only to avoid CORS 403 error)
-    try {
-      await supabase.auth.signOut({ scope: "local" });
-    } catch (e) {
-      // Ignore errors
-    }
+    // Sign out from Supabase (local only, don't await)
+    supabase.auth.signOut({ scope: "local" }).catch(() => {});
 
-    // Navigate to login
-    navigate("/merchant/login");
+    // Force full page reload to login (navigate doesn't work reliably)
+    window.location.href = "#/merchant/login";
+    window.location.reload();
   };
 
   return (

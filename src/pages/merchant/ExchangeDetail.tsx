@@ -1367,7 +1367,8 @@ export default function MerchantExchangeDetail() {
               )}
 
               {isPending && (
-                                {/* Video Call Button */}
+                <>
+                {/* Video Call Button */}
                 <button
                   onClick={() => setShowSMSModal(true)}
                   className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 mb-4"
@@ -1392,6 +1393,7 @@ export default function MerchantExchangeDetail() {
                     Refuser
                   </button>
                 </div>
+                </>
               )}
 
               {!isPending && exchange.status === "validated" && (

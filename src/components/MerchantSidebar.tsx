@@ -1,7 +1,7 @@
+import { Link, useLocation } from "react-router-dom";
 import {
   Star,
-  Video, Link, useLocation } from "react-router-dom";
-import {
+  Video,
   LayoutDashboard,
   Package,
   Users,

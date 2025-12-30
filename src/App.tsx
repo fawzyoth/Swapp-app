@@ -434,9 +434,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          </ProtectedRoute>
-            }
-          />
           <Route
             path="/merchant/reviews"
             element={
@@ -460,7 +457,7 @@ function App() {
                 <MerchantVideoCall />
               </ProtectedRoute>
             }
-          /
+          />
 
           {/* Delivery routes */}
           <Route

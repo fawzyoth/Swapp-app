@@ -104,6 +104,7 @@ export type Review = {
   is_published: boolean;
   merchant_response?: string;
   merchant_response_at?: string;
+  video_url?: string;
   created_at: string;
 };
 

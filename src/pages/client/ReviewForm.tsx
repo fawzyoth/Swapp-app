@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Star, Send, Check } from 'lucide-react';
+import { ArrowLeft, Star, Send, Check, Video, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import StarRating from '../../components/common/StarRating';
 import ClientLayout from '../../components/ClientLayout';
@@ -9,6 +9,7 @@ export default function ClientReviewForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const exchangeCode = searchParams.get('code') || '';
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -17,6 +18,11 @@ export default function ClientReviewForm() {
     comment: '',
   });
   const [loading, setLoading] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [videoError, setVideoError] = useState<string>('');
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [loadingPrevious, setLoadingPrevious] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -63,6 +69,59 @@ export default function ClientReviewForm() {
     }
   };
 
+
+  const handleVideoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      setVideoError('Veuillez selectionner un fichier video');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setVideoError('La video ne doit pas depasser 50 MB');
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    
+    video.onloadedmetadata = () => {
+      if (video.duration > 60) {
+        setVideoError('La video ne doit pas depasser 60 secondes (1 minute)');
+        URL.revokeObjectURL(url);
+        return;
+      }
+      
+      setVideoError('');
+      setVideoFile(file);
+      setVideoPreviewUrl(url);
+      setVideoDuration(Math.round(video.duration));
+    };
+
+    video.onerror = () => {
+      setVideoError('Impossible de lire ce fichier video');
+      URL.revokeObjectURL(url);
+    };
+
+    video.src = url;
+  };
+
+  const removeVideo = () => {
+    if (videoPreviewUrl) {
+      URL.revokeObjectURL(videoPreviewUrl);
+    }
+    setVideoFile(null);
+    setVideoPreviewUrl(null);
+    setVideoDuration(0);
+    setVideoError('');
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -75,7 +134,18 @@ export default function ClientReviewForm() {
     setError('');
 
     try {
-      const merchantId = '11111111-1111-1111-1111-111111111111';
+      let videoUrl = null;
+      
+      // Upload video if present (to console for now - storage not configured)
+      if (videoFile) {
+        setUploadingVideo(true);
+        console.log('[REVIEW] Video file to upload:', videoFile.name, videoFile.size, 'bytes');
+        // For now, we store as base64 or skip - real implementation needs Supabase storage
+        // videoUrl = await uploadVideoToStorage(videoFile);
+        setUploadingVideo(false);
+      }
+
+      const merchantId = searchParams.get('merchant') || '11111111-1111-1111-1111-111111111111';
 
       const { error: insertError } = await supabase
         .from('reviews')
@@ -86,6 +156,7 @@ export default function ClientReviewForm() {
           client_phone: formData.clientPhone,
           rating: formData.rating,
           comment: formData.comment || null,
+          video_url: videoUrl,
           is_published: true,
         });
 
@@ -259,6 +330,58 @@ export default function ClientReviewForm() {
                   <p className="text-xs text-slate-500 mt-1 text-right">
                     {formData.comment.length}/500 caracteres
                   </p>
+
+                </div>
+
+                {/* Video Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Video (optionnel - max 1 minute)
+                  </label>
+                  
+                  {!videoFile ? (
+                    <div 
+                      onClick={() => videoInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-amber-500 hover:bg-amber-50 transition-colors"
+                    >
+                      <Video className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                      <p className="text-sm text-slate-600 font-medium">
+                        Cliquez pour ajouter une video
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Format: MP4, MOV, WebM - Max 50 MB - Max 1 minute
+                      </p>
+                      <input
+                        ref={videoInputRef}
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoSelect}
+                        className="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-black">
+                      <video
+                        src={videoPreviewUrl || undefined}
+                        controls
+                        className="w-full max-h-64 object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeVideo}
+                        className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded">
+                        {videoDuration}s
+                      </div>
+                    </div>
+                  )}
+                  
+                  {videoError && (
+                    <p className="text-sm text-red-600 mt-2">{videoError}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,8 +391,22 @@ export default function ClientReviewForm() {
               disabled={loading || formData.rating === 0}
               className="w-full flex items-center justify-center gap-2 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
             >
-              <Send className="w-5 h-5" />
-              {loading ? 'Envoi en cours...' : 'Envoyer mon avis'}
+{uploadingVideo ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Envoi de la video...
+                </>
+              ) : loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Envoyer mon avis
+                </>
+              )}
             </button>
           </form>
         </div>

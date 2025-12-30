@@ -256,6 +256,7 @@ export default function MerchantExchangeDetail() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [jaxLoading, setJaxLoading] = useState(false);
+  const [showSMSModal, setShowSMSModal] = useState(false);
   const [jaxError, setJaxError] = useState<string | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 

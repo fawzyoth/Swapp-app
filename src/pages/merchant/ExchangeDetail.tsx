@@ -1228,6 +1228,14 @@ export default function MerchantExchangeDetail() {
                         </a>
                       </p>
                     </div>
+                    {/* Video Call Button */}
+                    <button
+                      onClick={() => setShowSMSModal(true)}
+                      className="w-full mt-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Video className="w-4 h-4" />
+                      Appel Video
+                    </button>
                   </div>
                 </div>
 
@@ -1368,16 +1376,6 @@ export default function MerchantExchangeDetail() {
               )}
 
               {isPending && (
-                <>
-                {/* Video Call Button */}
-                <button
-                  onClick={() => setShowSMSModal(true)}
-                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 mb-4"
-                >
-                  <Video className="w-5 h-5" />
-                  Inviter a un appel video
-                </button>
-
                 <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200">
                   <button
                     onClick={() => setShowValidateModal(true)}
@@ -1394,7 +1392,6 @@ export default function MerchantExchangeDetail() {
                     Refuser
                   </button>
                 </div>
-                </>
               )}
 
               {!isPending && exchange.status === "validated" && (
@@ -2149,6 +2146,17 @@ export default function MerchantExchangeDetail() {
           </div>
         )}
       </div>
+
+      {/* SMS Invite Modal for Video Call */}
+      {showSMSModal && exchange && (
+        <SMSInviteModal
+          isOpen={showSMSModal}
+          onClose={() => setShowSMSModal(false)}
+          clientPhone={exchange.client_phone}
+          clientName={exchange.client_name}
+          exchangeId={exchange.id}
+        />
+      )}
     </MerchantLayout>
   );
 }

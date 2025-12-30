@@ -28,9 +28,9 @@ const ClientExchangeDetail = lazy(
   () => import("./pages/client/ExchangeDetail"),
 );
 const ClientChat = lazy(() => import("./pages/client/Chat"));
-const ClientExchangeSuccess = lazy(
-  () => import("./pages/client/ExchangeSuccess"),
-);
+const ClientExchangeSuccess = lazy(() => import("./pages/client/ExchangeSuccess"));
+const ClientReviewForm = lazy(() => import("./pages/client/ReviewForm"));
+const ClientVideoCall = lazy(() => import("./pages/client/VideoCall"));
 
 // Merchant pages
 const MerchantLogin = lazy(() => import("./pages/merchant/Login"));
@@ -56,9 +56,10 @@ const MerchantPickupManagement = lazy(
 const MerchantPaymentHistory = lazy(
   () => import("./pages/merchant/PaymentHistory"),
 );
-const MerchantPaymentDetail = lazy(
-  () => import("./pages/merchant/PaymentDetail"),
-);
+const MerchantPaymentDetail = lazy(() => import("./pages/merchant/PaymentDetail"));
+const MerchantReviews = lazy(() => import("./pages/merchant/Reviews"));
+const MerchantVideoCall = lazy(() => import("./pages/merchant/VideoCall"));
+const MerchantVideoCallList = lazy(() => import("./pages/merchant/VideoCallList"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -132,6 +133,7 @@ function ClientRoutes() {
           <Route path="exchange/:id" element={<ClientExchangeDetail />} />
           <Route path="chat/:exchangeId" element={<ClientChat />} />
           <Route path="chat" element={<ClientChat />} />
+          <Route path="review/new" element={<ClientReviewForm />} />
         </Routes>
       </Suspense>
     </LanguageProvider>
@@ -310,6 +312,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<UnifiedLogin />} />
           <Route path="/client/*" element={<ClientRoutes />} />
+          <Route path="/call/:roomId" element={<ClientVideoCall />} />
 
           {/* Admin routes - no auth for demo */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -431,14 +434,33 @@ function App() {
               </ProtectedRoute>
             }
           />
+          </ProtectedRoute>
+            }
+          />
           <Route
-            path="/merchant/payments/:id"
+            path="/merchant/reviews"
             element={
               <ProtectedRoute loginPath="/login">
-                <MerchantPaymentDetail />
+                <MerchantReviews />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/merchant/video-calls"
+            element={
+              <ProtectedRoute loginPath="/login">
+                <MerchantVideoCallList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/call/:roomId"
+            element={
+              <ProtectedRoute loginPath="/login">
+                <MerchantVideoCall />
+              </ProtectedRoute>
+            }
+          /
 
           {/* Delivery routes */}
           <Route

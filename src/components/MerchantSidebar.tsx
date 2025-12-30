@@ -1,4 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import {
+  Star,
+  Video, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -23,6 +25,8 @@ const menuItems = [
   { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
   { path: "/merchant/branding", icon: Palette, label: "Ma Marque" },
   { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie" },
+  { path: "/merchant/reviews", icon: Star, label: "Avis Clients" },
+  { path: "/merchant/video-calls", icon: Video, label: "Appels Video" },
 ];
 
 export default function MerchantSidebar() {

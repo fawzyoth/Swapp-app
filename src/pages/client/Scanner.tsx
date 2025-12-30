@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import { ScanLine, KeyRound } from "lucide-react";
+import { ScanLine, KeyRound, Package, Star, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
@@ -11,6 +11,9 @@ export default function ClientScanner() {
   const [manualCode, setManualCode] = useState("");
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [scannedCode, setScannedCode] = useState("");
+  const [scannedMerchantId, setScannedMerchantId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { t, dir, lang } = useLanguage();
 
@@ -24,7 +27,25 @@ export default function ClientScanner() {
 
       scanner.render(onScanSuccess, onScanError);
 
-      return () => {
+    
+  const handleChoiceExchange = () => {
+    setShowChoiceModal(false);
+    if (scannedMerchantId) {
+      navigate(`/client/exchange/new?merchant=${scannedMerchantId}`);
+    } else if (scannedCode) {
+      navigate(`/client/exchange/new?code=${scannedCode}`);
+    }
+  };
+
+  const handleChoiceReview = () => {
+    setShowChoiceModal(false);
+    const params = new URLSearchParams();
+    if (scannedCode) params.set('code', scannedCode);
+    if (scannedMerchantId) params.set('merchant', scannedMerchantId);
+    navigate(`/client/review/new?${params.toString()}`);
+  };
+
+  return () => {
         scanner.clear();
       };
     }
@@ -312,6 +333,63 @@ export default function ClientScanner() {
           </div>
         </div>
       </div>
+
+      {/* Choice Modal */}
+      {showChoiceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-slate-900">
+                  {lang === "ar" ? "ماذا تريد أن تفعل؟" : "Que souhaitez-vous faire ?"}
+                </h2>
+                <button
+                  onClick={() => setShowChoiceModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="grid gap-4">
+                <button
+                  onClick={handleChoiceExchange}
+                  className="flex items-center gap-4 p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-100 transition-all text-left"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <Package className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">
+                      {lang === "ar" ? "طلب استبدال" : "Demander un échange"}
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      {lang === "ar" ? "استبدال منتجك بآخر" : "Échanger votre produit contre un autre"}
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleChoiceReview}
+                  className="flex items-center gap-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl hover:border-amber-500 hover:bg-amber-100 transition-all text-left"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Star className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">
+                      {lang === "ar" ? "ترك تقييم" : "Laisser un avis"}
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      {lang === "ar" ? "شارك تجربتك مع التاجر" : "Partagez votre expérience avec le marchand"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

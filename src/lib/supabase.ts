@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://xlwznudjklezjkitzqeg.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsd3pudWRqa2xlempraXR6cWVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyOTIwMTEsImV4cCI6MjA2Mzg2ODAxMX0.CMr4k7tCrj-qlAE4vj8RMh9zp_mkQ7D6FophODiMtMg";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -90,12 +90,65 @@ export type Message = {
   created_at: string;
 };
 
-export type StatusHistory = {
+
+
+// Review System Types
+export type Review = {
   id: string;
-  exchange_id: string;
-  status: string;
+  exchange_code?: string;
+  client_name: string;
+  client_phone: string;
+  merchant_id?: string;
+  rating: number;
+  comment?: string;
+  is_published: boolean;
+  merchant_response?: string;
+  merchant_response_at?: string;
   created_at: string;
 };
+
+// Video Call Types
+export type VideoCallStatus = 'pending' | 'active' | 'completed' | 'expired' | 'cancelled';
+
+export type VideoCall = {
+  id: string;
+  exchange_id?: string;
+  merchant_id?: string;
+  client_phone: string;
+  client_name: string;
+  room_id: string;
+  status: VideoCallStatus;
+  max_duration_seconds: number;
+  started_at?: string;
+  ended_at?: string;
+  duration_seconds?: number;
+  recording_url?: string;
+  recording_consent: boolean;
+  sms_sent_at?: string;
+  created_at: string;
+};
+
+// SMS Log Types
+export type SMSLogStatus = 'pending' | 'sent' | 'delivered' | 'failed';
+
+export type SMSLog = {
+  id: string;
+  video_call_id?: string;
+  recipient_phone: string;
+  message_content: string;
+  status: SMSLogStatus;
+  sent_at?: string;
+  created_at: string;
+};
+
+export const VIDEO_CALL_STATUS_LABELS: Record<VideoCallStatus, string> = {
+  pending: 'En attente',
+  active: 'En cours',
+  completed: 'Terminé',
+  expired: 'Expiré',
+  cancelled: 'Annulé',
+};
+
 
 export type DeliveryPerson = {
   id: string;

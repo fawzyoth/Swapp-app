@@ -25,6 +25,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { supabase, STATUS_LABELS } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
+import SMSInviteModal from "../../components/merchant/SMSInviteModal";
 import {
   sendRejectionSMS,
   sendAcceptanceSMS,
@@ -1057,7 +1058,18 @@ export default function MerchantExchangeDetail() {
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
         </div>
-      </MerchantLayout>
+      
+      {/* SMS Invite Modal for Video Call */}
+      {showSMSModal && exchange && (
+        <SMSInviteModal
+          isOpen={showSMSModal}
+          onClose={() => setShowSMSModal(false)}
+          clientPhone={exchange.client_phone}
+          clientName={exchange.client_name}
+          exchangeId={exchange.id}
+        />
+      )}
+    </MerchantLayout>
     );
   }
 
@@ -1355,6 +1367,15 @@ export default function MerchantExchangeDetail() {
               )}
 
               {isPending && (
+                                {/* Video Call Button */}
+                <button
+                  onClick={() => setShowSMSModal(true)}
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 mb-4"
+                >
+                  <Video className="w-5 h-5" />
+                  Inviter a un appel video
+                </button>
+
                 <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200">
                   <button
                     onClick={() => setShowValidateModal(true)}

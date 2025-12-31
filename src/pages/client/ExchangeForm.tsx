@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useClientSession } from "../../contexts/ClientSessionContext";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import {
   TUNISIA_GOVERNORATES,
@@ -24,6 +25,8 @@ export default function ClientExchangeForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, lang, dir } = useLanguage();
+  const { setClientInfo, addScannedMerchant, updateMerchantInteraction } =
+    useClientSession();
   const merchantId = searchParams.get("merchant") || "";
   const bordereauCode = searchParams.get("bordereau") || "";
 
@@ -170,6 +173,14 @@ export default function ClientExchangeForm() {
       console.log("Merchant query result:", { data, error });
       if (error) throw error;
       setMerchant(data);
+      // Save merchant to scanned history
+      if (data) {
+        addScannedMerchant({
+          id: data.id,
+          name: data.store_name || data.name,
+          logoUrl: data.logo_url,
+        });
+      }
     } catch (err) {
       console.error("Error loading merchant:", err);
       setError(t("merchantNotFound"));
@@ -580,6 +591,12 @@ export default function ClientExchangeForm() {
 
       localStorage.setItem("lastClientPhone", formData.clientPhone);
 
+      // Save client info and update merchant interaction
+      setClientInfo(formData.clientName, formData.clientPhone);
+      if (merchant?.id) {
+        updateMerchantInteraction(merchant.id, "exchange");
+      }
+
       // Redirect to success page instead of tracking
       navigate(`/client/success/${exchangeCode}`);
     } catch (err) {
@@ -626,25 +643,38 @@ export default function ClientExchangeForm() {
   // Show choice modal first
   if (showChoiceModal) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4" dir={dir}>
+      <div
+        className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4"
+        dir={dir}
+      >
         <div className="max-w-md w-full">
           {/* Brand Header */}
           <div className="text-center mb-8">
             {merchant?.logo_url ? (
-              <img src={merchant.logo_url} alt={merchant.store_name} className="w-20 h-20 mx-auto rounded-2xl object-cover shadow-lg mb-4" />
+              <img
+                src={merchant.logo_url}
+                alt={merchant.store_name}
+                className="w-20 h-20 mx-auto rounded-2xl object-cover shadow-lg mb-4"
+              />
             ) : (
               <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
                 <Store className="w-10 h-10 text-white" />
               </div>
             )}
-            <h1 className="text-2xl font-bold text-white mb-1">{merchant?.store_name || "Bienvenue"}</h1>
-            <p className="text-slate-400">{lang === "ar" ? "كيف يمكننا مساعدتك؟" : "Comment pouvons-nous vous aider ?"}</p>
+            <h1 className="text-2xl font-bold text-white mb-1">
+              {merchant?.store_name || "Bienvenue"}
+            </h1>
+            <p className="text-slate-400">
+              {lang === "ar"
+                ? "كيف يمكننا مساعدتك؟"
+                : "Comment pouvons-nous vous aider ?"}
+            </p>
           </div>
 
           {/* Choice Cards */}
           <div className="space-y-4">
-            <button 
-              onClick={() => setShowChoiceModal(false)} 
+            <button
+              onClick={() => setShowChoiceModal(false)}
               className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 hover:bg-white/20 transition-all group text-left"
             >
               <div className="flex items-center gap-4">
@@ -652,14 +682,22 @@ export default function ClientExchangeForm() {
                   <Package className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">{lang === "ar" ? "طلب استبدال" : "Demander un echange"}</h3>
-                  <p className="text-sm text-slate-300">{lang === "ar" ? "استبدال منتجك بآخر" : "Echanger votre produit contre un autre"}</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    {lang === "ar" ? "طلب استبدال" : "Demander un echange"}
+                  </h3>
+                  <p className="text-sm text-slate-300">
+                    {lang === "ar"
+                      ? "استبدال منتجك بآخر"
+                      : "Echanger votre produit contre un autre"}
+                  </p>
                 </div>
               </div>
             </button>
 
-            <button 
-              onClick={() => navigate("/client/review/new?merchant=" + merchantId)} 
+            <button
+              onClick={() =>
+                navigate("/client/review/new?merchant=" + merchantId)
+              }
               className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 hover:bg-white/20 transition-all group text-left"
             >
               <div className="flex items-center gap-4">
@@ -667,8 +705,14 @@ export default function ClientExchangeForm() {
                   <Star className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">{lang === "ar" ? "ترك تقييم" : "Laisser un avis"}</h3>
-                  <p className="text-sm text-slate-300">{lang === "ar" ? "شارك تجربتك مع المتجر" : "Partagez votre experience avec nous"}</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    {lang === "ar" ? "ترك تقييم" : "Laisser un avis"}
+                  </h3>
+                  <p className="text-sm text-slate-300">
+                    {lang === "ar"
+                      ? "شارك تجربتك مع المتجر"
+                      : "Partagez votre experience avec nous"}
+                  </p>
                 </div>
               </div>
             </button>
@@ -676,7 +720,10 @@ export default function ClientExchangeForm() {
 
           {/* Footer */}
           <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500">Powered by <span className="text-emerald-400 font-semibold">SWAPP</span></p>
+            <p className="text-xs text-slate-500">
+              Powered by{" "}
+              <span className="text-emerald-400 font-semibold">SWAPP</span>
+            </p>
           </div>
         </div>
       </div>

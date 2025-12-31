@@ -7,6 +7,7 @@ import {
 import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "./lib/supabase";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ClientSessionProvider } from "./contexts/ClientSessionContext";
 
 // Minimal loading spinner
 const LoadingSpinner = () => (
@@ -28,9 +29,12 @@ const ClientExchangeDetail = lazy(
   () => import("./pages/client/ExchangeDetail"),
 );
 const ClientChat = lazy(() => import("./pages/client/Chat"));
-const ClientExchangeSuccess = lazy(() => import("./pages/client/ExchangeSuccess"));
+const ClientExchangeSuccess = lazy(
+  () => import("./pages/client/ExchangeSuccess"),
+);
 const ClientReviewForm = lazy(() => import("./pages/client/ReviewForm"));
 const ClientVideoCall = lazy(() => import("./pages/client/VideoCall"));
+const ClientMyBrands = lazy(() => import("./pages/client/MyBrands"));
 
 // Merchant pages
 const MerchantLogin = lazy(() => import("./pages/merchant/Login"));
@@ -56,10 +60,14 @@ const MerchantPickupManagement = lazy(
 const MerchantPaymentHistory = lazy(
   () => import("./pages/merchant/PaymentHistory"),
 );
-const MerchantPaymentDetail = lazy(() => import("./pages/merchant/PaymentDetail"));
+const MerchantPaymentDetail = lazy(
+  () => import("./pages/merchant/PaymentDetail"),
+);
 const MerchantReviews = lazy(() => import("./pages/merchant/Reviews"));
 const MerchantVideoCall = lazy(() => import("./pages/merchant/VideoCall"));
-const MerchantVideoCallList = lazy(() => import("./pages/merchant/VideoCallList"));
+const MerchantVideoCallList = lazy(
+  () => import("./pages/merchant/VideoCallList"),
+);
 
 // Admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -123,19 +131,22 @@ const FinanceAlerts = lazy(() => import("./pages/finance/Alerts"));
 function ClientRoutes() {
   return (
     <LanguageProvider>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route path="scan" element={<ClientScanner />} />
-          <Route path="exchange/new" element={<ClientExchangeForm />} />
-          <Route path="success/:code" element={<ClientExchangeSuccess />} />
-          <Route path="tracking/:code" element={<ClientTracking />} />
-          <Route path="exchanges" element={<ClientExchangeList />} />
-          <Route path="exchange/:id" element={<ClientExchangeDetail />} />
-          <Route path="chat/:exchangeId" element={<ClientChat />} />
-          <Route path="chat" element={<ClientChat />} />
-          <Route path="review/new" element={<ClientReviewForm />} />
-        </Routes>
-      </Suspense>
+      <ClientSessionProvider>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="scan" element={<ClientScanner />} />
+            <Route path="exchange/new" element={<ClientExchangeForm />} />
+            <Route path="success/:code" element={<ClientExchangeSuccess />} />
+            <Route path="tracking/:code" element={<ClientTracking />} />
+            <Route path="exchanges" element={<ClientExchangeList />} />
+            <Route path="exchange/:id" element={<ClientExchangeDetail />} />
+            <Route path="chat/:exchangeId" element={<ClientChat />} />
+            <Route path="chat" element={<ClientChat />} />
+            <Route path="review/new" element={<ClientReviewForm />} />
+            <Route path="brands" element={<ClientMyBrands />} />
+          </Routes>
+        </Suspense>
+      </ClientSessionProvider>
     </LanguageProvider>
   );
 }

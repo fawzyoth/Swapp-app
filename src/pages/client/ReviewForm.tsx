@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useClientSession } from "../../contexts/ClientSessionContext";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import StarRating from "../../components/common/StarRating";
 
@@ -19,6 +20,8 @@ export default function ClientReviewForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, lang, dir } = useLanguage();
+  const { setClientInfo, addScannedMerchant, updateMerchantInteraction } =
+    useClientSession();
   const exchangeCode = searchParams.get("code") || "";
   const merchantId = searchParams.get("merchant") || "";
 
@@ -85,6 +88,12 @@ export default function ClientReviewForm() {
 
       if (!error && data) {
         setMerchant(data);
+        // Save merchant to scanned history
+        addScannedMerchant({
+          id: data.id,
+          name: data.store_name || data.name,
+          logoUrl: data.logo_url,
+        });
       }
     } catch (err) {
       console.error("Error loading merchant:", err);
@@ -264,6 +273,13 @@ export default function ClientReviewForm() {
       if (insertError) throw insertError;
 
       localStorage.setItem("lastClientPhone", formData.clientPhone);
+
+      // Save client info and update merchant interaction
+      setClientInfo(formData.clientName, formData.clientPhone);
+      if (merchantId) {
+        updateMerchantInteraction(merchantId, "review");
+      }
+
       setSuccess(true);
     } catch (err: any) {
       console.error("Error submitting review:", err);

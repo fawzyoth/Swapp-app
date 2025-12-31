@@ -1,16 +1,33 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Users, TrendingUp, Search, Filter, ChevronRight, Mail, Phone, Calendar, Package, TrendingDown, Award, Clock } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import MerchantLayout from '../../components/MerchantLayout';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Users,
+  TrendingUp,
+  Search,
+  Filter,
+  ChevronRight,
+  Mail,
+  Phone,
+  Calendar,
+  Package,
+  TrendingDown,
+  Award,
+  Clock,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import MerchantLayout from "../../components/MerchantLayout";
 
 export default function MerchantClientList() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'exchanges' | 'rate' | 'recent'>('exchanges');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"exchanges" | "rate" | "recent">(
+    "exchanges",
+  );
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "inactive"
+  >("all");
 
   useEffect(() => {
     checkAuth();
@@ -18,29 +35,47 @@ export default function MerchantClientList() {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
-      navigate('/merchant/login');
+      navigate("/merchant/login");
     }
   };
 
   const fetchClients = async () => {
     try {
+      // Get merchant ID first
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: merchantData } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      if (!merchantData) return;
+
+      // Only fetch needed fields - NO video, NO images
       const { data: exchanges } = await supabase
-        .from('exchanges')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("exchanges")
+        .select("id, client_name, client_phone, status, created_at")
+        .eq("merchant_id", merchantData.id)
+        .order("created_at", { ascending: false });
 
       if (exchanges) {
         const clientsMap = new Map();
 
-        exchanges.forEach(exchange => {
+        exchanges.forEach((exchange) => {
           const key = exchange.client_phone;
           if (!clientsMap.has(key)) {
             clientsMap.set(key, {
               name: exchange.client_name,
               phone: exchange.client_phone,
-              email: `${exchange.client_name.toLowerCase().replace(/\s/g, '')}@example.com`,
+              email: `${exchange.client_name.toLowerCase().replace(/\s/g, "")}@example.com`,
               exchanges: [],
               firstExchange: exchange.created_at,
               lastExchange: exchange.created_at,
@@ -57,17 +92,23 @@ export default function MerchantClientList() {
           }
         });
 
-        const clientsArray = Array.from(clientsMap.values()).map(client => {
-          const validated = client.exchanges.filter((e: any) =>
-            e.status === 'validated' || e.status === 'completed'
+        const clientsArray = Array.from(clientsMap.values()).map((client) => {
+          const validated = client.exchanges.filter(
+            (e: any) => e.status === "validated" || e.status === "completed",
           ).length;
-          const pending = client.exchanges.filter((e: any) => e.status === 'pending').length;
-          const rejected = client.exchanges.filter((e: any) => e.status === 'rejected').length;
+          const pending = client.exchanges.filter(
+            (e: any) => e.status === "pending",
+          ).length;
+          const rejected = client.exchanges.filter(
+            (e: any) => e.status === "rejected",
+          ).length;
           const total = client.exchanges.length;
-          const acceptanceRate = total > 0 ? Math.round((validated / total) * 100) : 0;
+          const acceptanceRate =
+            total > 0 ? Math.round((validated / total) * 100) : 0;
 
           const daysSinceLastExchange = Math.floor(
-            (Date.now() - new Date(client.lastExchange).getTime()) / (1000 * 60 * 60 * 24)
+            (Date.now() - new Date(client.lastExchange).getTime()) /
+              (1000 * 60 * 60 * 24),
           );
           const isActive = daysSinceLastExchange <= 30;
 
@@ -86,34 +127,39 @@ export default function MerchantClientList() {
         setClients(clientsArray);
       }
     } catch (error) {
-      console.error('Error fetching clients:', error);
+      console.error("Error fetching clients:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredAndSortedClients = clients
-    .filter(client => {
+    .filter((client) => {
       const matchesSearch =
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.phone.includes(searchTerm) ||
         client.email.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter =
-        filterStatus === 'all' ? true :
-        filterStatus === 'active' ? client.isActive :
-        !client.isActive;
+        filterStatus === "all"
+          ? true
+          : filterStatus === "active"
+            ? client.isActive
+            : !client.isActive;
 
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case 'exchanges':
+        case "exchanges":
           return b.totalExchanges - a.totalExchanges;
-        case 'rate':
+        case "rate":
           return b.acceptanceRate - a.acceptanceRate;
-        case 'recent':
-          return new Date(b.lastExchange).getTime() - new Date(a.lastExchange).getTime();
+        case "recent":
+          return (
+            new Date(b.lastExchange).getTime() -
+            new Date(a.lastExchange).getTime()
+          );
         default:
           return 0;
       }
@@ -121,11 +167,15 @@ export default function MerchantClientList() {
 
   const stats = {
     total: clients.length,
-    active: clients.filter(c => c.isActive).length,
-    avgRate: clients.length > 0
-      ? Math.round(clients.reduce((sum, c) => sum + c.acceptanceRate, 0) / clients.length)
-      : 0,
-    recurring: clients.filter(c => c.totalExchanges > 1).length,
+    active: clients.filter((c) => c.isActive).length,
+    avgRate:
+      clients.length > 0
+        ? Math.round(
+            clients.reduce((sum, c) => sum + c.acceptanceRate, 0) /
+              clients.length,
+          )
+        : 0,
+    recurring: clients.filter((c) => c.totalExchanges > 1).length,
     totalExchanges: clients.reduce((sum, c) => sum + c.totalExchanges, 0),
   };
 
@@ -143,8 +193,12 @@ export default function MerchantClientList() {
     <MerchantLayout>
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Gestion des Clients</h1>
-          <p className="text-slate-600">Vue d'ensemble de vos clients et de leur activité</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Gestion des Clients
+          </h1>
+          <p className="text-slate-600">
+            Vue d'ensemble de vos clients et de leur activité
+          </p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -154,7 +208,9 @@ export default function MerchantClientList() {
                 <Users className="w-5 h-5 text-sky-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {stats.total}
+                </div>
                 <div className="text-xs text-slate-600">Clients uniques</div>
               </div>
             </div>
@@ -166,7 +222,9 @@ export default function MerchantClientList() {
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-slate-900">{stats.active}</div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {stats.active}
+                </div>
                 <div className="text-xs text-slate-600">Clients actifs</div>
               </div>
             </div>
@@ -178,7 +236,9 @@ export default function MerchantClientList() {
                 <Award className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-slate-900">{stats.avgRate}%</div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {stats.avgRate}%
+                </div>
                 <div className="text-xs text-slate-600">Taux d'acceptation</div>
               </div>
             </div>
@@ -190,7 +250,9 @@ export default function MerchantClientList() {
                 <Package className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-slate-900">{stats.totalExchanges}</div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {stats.totalExchanges}
+                </div>
                 <div className="text-xs text-slate-600">Échanges totaux</div>
               </div>
             </div>
@@ -222,7 +284,9 @@ export default function MerchantClientList() {
               >
                 <option value="all">Tous ({stats.total})</option>
                 <option value="active">Actifs ({stats.active})</option>
-                <option value="inactive">Inactifs ({stats.total - stats.active})</option>
+                <option value="inactive">
+                  Inactifs ({stats.total - stats.active})
+                </option>
               </select>
 
               <select
@@ -241,9 +305,13 @@ export default function MerchantClientList() {
         {filteredAndSortedClients.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun client trouvé</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              Aucun client trouvé
+            </h3>
             <p className="text-slate-600">
-              {searchTerm ? 'Essayez de modifier votre recherche' : 'Les clients apparaîtront ici après leur premier échange'}
+              {searchTerm
+                ? "Essayez de modifier votre recherche"
+                : "Les clients apparaîtront ici après leur premier échange"}
             </p>
           </div>
         ) : (
@@ -291,32 +359,44 @@ export default function MerchantClientList() {
 
                     <div className="grid grid-cols-4 gap-4 pl-15">
                       <div>
-                        <div className="text-xs text-slate-500 mb-1">Échanges</div>
+                        <div className="text-xs text-slate-500 mb-1">
+                          Échanges
+                        </div>
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-sky-600" />
-                          <span className="font-semibold text-slate-900">{client.totalExchanges}</span>
+                          <span className="font-semibold text-slate-900">
+                            {client.totalExchanges}
+                          </span>
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-slate-500 mb-1">Taux acceptation</div>
+                        <div className="text-xs text-slate-500 mb-1">
+                          Taux acceptation
+                        </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-slate-200 rounded-full h-1.5 max-w-[60px]">
                             <div
                               className={`h-1.5 rounded-full ${
-                                client.acceptanceRate >= 80 ? 'bg-emerald-500' :
-                                client.acceptanceRate >= 50 ? 'bg-amber-500' :
-                                'bg-red-500'
+                                client.acceptanceRate >= 80
+                                  ? "bg-emerald-500"
+                                  : client.acceptanceRate >= 50
+                                    ? "bg-amber-500"
+                                    : "bg-red-500"
                               }`}
                               style={{ width: `${client.acceptanceRate}%` }}
                             />
                           </div>
-                          <span className="text-sm font-semibold text-slate-900">{client.acceptanceRate}%</span>
+                          <span className="text-sm font-semibold text-slate-900">
+                            {client.acceptanceRate}%
+                          </span>
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-slate-500 mb-1">Statuts</div>
+                        <div className="text-xs text-slate-500 mb-1">
+                          Statuts
+                        </div>
                         <div className="flex items-center gap-2 text-xs">
                           {client.pending > 0 && (
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
@@ -332,13 +412,17 @@ export default function MerchantClientList() {
                       </div>
 
                       <div>
-                        <div className="text-xs text-slate-500 mb-1">Dernière activité</div>
+                        <div className="text-xs text-slate-500 mb-1">
+                          Dernière activité
+                        </div>
                         <div className="flex items-center gap-1 text-sm text-slate-700">
                           <Clock className="w-3.5 h-3.5" />
                           <span>
-                            {client.daysSinceLastExchange === 0 ? "Aujourd'hui" :
-                             client.daysSinceLastExchange === 1 ? 'Hier' :
-                             `Il y a ${client.daysSinceLastExchange}j`}
+                            {client.daysSinceLastExchange === 0
+                              ? "Aujourd'hui"
+                              : client.daysSinceLastExchange === 1
+                                ? "Hier"
+                                : `Il y a ${client.daysSinceLastExchange}j`}
                           </span>
                         </div>
                       </div>

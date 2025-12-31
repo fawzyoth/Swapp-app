@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Store, ArrowLeft } from "lucide-react";
+import { Truck, ArrowLeft } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
-export default function MerchantLogin() {
+export default function DeliveryLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,27 +16,27 @@ export default function MerchantLogin() {
     try {
       // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Check if user is a merchant
-        const { data: merchant, error: merchantError } = await supabase
-          .from("merchants")
+        // Check if user is a delivery person
+        const { data: deliveryPerson, error: dpError } = await supabase
+          .from("delivery_persons")
           .select("id")
           .eq("email", data.user.email)
           .maybeSingle();
 
-        if (merchantError || !merchant) {
+        if (dpError || !deliveryPerson) {
           await supabase.auth.signOut();
-          throw new Error("Compte e-commerçant non trouvé.");
+          throw new Error("Compte livreur non trouvé.");
         }
 
-        // Redirect to merchant dashboard
-        window.location.hash = "#/merchant/dashboard";
+        // Redirect to dashboard
+        window.location.href = "#/delivery/dashboard";
       }
     } catch (err: any) {
       setError(err.message || "Erreur de connexion");
@@ -50,7 +50,7 @@ export default function MerchantLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8">
         <button
           onClick={goHome}
@@ -62,13 +62,15 @@ export default function MerchantLogin() {
 
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-100 rounded-full mb-4">
-              <Store className="w-8 h-8 text-sky-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+              <Truck className="w-8 h-8 text-amber-600" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Connexion E-Commerçant
+              Connexion Livreur
             </h1>
-            <p className="text-slate-600">Accédez à votre tableau de bord</p>
+            <p className="text-slate-600">
+              Accédez à votre espace de vérification
+            </p>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -89,7 +91,7 @@ export default function MerchantLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
 
@@ -103,14 +105,14 @@ export default function MerchantLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
+                className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
               >
                 {loading ? "Connexion..." : "Se connecter"}
               </button>

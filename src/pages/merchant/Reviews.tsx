@@ -290,6 +290,22 @@ export default function MerchantReviews() {
                       </div>
                     </div>
 
+                    {selectedReview.video_url && (
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                          <Video className="w-4 h-4" />
+                          Video du client
+                        </h4>
+                        <div className="bg-black rounded-lg overflow-hidden">
+                          <video
+                            src={selectedReview.video_url}
+                            controls
+                            className="w-full max-h-64 object-contain"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {selectedReview.merchant_response && (
                       <div className="mb-6">
                         <h4 className="font-semibold text-slate-900 mb-2">Votre reponse</h4>

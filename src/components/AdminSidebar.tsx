@@ -1,44 +1,43 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Star,
-  Video,
   LayoutDashboard,
-  Package,
   Users,
-  MessageSquare,
-  LogOut,
-  Store,
+  Shield,
   Menu,
   X,
-  Palette,
-  Banknote,
+  Home,
   Truck,
+  Banknote,
+  FileText,
+  Clock,
+  Store,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
 
 const menuItems = [
-  { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { path: "/merchant/exchanges", icon: Package, label: "Échanges" },
-  { path: "/merchant/pickups", icon: Truck, label: "Ramassages" },
-  { path: "/merchant/clients", icon: Users, label: "Clients" },
-  { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
-  { path: "/merchant/branding", icon: Palette, label: "Ma Marque" },
-  { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie" },
-  { path: "/merchant/reviews", icon: Star, label: "Avis Clients" },
-  { path: "/merchant/video-calls", icon: Video, label: "Appels Video" },
+  { path: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/admin/merchants", icon: Users, label: "E-Commerçants" },
+  { path: "/admin/delivery-persons", icon: Truck, label: "Livreurs" },
+  { path: "/admin/finances", icon: Banknote, label: "Finances" },
+  {
+    path: "/admin/delivery-collections",
+    icon: Wallet,
+    label: "Collectes Livreurs",
+  },
+  {
+    path: "/admin/merchant-payments",
+    icon: Store,
+    label: "Paiements Marchands",
+  },
+  { path: "/admin/invoices", icon: FileText, label: "Factures" },
+  { path: "/admin/settlements", icon: Clock, label: "Règlements" },
 ];
 
-export default function MerchantSidebar() {
+export default function AdminSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleLogout = () => {
-    // Sign out locally (no server call to avoid CORS)
-    supabase.auth.signOut({ scope: "local" });
-    // Redirect to unified login
-    window.location.href = "#/login";
-  };
 
   return (
     <>
@@ -61,12 +60,12 @@ export default function MerchantSidebar() {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-sky-600" />
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">E-Commerçant</h2>
-                <p className="text-xs text-slate-500">Espace Pro</p>
+                <h2 className="font-semibold text-slate-900">Administration</h2>
+                <p className="text-xs text-slate-500">Gestion Plateforme</p>
               </div>
             </div>
           </div>
@@ -84,7 +83,7 @@ export default function MerchantSidebar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                         isActive
-                          ? "bg-sky-50 text-sky-600"
+                          ? "bg-purple-50 text-purple-600"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
@@ -99,11 +98,11 @@ export default function MerchantSidebar() {
 
           <div className="p-4 border-t border-slate-200">
             <button
-              onClick={handleLogout}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
+              onClick={() => navigate("/")}
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 w-full transition-colors"
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Déconnexion</span>
+              <Home className="w-5 h-5" />
+              <span className="font-medium">Retour à l'accueil</span>
             </button>
           </div>
         </div>

@@ -1,35 +1,32 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  Star,
-  Video,
   LayoutDashboard,
-  Package,
-  Users,
-  MessageSquare,
-  LogOut,
-  Store,
+  ScanLine,
+  ClipboardCheck,
+  Truck,
   Menu,
   X,
-  Palette,
+  Home,
+  LogOut,
   Banknote,
-  Truck,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const menuItems = [
-  { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { path: "/merchant/exchanges", icon: Package, label: "Échanges" },
-  { path: "/merchant/pickups", icon: Truck, label: "Ramassages" },
-  { path: "/merchant/clients", icon: Users, label: "Clients" },
-  { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
-  { path: "/merchant/branding", icon: Palette, label: "Ma Marque" },
-  { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie" },
-  { path: "/merchant/reviews", icon: Star, label: "Avis Clients" },
-  { path: "/merchant/video-calls", icon: Video, label: "Appels Video" },
+  { path: "/delivery/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/delivery/scan", icon: ScanLine, label: "Scanner Bordereau" },
+  {
+    path: "/delivery/verifications",
+    icon: ClipboardCheck,
+    label: "Mes Vérifications",
+  },
+  { path: "/delivery/wallet", icon: Wallet, label: "Mon Portefeuille" },
+  { path: "/delivery/finances", icon: Banknote, label: "Mes Finances" },
 ];
 
-export default function MerchantSidebar() {
+export default function DeliverySidebar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -38,6 +35,10 @@ export default function MerchantSidebar() {
     supabase.auth.signOut({ scope: "local" });
     // Redirect to unified login
     window.location.href = "#/login";
+  };
+
+  const goHome = () => {
+    window.location.href = "#/";
   };
 
   return (
@@ -61,12 +62,14 @@ export default function MerchantSidebar() {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-sky-600" />
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Truck className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">E-Commerçant</h2>
-                <p className="text-xs text-slate-500">Espace Pro</p>
+                <h2 className="font-semibold text-slate-900">Espace Livreur</h2>
+                <p className="text-xs text-slate-500">
+                  Vérification des échanges
+                </p>
               </div>
             </div>
           </div>
@@ -84,7 +87,7 @@ export default function MerchantSidebar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                         isActive
-                          ? "bg-sky-50 text-sky-600"
+                          ? "bg-amber-50 text-amber-600"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
@@ -97,10 +100,17 @@ export default function MerchantSidebar() {
             </ul>
           </nav>
 
-          <div className="p-4 border-t border-slate-200">
+          <div className="p-4 border-t border-slate-200 space-y-2">
+            <button
+              onClick={goHome}
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 w-full transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              <span className="font-medium">Retour à l'accueil</span>
+            </button>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 w-full transition-colors"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Déconnexion</span>

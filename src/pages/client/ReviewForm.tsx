@@ -255,11 +255,6 @@ export default function ClientReviewForm() {
     setError("");
 
     try {
-      // Log video for debugging
-      if (recordedBlob) {
-        console.log("[REVIEW] Video recorded:", recordedBlob.size, "bytes");
-      }
-
       const { error: insertError } = await supabase.from("reviews").insert({
         exchange_code: exchangeCode || null,
         merchant_id: merchantId || null,
@@ -267,6 +262,7 @@ export default function ClientReviewForm() {
         client_phone: formData.clientPhone,
         rating: formData.rating,
         comment: formData.comment || null,
+        video_url: recordedVideo || null,
         is_published: true,
       });
 

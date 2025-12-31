@@ -1,24 +1,37 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getTranslation, getDirection, TranslationKey } from '../lib/i18n';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import {
+  Language,
+  getTranslation,
+  getDirection,
+  TranslationKey,
+} from "../lib/i18n";
 
 interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
   t: (key: TranslationKey) => string;
-  dir: 'ltr' | 'rtl';
+  dir: "ltr" | "rtl";
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
-    const saved = localStorage.getItem('clientLanguage');
-    return (saved === 'ar' || saved === 'fr') ? saved : 'fr';
+    const saved = localStorage.getItem("clientLanguage");
+    return saved === "ar" || saved === "fr" ? saved : "ar";
   });
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
-    localStorage.setItem('clientLanguage', newLang);
+    localStorage.setItem("clientLanguage", newLang);
   };
 
   const t = (key: TranslationKey) => getTranslation(lang, key);
@@ -39,7 +52,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
 }

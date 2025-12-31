@@ -255,16 +255,42 @@ export default function ClientReviewForm() {
     setError("");
 
     try {
-      const { error: insertError } = await supabase.from("reviews").insert({
+      // Debug: log video info
+      console.log(
+        "[REVIEW] Submitting review with video:",
+        recordedVideo
+          ? `${(recordedVideo.length / 1024).toFixed(2)} KB`
+          : "No video",
+      );
+
+      const reviewData: any = {
         exchange_code: exchangeCode || null,
         merchant_id: merchantId || null,
         client_name: formData.clientName,
         client_phone: formData.clientPhone,
         rating: formData.rating,
         comment: formData.comment || null,
-        video_url: recordedVideo || null,
         is_published: true,
-      });
+      };
+
+      // Only add video if it exists and is not too large (max 5MB for Supabase text field)
+      if (recordedVideo && recordedVideo.length < 5 * 1024 * 1024) {
+        reviewData.video_url = recordedVideo;
+        console.log("[REVIEW] Video added to review data");
+      } else if (recordedVideo) {
+        console.warn(
+          "[REVIEW] Video too large, skipping:",
+          (recordedVideo.length / 1024 / 1024).toFixed(2),
+          "MB",
+        );
+      }
+
+      const { data, error: insertError } = await supabase
+        .from("reviews")
+        .insert(reviewData)
+        .select();
+
+      console.log("[REVIEW] Insert result:", { data, error: insertError });
 
       if (insertError) throw insertError;
 

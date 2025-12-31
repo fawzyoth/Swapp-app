@@ -51,12 +51,27 @@ export default function MerchantReviews() {
       return;
     }
 
-    // Get merchant ID from session
-    const { data: merchant } = await supabase
+    // Get merchant ID from session - try user_id first, then email
+    let merchant = null;
+
+    const { data: merchantByUserId } = await supabase
       .from("merchants")
       .select("id")
       .eq("user_id", session.user.id)
-      .single();
+      .maybeSingle();
+
+    if (merchantByUserId) {
+      merchant = merchantByUserId;
+    } else {
+      // Fallback to email lookup
+      const { data: merchantByEmail } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      merchant = merchantByEmail;
+    }
 
     if (merchant) {
       setMerchantId(merchant.id);

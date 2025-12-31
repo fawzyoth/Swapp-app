@@ -35,6 +35,7 @@ const ClientExchangeSuccess = lazy(
 const ClientReviewForm = lazy(() => import("./pages/client/ReviewForm"));
 const ClientVideoCall = lazy(() => import("./pages/client/VideoCall"));
 const ClientMyBrands = lazy(() => import("./pages/client/MyBrands"));
+const SocialRedirect = lazy(() => import("./pages/SocialRedirect"));
 
 // Merchant pages
 const MerchantLogin = lazy(() => import("./pages/merchant/Login"));
@@ -324,6 +325,7 @@ function App() {
           <Route path="/login" element={<UnifiedLogin />} />
           <Route path="/client/*" element={<ClientRoutes />} />
           <Route path="/call/:roomId" element={<ClientVideoCall />} />
+          <Route path="/go/:shortCode" element={<SocialRedirect />} />
 
           {/* Admin routes - no auth for demo */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

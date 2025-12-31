@@ -12,17 +12,77 @@ import {
   Trash2,
   QrCode,
   Printer,
-  FileText,
   Eye,
   Settings,
   ChevronDown,
   ChevronUp,
+  Plus,
+  BarChart3,
+  ExternalLink,
+  Copy,
+  Download,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { supabase } from "../../lib/supabase";
+import {
+  supabase,
+  SocialPlatform,
+  SocialQRCode,
+  SOCIAL_PLATFORM_LABELS,
+  SOCIAL_PLATFORM_COLORS,
+} from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
-type TabType = "exchange-paper" | "branding";
+type TabType = "exchange-paper" | "social-qr" | "branding";
+
+// Social Media Icons as SVG components
+const FacebookIcon = ({
+  size = 24,
+  color = "#1877F2",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const InstagramIcon = ({
+  size = 24,
+  color = "#E4405F",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+  </svg>
+);
+
+const TikTokIcon = ({
+  size = 24,
+  color = "#000000",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+  </svg>
+);
+
+const getSocialIcon = (platform: SocialPlatform, size = 24) => {
+  switch (platform) {
+    case "facebook":
+      return <FacebookIcon size={size} />;
+    case "instagram":
+      return <InstagramIcon size={size} />;
+    case "tiktok":
+      return <TikTokIcon size={size} />;
+  }
+};
 
 export default function BrandingSettings() {
   const navigate = useNavigate();
@@ -34,6 +94,17 @@ export default function BrandingSettings() {
   const [merchantId, setMerchantId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<TabType>("exchange-paper");
   const [showCustomization, setShowCustomization] = useState(false);
+
+  // Social QR states
+  const [socialQRCodes, setSocialQRCodes] = useState<SocialQRCode[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSocialUrl, setNewSocialUrl] = useState("");
+  const [newPlatform, setNewPlatform] = useState<SocialPlatform>("facebook");
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [selectedQR, setSelectedQR] = useState<SocialQRCode | null>(null);
+  const [scanStats, setScanStats] = useState<{ date: string; count: number }[]>(
+    [],
+  );
 
   const [formData, setFormData] = useState({
     logo_base64: "",
@@ -59,6 +130,12 @@ export default function BrandingSettings() {
   useEffect(() => {
     checkAuthAndFetchData();
   }, []);
+
+  useEffect(() => {
+    if (merchantId) {
+      fetchSocialQRCodes();
+    }
+  }, [merchantId]);
 
   const checkAuthAndFetchData = async () => {
     try {
@@ -95,6 +172,179 @@ export default function BrandingSettings() {
     }
   };
 
+  const fetchSocialQRCodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("social_qr_codes")
+        .select("*")
+        .eq("merchant_id", merchantId)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setSocialQRCodes(data);
+      }
+    } catch (err) {
+      console.error("Error fetching social QR codes:", err);
+    }
+  };
+
+  const generateShortCode = () => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  const detectPlatform = (url: string): SocialPlatform => {
+    if (url.includes("facebook.com") || url.includes("fb.com"))
+      return "facebook";
+    if (url.includes("instagram.com")) return "instagram";
+    if (url.includes("tiktok.com")) return "tiktok";
+    return "facebook";
+  };
+
+  const handleAddSocialQR = async () => {
+    if (!newSocialUrl.trim()) {
+      setError("Veuillez entrer une URL");
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(newSocialUrl);
+    } catch {
+      setError("URL invalide");
+      return;
+    }
+
+    setSavingSocial(true);
+    setError("");
+
+    try {
+      const platform = detectPlatform(newSocialUrl);
+      const shortCode = generateShortCode();
+
+      const { data, error: insertError } = await supabase
+        .from("social_qr_codes")
+        .insert({
+          merchant_id: merchantId,
+          platform,
+          social_url: newSocialUrl.trim(),
+          short_code: shortCode,
+          scan_count: 0,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      if (data) {
+        setSocialQRCodes([data, ...socialQRCodes]);
+      }
+
+      setNewSocialUrl("");
+      setShowAddModal(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      console.error("Error adding social QR:", err);
+      setError("Erreur lors de l'ajout du QR code");
+    } finally {
+      setSavingSocial(false);
+    }
+  };
+
+  const handleDeleteSocialQR = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce QR code ?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("social_qr_codes")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setSocialQRCodes(socialQRCodes.filter((qr) => qr.id !== id));
+      if (selectedQR?.id === id) setSelectedQR(null);
+    } catch (err) {
+      console.error("Error deleting social QR:", err);
+      setError("Erreur lors de la suppression");
+    }
+  };
+
+  const fetchScanStats = async (qrCodeId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("social_qr_scans")
+        .select("scanned_at")
+        .eq("qr_code_id", qrCodeId)
+        .order("scanned_at", { ascending: false });
+
+      if (!error && data) {
+        // Group by date
+        const grouped: Record<string, number> = {};
+        data.forEach((scan) => {
+          const date = new Date(scan.scanned_at).toLocaleDateString("fr-FR");
+          grouped[date] = (grouped[date] || 0) + 1;
+        });
+
+        const stats = Object.entries(grouped)
+          .slice(0, 7)
+          .map(([date, count]) => ({ date, count }))
+          .reverse();
+
+        setScanStats(stats);
+      }
+    } catch (err) {
+      console.error("Error fetching scan stats:", err);
+    }
+  };
+
+  const getQRCodeUrl = (shortCode: string) => {
+    return `https://fawzyoth.github.io/Swapp-app/#/go/${shortCode}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2000);
+  };
+
+  const downloadQRCode = (platform: SocialPlatform, shortCode: string) => {
+    const svg = document.getElementById(`qr-${shortCode}`);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = 400;
+      canvas.height = 400;
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.drawImage(img, 50, 50, 300, 300);
+      }
+
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `qr-${platform}-${shortCode}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -128,7 +378,6 @@ export default function BrandingSettings() {
   // Generate QR code URL for exchange form
   const getExchangeFormUrl = () => {
     const url = `https://fawzyoth.github.io/Swapp-app/#/client/exchange/new?merchant=${merchantId}`;
-    console.log("QR Code URL:", url, "MerchantId:", merchantId);
     return url;
   };
 
@@ -325,6 +574,17 @@ export default function BrandingSettings() {
           >
             <QrCode className="w-5 h-5" />
             Fiche QR Code
+          </button>
+          <button
+            onClick={() => setActiveTab("social-qr")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === "social-qr"
+                ? "bg-white text-pink-600 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <BarChart3 className="w-5 h-5" />
+            Réseaux Sociaux
           </button>
           <button
             onClick={() => setActiveTab("branding")}
@@ -637,6 +897,274 @@ export default function BrandingSettings() {
           </div>
         )}
 
+        {/* Social QR Tab */}
+        {activeTab === "social-qr" && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 px-6 py-4 flex items-center justify-between">
+                <div className="text-white">
+                  <h2 className="text-lg font-bold">
+                    QR Codes Réseaux Sociaux
+                  </h2>
+                  <p className="text-pink-100 text-sm">
+                    Créez des QR codes pour vos pages sociales et suivez les
+                    scans
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl hover:bg-purple-50 transition-colors font-semibold shadow-lg"
+                >
+                  <Plus className="w-5 h-5" />
+                  Ajouter
+                </button>
+              </div>
+            </div>
+
+            {/* QR Codes Grid */}
+            {socialQRCodes.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <QrCode className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  Aucun QR code
+                </h3>
+                <p className="text-slate-600 mb-4">
+                  Ajoutez vos liens Facebook, Instagram ou TikTok pour créer des
+                  QR codes trackables
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Créer mon premier QR code
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {socialQRCodes.map((qr) => (
+                  <div
+                    key={qr.id}
+                    className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all cursor-pointer ${
+                      selectedQR?.id === qr.id
+                        ? "border-purple-500 ring-2 ring-purple-200"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    onClick={() => {
+                      setSelectedQR(qr);
+                      fetchScanStats(qr.id);
+                    }}
+                  >
+                    {/* Platform Header */}
+                    <div
+                      className={`px-4 py-3 ${SOCIAL_PLATFORM_COLORS[qr.platform].bg} text-white flex items-center justify-between`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {getSocialIcon(qr.platform, 20)}
+                        <span className="font-semibold">
+                          {SOCIAL_PLATFORM_LABELS[qr.platform]}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white/20 px-2 py-1 rounded-full">
+                        <TrendingUp className="w-3 h-3" />
+                        <span className="text-sm font-medium">
+                          {qr.scan_count} scans
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="p-4 flex justify-center bg-slate-50">
+                      <div className="bg-white p-3 rounded-xl shadow-md relative">
+                        <QRCodeSVG
+                          id={`qr-${qr.short_code}`}
+                          value={getQRCodeUrl(qr.short_code)}
+                          size={120}
+                          level="M"
+                          imageSettings={{
+                            src:
+                              qr.platform === "facebook"
+                                ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzE4NzdGMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMjQgMTIuMDczYzAtNi42MjctNS4zNzMtMTItMTItMTJzLTEyIDUuMzczLTEyIDEyYzAgNS45OSA0LjM4OCAxMC45NTQgMTAuMTI1IDExLjg1NHYtOC4zODVINy4wNzh2LTMuNDdoMy4wNDdWOS40M2MwLTMuMDA3IDEuNzkyLTQuNjY5IDQuNTMzLTQuNjY5IDEuMzEyIDAgMi42ODYuMjM1IDIuNjg2LjIzNXYyLjk1M0gxNS44M2MtMS40OTEgMC0xLjk1Ni45MjUtMS45NTYgMS44NzR2Mi4yNWgzLjMyOGwtLjUzMiAzLjQ3aC0yLjc5NnY4LjM4NUMxOS42MTIgMjMuMDI3IDI0IDE4LjA2MiAyNCAxMi4wNzN6Ii8+PC9zdmc+"
+                                : qr.platform === "instagram"
+                                  ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0U0NDA1RiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMi4xNjNjMy4yMDQgMCAzLjU4NC4wMTIgNC44NS4wNyAzLjI1Mi4xNDggNC43NzEgMS42OTEgNC45MTkgNC45MTkuMDU4IDEuMjY1LjA2OSAxLjY0NS4wNjkgNC44NDkgMCAzLjIwNS0uMDEyIDMuNTg0LS4wNjkgNC44NDktLjE0OSAzLjIyNS0xLjY2NCA0Ljc3MS00LjkxOSA0LjkxOS0xLjI2Ni4wNTgtMS42NDQuMDctNC44NS4wNy0zLjIwNCAwLTMuNTg0LS4wMTItNC44NDktLjA3LTMuMjYtLjE0OS00Ljc3MS0xLjY5OS00LjkxOS00LjkyLS4wNTgtMS4yNjUtLjA3LTEuNjQ0LS4wNy00Ljg0OSAwLTMuMjA0LjAxMy0zLjU4My4wNy00Ljg0OS4xNDktMy4yMjcgMS42NjQtNC43NzEgNC45MTktNC45MTkgMS4yNjYtLjA1NyAxLjY0NS0uMDY5IDQuODQ5LS4wNjl6bTAtMi4xNjNjLTMuMjU5IDAtMy42NjcuMDE0LTQuOTQ3LjA3Mi00LjM1OC4yLTYuNzggMi42MTgtNi45OCA2Ljk4LS4wNTkgMS4yODEtLjA3MyAxLjY4OS0uMDczIDQuOTQ4IDAgMy4yNTkuMDE0IDMuNjY4LjA3MiA0Ljk0OC4yIDQuMzU4IDIuNjE4IDYuNzggNi45OCA2Ljk4IDEuMjgxLjA1OCAxLjY4OS4wNzIgNC45NDguMDcyIDMuMjU5IDAgMy42NjgtLjAxNCA0Ljk0OC0uMDcyIDQuMzU0LS4yIDYuNzgyLTIuNjE4IDYuOTc5LTYuOTguMDU5LTEuMjguMDczLTEuNjg5LjA3My00Ljk0OCAwLTMuMjU5LS4wMTQtMy42NjctLjA3Mi00Ljk0Ny0uMTk2LTQuMzU0LTIuNjE3LTYuNzgtNi45NzktNi45OC0xLjI4MS0uMDU5LTEuNjktLjA3My00Ljk0OS0uMDczem0wIDUuODM4Yy0zLjQwMyAwLTYuMTYyIDIuNzU5LTYuMTYyIDYuMTYyczIuNzU5IDYuMTYzIDYuMTYyIDYuMTYzIDYuMTYyLTIuNzU5IDYuMTYyLTYuMTYzYzAtMy40MDMtMi43NTktNi4xNjItNi4xNjItNi4xNjJ6bTAgMTAuMTYyYy0yLjIwOSAwLTQtMS43OS00LTQgMC0yLjIwOSAxLjc5MS00IDQtNHM0IDEuNzkxIDQgNGMwIDIuMjEtMS43OTEgNC00IDR6bTYuNDA2LTExLjg0NWMtLjc5NiAwLTEuNDQxLjY0NS0xLjQ0MSAxLjQ0cy42NDUgMS40NCAxLjQ0MSAxLjQ0Yy43OTUgMCAxLjQzOS0uNjQ1IDEuNDM5LTEuNDRzLS42NDQtMS40NC0xLjQzOS0xLjQ0eiIvPjwvc3ZnPg=="
+                                  : "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwMDAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTkuNTkgNi42OWE0LjgzIDQuODMgMCAwIDEtMy43Ny00LjI1VjJoLTMuNDV2MTMuNjdhMi44OSAyLjg5IDAgMCAxLTUuMiAxLjc0IDIuODkgMi44OSAwIDAgMSAyLjMxLTQuNjQgMi45MyAyLjkzIDAgMCAxIC44OC4xM1Y5LjRhNi44NCA2Ljg0IDAgMCAwLTEtLjA1QTYuMzMgNi4zMyAwIDAgMCA1IDIwLjFhNi4zNCA2LjM0IDAgMCAwIDEwLjg2LTQuNDN2LTdhOC4xNiA4LjE2IDAgMCAwIDQuNzcgMS41MnYtMy40YTQuODUgNC44NSAwIDAgMS0xLS4xeiIvPjwvc3ZnPg==",
+                            height: 24,
+                            width: 24,
+                            excavate: true,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* URL Preview */}
+                    <div className="px-4 py-3 border-t border-slate-100">
+                      <p className="text-xs text-slate-500 truncate">
+                        {qr.social_url}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="px-4 py-3 bg-slate-50 flex items-center justify-between gap-2 border-t border-slate-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(getQRCodeUrl(qr.short_code));
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copier
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadQRCode(qr.platform, qr.short_code);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Télécharger
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSocialQR(qr.id);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stats Panel */}
+            {selectedQR && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getSocialIcon(selectedQR.platform, 24)}
+                    <div>
+                      <h3 className="font-semibold text-slate-900">
+                        Statistiques
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {SOCIAL_PLATFORM_LABELS[selectedQR.platform]}
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedQR.social_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Voir la page
+                  </a>
+                </div>
+
+                <div className="p-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-slate-50 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-slate-900">
+                        {selectedQR.scan_count}
+                      </div>
+                      <div className="text-sm text-slate-500">Total scans</div>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-slate-900">
+                        {scanStats.length > 0
+                          ? scanStats[scanStats.length - 1]?.count || 0
+                          : 0}
+                      </div>
+                      <div className="text-sm text-slate-500">Aujourd'hui</div>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-slate-900">
+                        {scanStats.reduce((sum, s) => sum + s.count, 0)}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        Cette semaine
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Chart */}
+                  {scanStats.length > 0 ? (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Scans des 7 derniers jours
+                      </h4>
+                      <div className="flex items-end gap-2 h-32">
+                        {scanStats.map((stat, index) => {
+                          const maxCount = Math.max(
+                            ...scanStats.map((s) => s.count),
+                            1,
+                          );
+                          const height = (stat.count / maxCount) * 100;
+                          return (
+                            <div
+                              key={index}
+                              className="flex-1 flex flex-col items-center"
+                            >
+                              <div
+                                className={`w-full ${SOCIAL_PLATFORM_COLORS[selectedQR.platform].bg} rounded-t-md transition-all`}
+                                style={{ height: `${Math.max(height, 4)}%` }}
+                              />
+                              <div className="text-xs text-slate-500 mt-2 truncate w-full text-center">
+                                {stat.date.split("/").slice(0, 2).join("/")}
+                              </div>
+                              <div className="text-xs font-medium text-slate-700">
+                                {stat.count}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      <BarChart3 className="w-12 h-12 mx-auto mb-2 text-slate-300" />
+                      <p>Aucun scan enregistré</p>
+                      <p className="text-sm">
+                        Les statistiques apparaîtront ici
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Info Card */}
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <Eye className="w-5 h-5 text-purple-600 mt-0.5" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-purple-900 mb-1">
+                    Comment ça marche ?
+                  </h4>
+                  <p className="text-sm text-purple-700">
+                    Ajoutez vos liens Facebook, Instagram ou TikTok. Nous
+                    générons un QR code unique avec le logo du réseau social.
+                    Chaque scan est comptabilisé pour vous permettre de mesurer
+                    l'efficacité de vos supports marketing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Branding Tab */}
         {activeTab === "branding" && (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -831,6 +1359,82 @@ export default function BrandingSettings() {
           </form>
         )}
       </div>
+
+      {/* Add Social QR Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Ajouter un QR code social
+              </h3>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Lien de votre page sociale
+                </label>
+                <input
+                  type="url"
+                  value={newSocialUrl}
+                  onChange={(e) => {
+                    setNewSocialUrl(e.target.value);
+                    setNewPlatform(detectPlatform(e.target.value));
+                  }}
+                  placeholder="https://facebook.com/votre-page"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+
+              {newSocialUrl && (
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  {getSocialIcon(newPlatform, 24)}
+                  <span className="font-medium text-slate-700">
+                    {SOCIAL_PLATFORM_LABELS[newPlatform]} détecté
+                  </span>
+                </div>
+              )}
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-700">
+                  Collez le lien de votre page Facebook, Instagram ou TikTok. Le
+                  réseau social sera détecté automatiquement.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewSocialUrl("");
+                }}
+                className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleAddSocialQR}
+                disabled={!newSocialUrl.trim() || savingSocial}
+                className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white rounded-lg transition-colors"
+              >
+                {savingSocial ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Créer le QR code
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MerchantLayout>
   );
 }

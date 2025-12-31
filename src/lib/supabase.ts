@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xlwznudjklezjkitzqeg.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsd3pudWRqa2xlempraXR6cWVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTg5MDAsImV4cCI6MjA4MTEzNDkwMH0.jKCxu7hTM50bcGqM-Cbi4KTM1QS_N12MoUmo3ib_aEA";
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  "https://xlwznudjklezjkitzqeg.supabase.co";
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhsd3pudWRqa2xlempraXR6cWVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTg5MDAsImV4cCI6MjA4MTEzNDkwMH0.jKCxu7hTM50bcGqM-Cbi4KTM1QS_N12MoUmo3ib_aEA";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -90,8 +94,6 @@ export type Message = {
   created_at: string;
 };
 
-
-
 // Review System Types
 export type Review = {
   id: string;
@@ -109,7 +111,12 @@ export type Review = {
 };
 
 // Video Call Types
-export type VideoCallStatus = 'pending' | 'active' | 'completed' | 'expired' | 'cancelled';
+export type VideoCallStatus =
+  | "pending"
+  | "active"
+  | "completed"
+  | "expired"
+  | "cancelled";
 
 export type VideoCall = {
   id: string;
@@ -130,7 +137,7 @@ export type VideoCall = {
 };
 
 // SMS Log Types
-export type SMSLogStatus = 'pending' | 'sent' | 'delivered' | 'failed';
+export type SMSLogStatus = "pending" | "sent" | "delivered" | "failed";
 
 export type SMSLog = {
   id: string;
@@ -143,13 +150,12 @@ export type SMSLog = {
 };
 
 export const VIDEO_CALL_STATUS_LABELS: Record<VideoCallStatus, string> = {
-  pending: 'En attente',
-  active: 'En cours',
-  completed: 'Terminé',
-  expired: 'Expiré',
-  cancelled: 'Annulé',
+  pending: "En attente",
+  active: "En cours",
+  completed: "Terminé",
+  expired: "Expiré",
+  cancelled: "Annulé",
 };
-
 
 export type DeliveryPerson = {
   id: string;
@@ -1018,6 +1024,52 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "Espèces",
   check: "Chèque",
   mobile: "Paiement Mobile",
+};
+
+// ============================================
+// SOCIAL MEDIA QR CODES
+// ============================================
+
+export type SocialPlatform = "facebook" | "instagram" | "tiktok";
+
+export type SocialQRCode = {
+  id: string;
+  merchant_id: string;
+  platform: SocialPlatform;
+  social_url: string;
+  short_code: string; // Unique code for tracking redirect
+  scan_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SocialQRScan = {
+  id: string;
+  qr_code_id: string;
+  scanned_at: string;
+  user_agent?: string;
+  ip_hash?: string; // Hashed for privacy
+  referrer?: string;
+};
+
+export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+};
+
+export const SOCIAL_PLATFORM_COLORS: Record<
+  SocialPlatform,
+  { bg: string; text: string; icon: string }
+> = {
+  facebook: { bg: "bg-blue-600", text: "text-blue-600", icon: "#1877F2" },
+  instagram: {
+    bg: "bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400",
+    text: "text-pink-600",
+    icon: "#E4405F",
+  },
+  tiktok: { bg: "bg-black", text: "text-black", icon: "#000000" },
 };
 
 // Aliases for component imports

@@ -216,17 +216,17 @@ export default function MerchantReviews() {
   return (
     <MerchantLayout>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Avis Clients
-          </h2>
-          <p className="text-slate-600">
-            Consultez et répondez aux avis de vos clients
-          </p>
-        </div>
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Avis Clients
+            </h2>
+            <p className="text-slate-600">
+              Consultez et répondez aux avis de vos clients
+            </p>
+          </div>
 
-        {/* Stats Section */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          {/* Stats Section */}
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
           {/* Average Rating Card */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="text-center">
@@ -361,7 +361,7 @@ export default function MerchantReviews() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredReviews.map((review) => (
+            {filteredReviews.map((review, index) => (
               <div
                 key={review.id}
                 className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"

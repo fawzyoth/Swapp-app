@@ -11,27 +11,38 @@ import {
   Menu,
   X,
   Palette,
-  Banknote,
-  Truck,
+  Key,
+  Settings,
+  UserCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
 const menuItems = [
-  { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { path: "/merchant/exchanges", icon: Package, label: "Échanges" },
-  { path: "/merchant/pickups", icon: Truck, label: "Ramassages" },
-  { path: "/merchant/clients", icon: Users, label: "Clients" },
-  { path: "/merchant/payments", icon: Banknote, label: "Mes Paiements" },
-  { path: "/merchant/branding", icon: Palette, label: "Ma Marque" },
-  { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie" },
-  { path: "/merchant/reviews", icon: Star, label: "Avis Clients" },
-  { path: "/merchant/video-calls", icon: Video, label: "Appels Video" },
+  { path: "/merchant/dashboard", icon: LayoutDashboard, label: "Dashboard", dataOnboarding: null },
+  { path: "/merchant/exchanges", icon: Package, label: "Échanges", dataOnboarding: "exchanges" },
+  { path: "/merchant/clients", icon: Users, label: "Clients", dataOnboarding: "qr-code" },
+  { path: "/merchant/branding", icon: Palette, label: "Ma Marque", dataOnboarding: "branding" },
+  { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie", dataOnboarding: "chat" },
+  { path: "/merchant/reviews", icon: Star, label: "Avis Clients", dataOnboarding: null },
+  { path: "/merchant/video-calls", icon: Video, label: "Appels Video", dataOnboarding: null },
+  { path: "/merchant/api-keys", icon: Key, label: "Clés API", dataOnboarding: null },
 ];
 
 export default function MerchantSidebar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
+
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+      }
+    };
+    getUserEmail();
+  }, []);
 
   const handleLogout = () => {
     // Sign out locally (no server call to avoid CORS)
@@ -59,16 +70,13 @@ export default function MerchantSidebar() {
         } lg:translate-x-0 w-64`}
       >
         <div className="flex flex-col h-full">
+          {/* Logo Section */}
           <div className="p-6 border-b border-slate-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-sky-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">E-Commerçant</h2>
-                <p className="text-xs text-slate-500">Espace Pro</p>
-              </div>
-            </div>
+            <img
+              src="/Logo.png"
+              alt="Revixio"
+              className="h-8 w-auto"
+            />
           </div>
 
           <nav className="flex-1 p-4">
@@ -87,6 +95,7 @@ export default function MerchantSidebar() {
                           ? "bg-sky-50 text-sky-600"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
+                      {...(item.dataOnboarding ? { 'data-onboarding': item.dataOnboarding } : {})}
                     >
                       <Icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
@@ -97,14 +106,41 @@ export default function MerchantSidebar() {
             </ul>
           </nav>
 
+          {/* User Account Section */}
           <div className="p-4 border-t border-slate-200">
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Déconnexion</span>
-            </button>
+            {/* User Info */}
+            <div className="mb-3 px-3 py-2 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <UserCircle className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">
+                    {userEmail || "Utilisateur"}
+                  </p>
+                  <p className="text-xs text-slate-500">Compte Merchant</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-1">
+              <Link
+                to="/merchant/branding"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="font-medium">Paramètres</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-colors text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-medium">Déconnexion</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>

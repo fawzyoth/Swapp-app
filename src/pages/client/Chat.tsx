@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { MessageSquare, Send, Clock, Package } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ClientLayout from '../../components/ClientLayout';
@@ -9,23 +9,55 @@ export default function ClientChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageSubscription = useRef<any>(null);
 
   useEffect(() => {
     fetchExchanges();
+
+    return () => {
+      // Cleanup subscription on unmount
+      if (messageSubscription.current) {
+        messageSubscription.current.unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
     if (selectedExchange) {
       fetchMessages(selectedExchange.id);
+      subscribeToMessages(selectedExchange.id);
     }
-  }, [selectedExchange]);
+
+    return () => {
+      // Cleanup previous subscription when exchange changes
+      if (messageSubscription.current) {
+        messageSubscription.current.unsubscribe();
+      }
+    };
+  }, [selectedExchange?.id]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const fetchExchanges = async () => {
     try {
+      // Get client phone from session storage
+      const clientPhone = sessionStorage.getItem('client_phone');
+      if (!clientPhone) {
+        setLoading(false);
+        return;
+      }
+
+      // Optimize: Only select needed fields and limit results
       const { data } = await supabase
         .from('exchanges')
-        .select('*, messages(count)')
-        .order('created_at', { ascending: false });
+        .select('id, exchange_code, reason, status, created_at, merchant_id')
+        .eq('client_phone', clientPhone)
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit to most recent 50 exchanges
 
       if (data) {
         setExchanges(data);
@@ -42,21 +74,47 @@ export default function ClientChat() {
 
   const fetchMessages = async (exchangeId: string) => {
     try {
+      // Optimize: Limit to last 100 messages
       const { data } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, message, sender_type, created_at')
         .eq('exchange_id', exchangeId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      setMessages(data || []);
+      if (data) {
+        setMessages(data.reverse()); // Reverse to show oldest first
+      }
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
+  // Real-time subscription for new messages
+  const subscribeToMessages = (exchangeId: string) => {
+    messageSubscription.current = supabase
+      .channel(`messages:${exchangeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `exchange_id=eq.${exchangeId}`,
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+  };
+
+  const sendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedExchange) return;
+
+    const messageText = newMessage;
+    setNewMessage(''); // Clear immediately for better UX
 
     try {
       const { error } = await supabase
@@ -64,24 +122,25 @@ export default function ClientChat() {
         .insert({
           exchange_id: selectedExchange.id,
           sender_type: 'client',
-          message: newMessage,
+          message: messageText,
         });
 
-      if (!error) {
-        setNewMessage('');
-        fetchMessages(selectedExchange.id);
+      if (error) {
+        console.error('Error sending message:', error);
+        setNewMessage(messageText); // Restore message on error
       }
     } catch (error) {
       console.error('Error:', error);
+      setNewMessage(messageText); // Restore message on error
     }
-  };
+  }, [newMessage, selectedExchange]);
 
-  const formatTime = (date: string) => {
+  const formatTime = useCallback((date: string) => {
     const d = new Date(date);
     return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
 
-  const formatDate = (date: string) => {
+  const formatDate = useCallback((date: string) => {
     const d = new Date(date);
     const today = new Date();
     const yesterday = new Date(today);
@@ -94,37 +153,25 @@ export default function ClientChat() {
     } else {
       return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     }
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'validated': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'in_transit': return 'bg-purple-100 text-purple-800';
-      case 'at_depot': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-slate-100 text-slate-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending': return 'En attente';
-      case 'validated': return 'Validé';
-      case 'rejected': return 'Rejeté';
-      case 'completed': return 'Complété';
-      case 'in_transit': return 'En transit';
-      case 'at_depot': return 'Au dépôt';
-      default: return status;
-    }
-  };
+  const getStatusDisplay = useCallback((status: string) => {
+    const statusMap: Record<string, { label: string; class: string }> = {
+      pending: { label: 'En attente', class: 'bg-yellow-100 text-yellow-800' },
+      validated: { label: 'Validé', class: 'bg-green-100 text-green-800' },
+      rejected: { label: 'Rejeté', class: 'bg-red-100 text-red-800' },
+      completed: { label: 'Complété', class: 'bg-blue-100 text-blue-800' },
+      in_transit: { label: 'En transit', class: 'bg-purple-100 text-purple-800' },
+      at_depot: { label: 'Au dépôt', class: 'bg-orange-100 text-orange-800' },
+    };
+    return statusMap[status] || { label: status, class: 'bg-slate-100 text-slate-800' };
+  }, []);
 
   if (loading) {
     return (
       <ClientLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-slate-600">Chargement...</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </ClientLayout>
     );
@@ -150,35 +197,31 @@ export default function ClientChat() {
                 <p>Aucun échange</p>
               </div>
             ) : (
-              exchanges.map((exchange) => (
-                <div
-                  key={exchange.id}
-                  onClick={() => setSelectedExchange(exchange)}
-                  className={`p-4 border-b border-slate-100 cursor-pointer transition-colors ${
-                    selectedExchange?.id === exchange.id
-                      ? 'bg-blue-50 border-l-4 border-l-blue-500'
-                      : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-semibold text-slate-900">{exchange.exchange_code}</h3>
-                    <span className="text-xs text-slate-500">
-                      {formatDate(exchange.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-600 mb-2 truncate">{exchange.reason}</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(exchange.status)}`}>
-                      {getStatusLabel(exchange.status)}
-                    </span>
-                    {exchange.messages?.[0]?.count > 0 && (
-                      <span className="text-xs text-slate-500">
-                        {exchange.messages[0].count} msg
+              exchanges.map((exchange) => {
+                const statusDisplay = getStatusDisplay(exchange.status);
+                return (
+                  <div
+                    key={exchange.id}
+                    onClick={() => setSelectedExchange(exchange)}
+                    className={`p-4 border-b border-slate-100 cursor-pointer transition-colors ${
+                      selectedExchange?.id === exchange.id
+                        ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-slate-900 truncate">{exchange.exchange_code}</h3>
+                      <span className="text-xs text-slate-500 flex-shrink-0 ml-2">
+                        {formatDate(exchange.created_at)}
                       </span>
-                    )}
+                    </div>
+                    <p className="text-sm text-slate-600 mb-2 truncate">{exchange.reason}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${statusDisplay.class}`}>
+                      {statusDisplay.label}
+                    </span>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -192,8 +235,8 @@ export default function ClientChat() {
                     <h2 className="font-bold text-slate-900">{selectedExchange.exchange_code}</h2>
                     <p className="text-sm text-slate-600">{selectedExchange.reason}</p>
                   </div>
-                  <span className={`text-sm px-3 py-1 rounded-full ${getStatusColor(selectedExchange.status)}`}>
-                    {getStatusLabel(selectedExchange.status)}
+                  <span className={`text-sm px-3 py-1 rounded-full ${getStatusDisplay(selectedExchange.status).class}`}>
+                    {getStatusDisplay(selectedExchange.status).label}
                   </span>
                 </div>
               </div>
@@ -206,29 +249,32 @@ export default function ClientChat() {
                     <p className="text-sm">Démarrez la conversation avec le marchand</p>
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[70%] ${
-                        msg.sender_type === 'client'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-slate-100 text-slate-900'
-                      } rounded-2xl px-4 py-2`}>
-                        {msg.sender_type === 'merchant' && (
-                          <p className="text-xs font-semibold mb-1 opacity-75">Marchand</p>
-                        )}
-                        <p className="text-sm">{msg.message}</p>
-                        <div className={`flex items-center gap-1 mt-1 ${
-                          msg.sender_type === 'client' ? 'text-blue-100' : 'text-slate-500'
-                        }`}>
-                          <Clock className="w-3 h-3" />
-                          <span className="text-xs">{formatTime(msg.created_at)}</span>
+                  <>
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[70%] ${
+                          msg.sender_type === 'client'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-slate-100 text-slate-900'
+                        } rounded-2xl px-4 py-2`}>
+                          {msg.sender_type === 'merchant' && (
+                            <p className="text-xs font-semibold mb-1 opacity-75">Marchand</p>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                          <div className={`flex items-center gap-1 mt-1 ${
+                            msg.sender_type === 'client' ? 'text-blue-100' : 'text-slate-500'
+                          }`}>
+                            <Clock className="w-3 h-3" />
+                            <span className="text-xs">{formatTime(msg.created_at)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
               </div>
 
@@ -240,6 +286,7 @@ export default function ClientChat() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    autoComplete="off"
                   />
                   <button
                     type="submit"

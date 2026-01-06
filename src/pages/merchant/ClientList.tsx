@@ -192,16 +192,16 @@ export default function MerchantClientList() {
   return (
     <MerchantLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Gestion des Clients
-          </h1>
-          <p className="text-slate-600">
-            Vue d'ensemble de vos clients et de leur activité
-          </p>
-        </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Gestion des Clients
+            </h1>
+            <p className="text-slate-600">
+              Vue d'ensemble de vos clients et de leur activité
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-4 gap-4 mb-6">
+          <div className="grid md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-sky-100 rounded-lg">

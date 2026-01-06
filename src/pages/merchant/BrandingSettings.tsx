@@ -557,13 +557,13 @@ export default function BrandingSettings() {
   return (
     <MerchantLayout>
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Parametres</h1>
-        </div>
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-slate-900">Parametres</h1>
+          </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
           <button
             onClick={() => setActiveTab("exchange-paper")}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${

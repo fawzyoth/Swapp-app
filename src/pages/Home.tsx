@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Package, Store, Shield, Truck } from "lucide-react";
+import { Package, Store, Shield, Truck, UserPlus } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -98,6 +98,33 @@ export default function HomePage() {
               <li>• Gestion des comptes</li>
             </ul>
           </Link>
+        </div>
+
+        {/* Call to Action for Merchant Signup */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 md:p-12 text-center text-white">
+            <UserPlus className="w-16 h-16 mx-auto mb-4" />
+            <h3 className="text-3xl font-bold mb-4">
+              Vous êtes un e-commerçant?
+            </h3>
+            <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+              Rejoignez notre plateforme dès aujourd'hui et commencez à gérer vos échanges de manière professionnelle avec intégration automatique des services de livraison.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/signup"
+                className="px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
+              >
+                Créer mon compte gratuitement
+              </Link>
+              <Link
+                to="/login"
+                className="px-8 py-4 bg-blue-700 text-white rounded-xl font-bold text-lg hover:bg-blue-800 transition-all border-2 border-white/30"
+              >
+                Se connecter
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="mt-16 text-center">

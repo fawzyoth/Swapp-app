@@ -25,9 +25,27 @@ export default function MerchantVideoCallList() {
 
   const fetchVideoCalls = async () => {
     try {
+      // Get current merchant
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: merchantData } = await supabase
+        .from('merchants')
+        .select('id')
+        .eq('email', session.user.email)
+        .maybeSingle();
+
+      if (!merchantData) {
+        console.error('Merchant not found');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch only video calls for this merchant
       const { data, error } = await supabase
         .from('video_calls')
         .select('*')
+        .eq('merchant_id', merchantData.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

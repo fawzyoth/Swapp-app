@@ -17,8 +17,10 @@ const LoadingSpinner = () => (
 );
 
 // Lazy load all pages
+const LandingPage = lazy(() => import("./pages/Landing"));
 const HomePage = lazy(() => import("./pages/Home"));
 const UnifiedLogin = lazy(() => import("./pages/Login"));
+const MerchantSignup = lazy(() => import("./pages/MerchantSignup"));
 
 // Client pages
 const ClientScanner = lazy(() => import("./pages/client/Scanner"));
@@ -55,20 +57,13 @@ const MerchantChat = lazy(() => import("./pages/merchant/Chat"));
 const MerchantBrandingSettings = lazy(
   () => import("./pages/merchant/BrandingSettings"),
 );
-const MerchantPickupManagement = lazy(
-  () => import("./pages/merchant/PickupManagement"),
-);
-const MerchantPaymentHistory = lazy(
-  () => import("./pages/merchant/PaymentHistory"),
-);
-const MerchantPaymentDetail = lazy(
-  () => import("./pages/merchant/PaymentDetail"),
-);
 const MerchantReviews = lazy(() => import("./pages/merchant/Reviews"));
 const MerchantVideoCall = lazy(() => import("./pages/merchant/VideoCall"));
 const MerchantVideoCallList = lazy(
   () => import("./pages/merchant/VideoCallList"),
 );
+const MerchantApiKeys = lazy(() => import("./pages/merchant/ApiKeys"));
+const MerchantTutorial = lazy(() => import("./pages/merchant/Tutorial"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -321,8 +316,10 @@ function App() {
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Public routes - no auth check needed */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<UnifiedLogin />} />
+          <Route path="/signup" element={<MerchantSignup />} />
           <Route path="/client/*" element={<ClientRoutes />} />
           <Route path="/call/:roomId" element={<ClientVideoCall />} />
           <Route path="/go/:shortCode" element={<SocialRedirect />} />
@@ -432,22 +429,6 @@ function App() {
             }
           />
           <Route
-            path="/merchant/pickups"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <MerchantPickupManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/merchant/payments"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <MerchantPaymentHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/merchant/reviews"
             element={
               <ProtectedRoute loginPath="/login">
@@ -468,6 +449,22 @@ function App() {
             element={
               <ProtectedRoute loginPath="/login">
                 <MerchantVideoCall />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/api-keys"
+            element={
+              <ProtectedRoute loginPath="/login">
+                <MerchantApiKeys />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/merchant/tutorial"
+            element={
+              <ProtectedRoute loginPath="/login">
+                <MerchantTutorial />
               </ProtectedRoute>
             }
           />

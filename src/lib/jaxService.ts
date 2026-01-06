@@ -3,12 +3,8 @@
 //
 // Flow:
 // 1. Create colis (/user/colis/add) - when merchant prints bordereau
-// 2. Create pickup (/client/createByean) - scheduled for Wednesday/Sunday only
 
 const JAX_API_BASE = "https://core.jax-delivery.com/api";
-
-// Pickup days: Wednesday (3) and Sunday (0)
-const PICKUP_DAYS = [0, 3]; // Sunday = 0, Wednesday = 3
 
 // Default JAX token for all merchants (temporary - should be per-merchant in production)
 export const DEFAULT_JAX_TOKEN =
@@ -191,145 +187,6 @@ export const getJaxGouvernorats = async (token: string): Promise<any[]> => {
   }
 };
 
-// ============================================
-// PICKUP SCHEDULING (Wednesday & Sunday only)
-// ============================================
-
-// JAX Pickup Request
-export interface JaxPickupRequest {
-  adresse: string; // Pickup address
-  nbrColis: string; // Number of colis
-  colis_statut: string; // Status (10 = ready for pickup)
-  colis_list: string[]; // List of EAN codes
-  note?: string; // Optional note
-  gouvernorat_id: number; // Pickup governorate
-}
-
-// JAX Pickup Response
-export interface JaxPickupResponse {
-  success?: boolean;
-  message?: string;
-  pickup_id?: number;
-  error?: string;
-}
-
-// Check if today is a pickup day (Wednesday or Sunday)
-export const isPickupDay = (): boolean => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  return PICKUP_DAYS.includes(dayOfWeek);
-};
-
-// Get next pickup date (Wednesday or Sunday)
-export const getNextPickupDate = (): Date => {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-
-  // Calculate days until next Wednesday (3) and Sunday (0)
-  let daysUntilWednesday = (3 - dayOfWeek + 7) % 7;
-  let daysUntilSunday = (0 - dayOfWeek + 7) % 7;
-
-  // If today is the pickup day and it's before cutoff, use today
-  if (daysUntilWednesday === 0) daysUntilWednesday = 0;
-  if (daysUntilSunday === 0) daysUntilSunday = 0;
-
-  // If both are 0 (today is a pickup day), return today
-  // Otherwise pick the closest future day
-  let daysToAdd: number;
-  if (daysUntilWednesday === 0) {
-    daysToAdd = 0;
-  } else if (daysUntilSunday === 0) {
-    daysToAdd = 0;
-  } else {
-    daysToAdd = Math.min(daysUntilWednesday, daysUntilSunday);
-  }
-
-  const pickupDate = new Date(today);
-  pickupDate.setDate(today.getDate() + daysToAdd);
-  return pickupDate;
-};
-
-// Format date for display
-export const formatPickupDate = (date: Date): string => {
-  const days = [
-    "Dimanche",
-    "Lundi",
-    "Mardi",
-    "Mercredi",
-    "Jeudi",
-    "Vendredi",
-    "Samedi",
-  ];
-  const dayName = days[date.getDay()];
-  const dateStr = date.toLocaleDateString("fr-TN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  return `${dayName} ${dateStr}`;
-};
-
-// Create pickup request in JAX (schedules actual pickup)
-export const createJaxPickup = async (
-  token: string,
-  data: JaxPickupRequest,
-): Promise<JaxPickupResponse> => {
-  try {
-    const response = await fetch(`${JAX_API_BASE}/client/createByean`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-    console.log("JAX Pickup Response:", result);
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: result.message || `JAX API error: ${response.status}`,
-      };
-    }
-
-    return {
-      ...result,
-      success: true,
-    };
-  } catch (error) {
-    console.error("JAX Pickup Error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-};
-
-// Create pickup for multiple colis
-export const schedulePickupForColis = async (
-  token: string,
-  eanList: string[],
-  pickupAddress: string,
-  gouvernoratId: number,
-  note?: string,
-): Promise<JaxPickupResponse> => {
-  if (eanList.length === 0) {
-    return { success: false, error: "Aucun colis à ramasser" };
-  }
-
-  const pickupRequest: JaxPickupRequest = {
-    adresse: pickupAddress,
-    nbrColis: eanList.length.toString(),
-    colis_statut: "10", // Ready for pickup
-    colis_list: eanList,
-    note: note || "Pickup scheduled via SWAPP",
-    gouvernorat_id: gouvernoratId,
-  };
-
-  return createJaxPickup(token, pickupRequest);
-};
 
 // Validation error for JAX request
 export class JaxValidationError extends Error {

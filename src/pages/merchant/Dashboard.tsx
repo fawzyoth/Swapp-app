@@ -7,9 +7,10 @@ import {
   XCircle,
   Clock,
   Users,
-  Truck,
   Play,
   Info,
+  BookOpen,
+  X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
@@ -46,6 +47,15 @@ export default function MerchantDashboard() {
   const [reasonsStats, setReasonsStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
+  const [showTutorialBanner, setShowTutorialBanner] = useState(false);
+
+  useEffect(() => {
+    // Check if tutorial has been completed
+    const tutorialCompleted = localStorage.getItem("merchant_tutorial_completed");
+    if (!tutorialCompleted) {
+      setShowTutorialBanner(true);
+    }
+  }, []);
 
   useEffect(() => {
     // Check if demo mode is active
@@ -180,7 +190,51 @@ export default function MerchantDashboard() {
 
   return (
     <MerchantLayout>
-      <div>
+      <>
+        <div>
+        {/* Tutorial Banner for First-Time Users */}
+        {showTutorialBanner && (
+          <div className="mb-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white shadow-xl">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-2">Bienvenue sur SWAPP!</h3>
+                <p className="text-blue-100 mb-4">
+                  Découvrez comment utiliser la plateforme avec notre guide interactif de 5 minutes. Apprenez à gérer les QR codes, le processus d'échange, et la vérification vidéo.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate("/merchant/tutorial")}
+                    className="px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  >
+                    Commencer le tutoriel
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem("merchant_tutorial_completed", "true");
+                      setShowTutorialBanner(false);
+                    }}
+                    className="px-6 py-2 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition-colors border border-white/30"
+                  >
+                    Plus tard
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem("merchant_tutorial_completed", "true");
+                  setShowTutorialBanner(false);
+                }}
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Demo Mode Banner */}
         {demoMode && (
           <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
@@ -231,7 +285,7 @@ export default function MerchantDashboard() {
           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" data-onboarding="stats">
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -244,7 +298,7 @@ export default function MerchantDashboard() {
             <h3 className="text-slate-600 text-sm">Total des échanges</h3>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-6">
+          <div className="bg-white rounded-xl shadow p-6" data-onboarding="pending">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <Clock className="w-6 h-6 text-yellow-600" />
@@ -371,19 +425,11 @@ export default function MerchantDashboard() {
                   Voir les clients
                 </span>
               </Link>
-              <Link
-                to="/merchant/pickups"
-                className="flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <Truck className="w-5 h-5 text-slate-600" />
-                <span className="font-medium text-slate-900">
-                  Gestion des ramassages
-                </span>
-              </Link>
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     </MerchantLayout>
   );
 }

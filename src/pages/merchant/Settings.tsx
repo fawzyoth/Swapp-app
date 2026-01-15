@@ -1,8 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings as SettingsIcon, Lock, ArrowLeft, Eye, EyeOff, Truck, CheckCircle, XCircle, Loader } from "lucide-react";
+import { Settings as SettingsIcon, Lock, ArrowLeft, Eye, EyeOff, Truck, CheckCircle, XCircle, Loader, Plus, Trash2, X } from "lucide-react";
 import MerchantSidebar from "../../components/MerchantSidebar";
 import { supabase } from "../../lib/supabase";
+
+interface DeliveryIntegration {
+  id: string;
+  delivery_company: string;
+  status: string;
+  created_at: string;
+}
+
+const DELIVERY_COMPANIES = [
+  { value: "aramex", label: "Aramex" },
+  { value: "fedex", label: "FedEx" },
+  { value: "dhl", label: "DHL" },
+  { value: "ups", label: "UPS" },
+  { value: "la_poste_tunisienne", label: "La Poste Tunisienne" },
+  { value: "speedaf", label: "Speedaf" },
+  { value: "mylerz", label: "Mylerz" },
+];
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -23,35 +40,33 @@ export default function Settings() {
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState("");
   const [deliverySuccess, setDeliverySuccess] = useState("");
-  const [deliveryCompany, setDeliveryCompany] = useState<string>("");
-  const [deliveryApiKey, setDeliveryApiKey] = useState("");
-  const [showDeliveryApiKey, setShowDeliveryApiKey] = useState(false);
-  const [deliveryIntegration, setDeliveryIntegration] = useState<any>(null);
+  const [deliveryIntegrations, setDeliveryIntegrations] = useState<DeliveryIntegration[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newDeliveryCompany, setNewDeliveryCompany] = useState("");
+  const [newDeliveryApiKey, setNewDeliveryApiKey] = useState("");
+  const [showNewApiKey, setShowNewApiKey] = useState(false);
 
-  // Fetch delivery integration on mount
+  // Fetch delivery integrations on mount
   useEffect(() => {
-    fetchDeliveryIntegration();
+    fetchDeliveryIntegrations();
   }, []);
 
-  const fetchDeliveryIntegration = async () => {
+  const fetchDeliveryIntegrations = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
 
       const { data, error } = await supabase
-        .from("merchants")
-        .select("delivery_company, delivery_api_key, delivery_integration_status")
-        .eq("id", session.user.id)
-        .single();
+        .from("delivery_integrations")
+        .select("*")
+        .eq("merchant_id", session.user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      if (data) {
-        setDeliveryIntegration(data);
-        setDeliveryCompany(data.delivery_company || "");
-      }
+      setDeliveryIntegrations(data || []);
     } catch (err) {
-      console.error("Error fetching delivery integration:", err);
+      console.error("Error fetching delivery integrations:", err);
     }
   };
 
@@ -146,7 +161,7 @@ export default function Settings() {
     }
   };
 
-  const handleDeliveryIntegration = async (e: React.FormEvent) => {
+  const handleAddDeliveryIntegration = async (e: React.FormEvent) => {
     e.preventDefault();
     setDeliveryLoading(true);
     setDeliveryError("");
@@ -158,46 +173,56 @@ export default function Settings() {
         throw new Error("Session non trouvée. Veuillez vous reconnecter.");
       }
 
-      if (!deliveryCompany) {
+      if (!newDeliveryCompany) {
         throw new Error("Veuillez sélectionner une société de livraison");
       }
 
-      if (!deliveryApiKey.trim()) {
+      if (!newDeliveryApiKey.trim()) {
         throw new Error("Veuillez entrer une clé API");
       }
 
-      // Update merchant record with delivery integration
-      const { error: updateError } = await supabase
-        .from("merchants")
-        .update({
-          delivery_company: deliveryCompany,
-          delivery_api_key: deliveryApiKey,
-          delivery_integration_status: "active",
-        })
-        .eq("id", session.user.id);
+      // Check if integration already exists
+      const existing = deliveryIntegrations.find(
+        (d) => d.delivery_company === newDeliveryCompany
+      );
+      if (existing) {
+        throw new Error("Cette société de livraison est déjà intégrée");
+      }
 
-      if (updateError) throw updateError;
+      // Insert new delivery integration
+      const { error: insertError } = await supabase
+        .from("delivery_integrations")
+        .insert({
+          merchant_id: session.user.id,
+          delivery_company: newDeliveryCompany,
+          api_key: newDeliveryApiKey,
+          status: "active",
+        });
 
-      setDeliverySuccess("Intégration de livraison configurée avec succès!");
-      setDeliveryApiKey("");
+      if (insertError) throw insertError;
 
-      // Refresh delivery integration data
-      await fetchDeliveryIntegration();
+      setDeliverySuccess("Intégration ajoutée avec succès!");
+      setShowAddModal(false);
+      setNewDeliveryCompany("");
+      setNewDeliveryApiKey("");
+
+      // Refresh delivery integrations
+      await fetchDeliveryIntegrations();
 
       setTimeout(() => {
         setDeliverySuccess("");
       }, 3000);
 
     } catch (err: any) {
-      console.error("Delivery integration error:", err);
-      setDeliveryError(err.message || "Erreur lors de la configuration de l'intégration");
+      console.error("Add delivery integration error:", err);
+      setDeliveryError(err.message || "Erreur lors de l'ajout de l'intégration");
     } finally {
       setDeliveryLoading(false);
     }
   };
 
-  const handleDisconnectDelivery = async () => {
-    if (!window.confirm("Êtes-vous sûr de vouloir déconnecter cette intégration?")) {
+  const handleDeleteIntegration = async (integrationId: string) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette intégration?")) {
       return;
     }
 
@@ -205,36 +230,30 @@ export default function Settings() {
     setDeliveryError("");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
-        throw new Error("Session non trouvée. Veuillez vous reconnecter.");
-      }
+      const { error: deleteError } = await supabase
+        .from("delivery_integrations")
+        .delete()
+        .eq("id", integrationId);
 
-      const { error: updateError } = await supabase
-        .from("merchants")
-        .update({
-          delivery_company: null,
-          delivery_api_key: null,
-          delivery_integration_status: null,
-        })
-        .eq("id", session.user.id);
+      if (deleteError) throw deleteError;
 
-      if (updateError) throw updateError;
-
-      setDeliverySuccess("Intégration déconnectée avec succès!");
-      setDeliveryCompany("");
-      await fetchDeliveryIntegration();
+      setDeliverySuccess("Intégration supprimée avec succès!");
+      await fetchDeliveryIntegrations();
 
       setTimeout(() => {
         setDeliverySuccess("");
       }, 3000);
 
     } catch (err: any) {
-      console.error("Disconnect delivery error:", err);
-      setDeliveryError(err.message || "Erreur lors de la déconnexion");
+      console.error("Delete delivery integration error:", err);
+      setDeliveryError(err.message || "Erreur lors de la suppression");
     } finally {
       setDeliveryLoading(false);
     }
+  };
+
+  const getCompanyLabel = (value: string) => {
+    return DELIVERY_COMPANIES.find((c) => c.value === value)?.label || value;
   };
 
   return (
@@ -265,7 +284,7 @@ export default function Settings() {
           </div>
 
           {/* Change Password Section */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
               <Lock className="w-6 h-6 text-slate-700" />
               <div>
@@ -380,17 +399,26 @@ export default function Settings() {
           </div>
 
           {/* Delivery Company Integration Section */}
-          <div className="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
-              <Truck className="w-6 h-6 text-slate-700" />
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Société de Livraison
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Intégrez votre compte avec une société de livraison
-                </p>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <Truck className="w-6 h-6 text-slate-700" />
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Sociétés de Livraison
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Gérez vos intégrations avec les sociétés de livraison
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Ajouter
+              </button>
             </div>
 
             {deliveryError && (
@@ -407,124 +435,183 @@ export default function Settings() {
               </div>
             )}
 
-            {/* Show current integration status */}
-            {deliveryIntegration?.delivery_integration_status === "active" && (
-              <div className="mb-6 p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-emerald-900">
-                        Intégration Active
-                      </p>
-                      <p className="text-sm text-emerald-700">
-                        Société: <span className="font-medium">{deliveryIntegration.delivery_company}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleDisconnectDelivery}
-                    disabled={deliveryLoading}
-                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+            {/* List of integrations */}
+            {deliveryIntegrations.length === 0 ? (
+              <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                <Truck className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-600 mb-4">
+                  Aucune intégration configurée
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Ajouter une intégration
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {deliveryIntegrations.map((integration) => (
+                  <div
+                    key={integration.id}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors"
                   >
-                    Déconnecter
-                  </button>
-                </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Truck className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900">
+                          {getCompanyLabel(integration.delivery_company)}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            integration.status === "active"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-200 text-slate-700"
+                          }`}>
+                            {integration.status === "active" ? (
+                              <>
+                                <CheckCircle className="w-3 h-3" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3" />
+                                Inactive
+                              </>
+                            )}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Ajouté le {new Date(integration.created_at).toLocaleDateString("fr-FR")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteIntegration(integration.id)}
+                      disabled={deliveryLoading}
+                      className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors disabled:opacity-50"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
-            <form onSubmit={handleDeliveryIntegration} className="space-y-5">
-              {/* Delivery Company Selection */}
+            {/* Info Card */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                💡 Comment obtenir votre clé API?
+              </h4>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• Connectez-vous au tableau de bord de votre société de livraison</li>
+                <li>• Accédez aux paramètres d'intégration ou API</li>
+                <li>• Générez une nouvelle clé API si nécessaire</li>
+                <li>• Copiez et collez la clé lors de l'ajout d'une intégration</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Integration Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h3 className="text-xl font-bold text-slate-900">
+                Ajouter une intégration
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleAddDeliveryIntegration} className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Société de livraison *
                 </label>
                 <select
-                  value={deliveryCompany}
-                  onChange={(e) => setDeliveryCompany(e.target.value)}
+                  value={newDeliveryCompany}
+                  onChange={(e) => setNewDeliveryCompany(e.target.value)}
                   required
-                  disabled={deliveryIntegration?.delivery_integration_status === "active"}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 >
                   <option value="">Sélectionnez une société</option>
-                  <option value="aramex">Aramex</option>
-                  <option value="fedex">FedEx</option>
-                  <option value="dhl">DHL</option>
-                  <option value="ups">UPS</option>
-                  <option value="la_poste_tunisienne">La Poste Tunisienne</option>
-                  <option value="speedaf">Speedaf</option>
-                  <option value="mylerz">Mylerz</option>
+                  {DELIVERY_COMPANIES.map((company) => (
+                    <option key={company.value} value={company.value}>
+                      {company.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              {/* API Key Input */}
-              {deliveryIntegration?.delivery_integration_status !== "active" && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Clé API *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showDeliveryApiKey ? "text" : "password"}
-                      value={deliveryApiKey}
-                      onChange={(e) => setDeliveryApiKey(e.target.value)}
-                      required
-                      placeholder="Entrez votre clé API"
-                      className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowDeliveryApiKey(!showDeliveryApiKey)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showDeliveryApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Obtenez votre clé API depuis le tableau de bord de votre société de livraison
-                  </p>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Clé API *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewApiKey ? "text" : "password"}
+                    value={newDeliveryApiKey}
+                    onChange={(e) => setNewDeliveryApiKey(e.target.value)}
+                    required
+                    placeholder="Entrez votre clé API"
+                    className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewApiKey(!showNewApiKey)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showNewApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
-              )}
-
-              {/* Info Card */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                  💡 Comment obtenir votre clé API?
-                </h4>
-                <ul className="text-xs text-blue-800 space-y-1">
-                  <li>• Connectez-vous au tableau de bord de votre société de livraison</li>
-                  <li>• Accédez aux paramètres d'intégration ou API</li>
-                  <li>• Générez une nouvelle clé API si nécessaire</li>
-                  <li>• Copiez et collez la clé ici</li>
-                </ul>
+                <p className="text-xs text-slate-500 mt-1">
+                  Obtenez votre clé API depuis le tableau de bord de votre société de livraison
+                </p>
               </div>
 
-              {/* Submit Button */}
-              {deliveryIntegration?.delivery_integration_status !== "active" && (
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors"
+                >
+                  Annuler
+                </button>
                 <button
                   type="submit"
                   disabled={deliveryLoading}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   {deliveryLoading ? (
                     <>
                       <Loader className="w-5 h-5 animate-spin" />
-                      Configuration en cours...
+                      Ajout...
                     </>
                   ) : (
                     <>
-                      <Truck className="w-5 h-5" />
-                      Configurer l'intégration
+                      <Plus className="w-5 h-5" />
+                      Ajouter
                     </>
                   )}
                 </button>
-              )}
+              </div>
             </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

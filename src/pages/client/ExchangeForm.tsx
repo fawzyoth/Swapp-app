@@ -735,7 +735,7 @@ export default function ClientExchangeForm() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => navigate("/client/scan")}
+            onClick={() => setShowChoiceModal(true)}
             className="flex items-center text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 me-2" />

@@ -12,48 +12,65 @@ export default function EmailConfirmation() {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        // Check if we have a token in the URL
-        const token = searchParams.get("token");
-        const type = searchParams.get("type");
+        console.log("Email confirmation page loaded");
+        console.log("Search params:", Object.fromEntries(searchParams.entries()));
+        console.log("Full hash:", window.location.hash);
 
-        console.log("Email confirmation params:", { token, type });
+        // Wait a moment for Supabase to process the session from URL
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (type === "signup" && token) {
-          // Verify the token
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: "signup",
-          });
+        // Check if we have an error in URL params
+        const error_code = searchParams.get("error_code");
+        const error_description = searchParams.get("error_description");
 
-          if (error) throw error;
+        if (error_code) {
+          console.error("Error in URL:", error_code, error_description);
 
-          console.log("Email verified successfully:", data);
-          setStatus("success");
-          setMessage("Votre email a été confirmé avec succès! Vous pouvez maintenant vous connecter.");
-
-          // Redirect to login page after 3 seconds
-          setTimeout(() => {
-            navigate("/login?confirmed=true");
-          }, 3000);
-        } else {
-          // Check current session
+          // Check if user might already be confirmed
           const { data: { session } } = await supabase.auth.getSession();
 
-          if (session?.user?.email_confirmed_at) {
+          if (session?.user) {
+            console.log("User has active session despite error:", session.user);
             setStatus("success");
-            setMessage("Votre email est déjà confirmé! Vous pouvez vous connecter.");
+            setMessage("Votre email a été confirmé! Vous pouvez maintenant vous connecter.");
             setTimeout(() => {
               navigate("/login?confirmed=true");
             }, 2000);
-          } else {
-            setStatus("error");
-            setMessage("Lien de confirmation invalide ou expiré.");
+            return;
           }
+
+          // Otherwise show error but allow login attempt
+          setStatus("error");
+          setMessage("Le lien de confirmation a expiré. Essayez de vous connecter - votre compte pourrait déjà être actif.");
+          return;
+        }
+
+        // Check current session after Supabase processes the URL tokens
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        console.log("Session after confirmation:", session);
+        console.log("Session error:", error);
+
+        if (session?.user) {
+          console.log("Email confirmed successfully for:", session.user.email);
+          setStatus("success");
+          setMessage("Votre email a été confirmé avec succès! Vous pouvez maintenant vous connecter.");
+
+          // Sign out so user can log in properly
+          await supabase.auth.signOut();
+
+          setTimeout(() => {
+            navigate("/login?confirmed=true");
+          }, 2000);
+        } else {
+          // No session but no error - might need to try login
+          setStatus("error");
+          setMessage("Lien de confirmation invalide ou expiré. Essayez de vous connecter - votre compte pourrait déjà être actif.");
         }
       } catch (error: any) {
         console.error("Email confirmation error:", error);
         setStatus("error");
-        setMessage(error.message || "Erreur lors de la confirmation de l'email");
+        setMessage("Lien de confirmation invalide. Essayez de vous connecter - votre compte pourrait déjà être actif.");
       }
     };
 

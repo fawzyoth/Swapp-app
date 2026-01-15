@@ -12,6 +12,7 @@ interface DeliveryIntegration {
 }
 
 const DELIVERY_COMPANIES = [
+  { value: "test_delivery", label: "Test Delivery (Fake/Testing)" },
   { value: "aramex", label: "Aramex" },
   { value: "fedex", label: "FedEx" },
   { value: "dhl", label: "DHL" },

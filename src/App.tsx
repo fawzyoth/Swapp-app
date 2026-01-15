@@ -23,6 +23,7 @@ const UnifiedLogin = lazy(() => import("./pages/Login"));
 const MerchantSignup = lazy(() => import("./pages/MerchantSignup"));
 const CheckEmail = lazy(() => import("./pages/CheckEmail"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
+const TestDeliveryInfo = lazy(() => import("./pages/TestDeliveryInfo"));
 
 // Client pages
 const ClientScanner = lazy(() => import("./pages/client/Scanner"));
@@ -320,6 +321,7 @@ function App() {
           <Route path="/signup" element={<MerchantSignup />} />
           <Route path="/check-email" element={<CheckEmail />} />
           <Route path="/confirm-email" element={<EmailConfirmation />} />
+          <Route path="/test-delivery/:code" element={<TestDeliveryInfo />} />
           <Route path="/client/*" element={<ClientRoutes />} />
           <Route path="/call/:roomId" element={<ClientVideoCall />} />
           <Route path="/go/:shortCode" element={<SocialRedirect />} />

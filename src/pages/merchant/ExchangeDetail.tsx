@@ -481,8 +481,10 @@ export default function MerchantExchangeDetail() {
       setJaxLoading(false);
     }
 
-    // Generate QR code URL for delivery person verification
-    const verificationUrl = `https://swapp-app.pages.dev/#/delivery/verify/${exchange.exchange_code}`;
+    // Generate QR code URL - use test delivery page if delivery company is test_delivery
+    const verificationUrl = exchange.delivery_company === "test_delivery"
+      ? `https://swapp-app.pages.dev/#/test-delivery/${exchange.exchange_code}`
+      : `https://swapp-app.pages.dev/#/delivery/verify/${exchange.exchange_code}`;
 
     const printWindow = window.open("", "", "height=800,width=600");
     if (printWindow) {

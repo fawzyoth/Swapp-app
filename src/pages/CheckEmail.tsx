@@ -1,10 +1,17 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 export default function CheckEmail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
+
+  useEffect(() => {
+    console.log("CheckEmail page loaded");
+    console.log("Email from params:", email);
+    console.log("All search params:", Object.fromEntries(searchParams.entries()));
+  }, [email, searchParams]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">

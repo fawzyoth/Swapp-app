@@ -1,8 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, Package, CheckCircle, ArrowRight } from "lucide-react";
+import { Shield, Package, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import LandingNew from "./LandingNew";
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [showNew, setShowNew] = useState(false);
+
+  // If user wants to see new version, render that instead
+  if (showNew) {
+    return <LandingNew />;
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -16,6 +24,14 @@ export default function Landing() {
             className="w-auto"
           />
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowNew(!showNew)}
+              className="text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors font-medium flex items-center gap-1.5"
+              title="Basculer entre les versions"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Version {showNew ? "Simple" : "Animée"}
+            </button>
             <button
               onClick={() => navigate("/login")}
               className="text-sm text-slate-600 hover:text-slate-900 transition-colors px-4 py-2"

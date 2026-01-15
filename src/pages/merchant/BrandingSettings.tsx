@@ -556,82 +556,92 @@ export default function BrandingSettings() {
 
   return (
     <MerchantLayout>
-      <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-900">Parametres</h1>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          {/* Header with Description */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Ma Marque</h1>
+            <p className="text-slate-600">Personnalisez vos QR codes et gérez votre identité de marque</p>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl">
+          {/* Tab Navigation - Improved Design */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
           <button
             onClick={() => setActiveTab("exchange-paper")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+            className={`flex items-center justify-center sm:flex-1 gap-2 px-6 py-4 rounded-xl font-semibold transition-all ${
               activeTab === "exchange-paper"
-                ? "bg-white text-emerald-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md transform scale-[1.02]"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             <QrCode className="w-5 h-5" />
-            Fiche QR Code
+            <span>Fiche QR Code</span>
           </button>
           <button
             onClick={() => setActiveTab("social-qr")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+            className={`flex items-center justify-center sm:flex-1 gap-2 px-6 py-4 rounded-xl font-semibold transition-all ${
               activeTab === "social-qr"
-                ? "bg-white text-pink-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white shadow-md transform scale-[1.02]"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             <BarChart3 className="w-5 h-5" />
-            Réseaux Sociaux
+            <span>Réseaux Sociaux</span>
+            {socialQRCodes.length > 0 && (
+              <span className="bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {socialQRCodes.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("branding")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+            className={`flex items-center justify-center sm:flex-1 gap-2 px-6 py-4 rounded-xl font-semibold transition-all ${
               activeTab === "branding"
-                ? "bg-white text-sky-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-md transform scale-[1.02]"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             <Palette className="w-5 h-5" />
-            Marque & Logo
+            <span>Marque & Logo</span>
           </button>
         </div>
 
-        {/* Alerts */}
+        {/* Alerts - Fixed Position at Top */}
         {success && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
-            <span className="text-emerald-800">
-              Modifications enregistrees avec succes
+          <div className="mb-6 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
+            </div>
+            <span className="text-emerald-900 font-medium">
+              Modifications enregistrées avec succès !
             </span>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800">{error}</span>
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <span className="text-red-900 font-medium">{error}</span>
           </div>
         )}
 
         {/* Exchange Paper Tab */}
         {activeTab === "exchange-paper" && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Main Preview Card with Print Button */}
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
               {/* Top Action Bar */}
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 sm:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="text-white">
-                  <h2 className="text-lg font-bold">Fiche d'Echange</h2>
-                  <p className="text-emerald-100 text-sm">
-                    Imprimez cette fiche et glissez-la dans vos colis
+                  <h2 className="text-xl font-bold mb-1">Fiche d'Échange QR Code</h2>
+                  <p className="text-emerald-50 text-sm sm:text-base">
+                    Imprimez cette fiche et glissez-la dans vos colis pour faciliter les échanges
                   </p>
                 </div>
                 <button
                   onClick={printExchangePaper}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors font-semibold shadow-lg"
+                  className="flex items-center gap-2 px-8 py-4 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 hover:shadow-xl transition-all font-bold shadow-lg whitespace-nowrap transform hover:scale-105"
                 >
                   <Printer className="w-5 h-5" />
                   Imprimer
@@ -712,21 +722,28 @@ export default function BrandingSettings() {
             </div>
 
             {/* Collapsible Customization */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
               <button
                 onClick={() => setShowCustomization(!showCustomization)}
-                className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50 transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <Settings className="w-5 h-5 text-slate-500" />
-                  <span className="font-medium text-slate-700">
-                    Personnaliser le contenu
-                  </span>
+                  <div className={`p-2 rounded-lg transition-colors ${showCustomization ? 'bg-emerald-100' : 'bg-slate-100 group-hover:bg-slate-200'}`}>
+                    <Settings className={`w-5 h-5 ${showCustomization ? 'text-emerald-600' : 'text-slate-600'}`} />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-slate-900 block">
+                      Personnaliser le contenu
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      Modifiez le texte et les options d'affichage
+                    </span>
+                  </div>
                 </div>
                 {showCustomization ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
+                  <ChevronUp className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
+                  <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
                 )}
               </button>
 
@@ -876,20 +893,22 @@ export default function BrandingSettings() {
             </div>
 
             {/* Info Card */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex gap-3">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <Eye className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
                 <div>
-                  <h4 className="font-medium text-blue-900 mb-1">
-                    Comment ca marche ?
+                  <h4 className="font-bold text-blue-900 mb-2 text-lg">
+                    💡 Comment ça marche ?
                   </h4>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-blue-800 leading-relaxed">
                     Imprimez cette fiche et glissez-la dans chaque colis. Vos
-                    clients scannent le QR code pour demander un echange
-                    facilement. Plus besoin d'imprimer un bordereau pour chaque
-                    echange !
+                    clients scannent le QR code pour demander un échange
+                    facilement. <span className="font-semibold">Plus besoin d'imprimer un bordereau pour chaque
+                    échange !</span>
                   </p>
                 </div>
               </div>
@@ -899,22 +918,21 @@ export default function BrandingSettings() {
 
         {/* Social QR Tab */}
         {activeTab === "social-qr" && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Header */}
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 px-6 py-4 flex items-center justify-between">
+            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 px-6 sm:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="text-white">
-                  <h2 className="text-lg font-bold">
+                  <h2 className="text-xl font-bold mb-1">
                     QR Codes Réseaux Sociaux
                   </h2>
-                  <p className="text-pink-100 text-sm">
-                    Créez des QR codes pour vos pages sociales et suivez les
-                    scans
+                  <p className="text-pink-50 text-sm sm:text-base">
+                    Créez des QR codes pour vos pages sociales et suivez les statistiques de scan
                   </p>
                 </div>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl hover:bg-purple-50 transition-colors font-semibold shadow-lg"
+                  className="flex items-center gap-2 px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-purple-50 hover:shadow-xl transition-all font-bold shadow-lg whitespace-nowrap transform hover:scale-105"
                 >
                   <Plus className="w-5 h-5" />
                   Ajouter
@@ -924,22 +942,22 @@ export default function BrandingSettings() {
 
             {/* QR Codes Grid */}
             {socialQRCodes.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <QrCode className="w-8 h-8 text-slate-400" />
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-lg border-2 border-purple-200 p-16 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md">
+                  <QrCode className="w-12 h-12 text-purple-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                  Aucun QR code
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Créez votre premier QR code social
                 </h3>
-                <p className="text-slate-600 mb-4">
+                <p className="text-slate-600 mb-6 max-w-md mx-auto text-lg">
                   Ajoutez vos liens Facebook, Instagram ou TikTok pour créer des
-                  QR codes trackables
+                  QR codes trackables et mesurer votre impact
                 </p>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg font-bold transform hover:scale-105"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   Créer mon premier QR code
                 </button>
               </div>
@@ -948,10 +966,10 @@ export default function BrandingSettings() {
                 {socialQRCodes.map((qr) => (
                   <div
                     key={qr.id}
-                    className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all cursor-pointer ${
+                    className={`bg-white rounded-2xl shadow-lg border-2 overflow-hidden transition-all cursor-pointer transform hover:scale-[1.02] ${
                       selectedQR?.id === qr.id
-                        ? "border-purple-500 ring-2 ring-purple-200"
-                        : "border-slate-200 hover:border-slate-300"
+                        ? "border-purple-500 ring-4 ring-purple-200 scale-[1.02]"
+                        : "border-slate-200 hover:border-purple-300 hover:shadow-xl"
                     }`}
                     onClick={() => {
                       setSelectedQR(qr);
@@ -1144,19 +1162,21 @@ export default function BrandingSettings() {
             )}
 
             {/* Info Card */}
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <div className="flex gap-3">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <Eye className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-purple-600" />
+                  </div>
                 </div>
                 <div>
-                  <h4 className="font-medium text-purple-900 mb-1">
-                    Comment ça marche ?
+                  <h4 className="font-bold text-purple-900 mb-2 text-lg">
+                    💡 Comment ça marche ?
                   </h4>
-                  <p className="text-sm text-purple-700">
+                  <p className="text-purple-800 leading-relaxed">
                     Ajoutez vos liens Facebook, Instagram ou TikTok. Nous
                     générons un QR code unique avec le logo du réseau social.
-                    Chaque scan est comptabilisé pour vous permettre de mesurer
+                    <span className="font-semibold"> Chaque scan est comptabilisé</span> pour vous permettre de mesurer
                     l'efficacité de vos supports marketing.
                   </p>
                 </div>
@@ -1167,24 +1187,29 @@ export default function BrandingSettings() {
 
         {/* Branding Tab */}
         {activeTab === "branding" && (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Logo Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Upload className="w-5 h-5 text-sky-600" />
-                Logo de l'entreprise
-              </h2>
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                <div className="w-10 h-10 bg-sky-100 rounded-xl flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Logo de l'entreprise</h2>
+                  <p className="text-sm text-slate-500">Affichez votre logo sur vos fiches d'échange</p>
+                </div>
+              </div>
 
-              <div className="flex items-start gap-6">
-                <div className="w-32 h-32 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
+                <div className="w-40 h-40 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden shadow-inner">
                   {formData.logo_base64 ? (
                     <img
                       src={formData.logo_base64}
                       alt="Logo"
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain p-4"
                     />
                   ) : (
-                    <Building2 className="w-12 h-12 text-slate-400" />
+                    <Building2 className="w-16 h-16 text-slate-400" />
                   )}
                 </div>
 
@@ -1199,40 +1224,47 @@ export default function BrandingSettings() {
                   />
                   <label
                     htmlFor="logo-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-xl hover:from-sky-600 hover:to-blue-600 cursor-pointer transition-all shadow-md hover:shadow-lg font-semibold"
                   >
-                    <Upload className="w-4 h-4" />
-                    Telecharger une image
+                    <Upload className="w-5 h-5" />
+                    Télécharger une image
                   </label>
 
                   {formData.logo_base64 && (
                     <button
                       type="button"
                       onClick={removeLogo}
-                      className="ml-3 inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                      className="ml-3 inline-flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all font-semibold"
                     >
                       <Trash2 className="w-4 h-4" />
                       Supprimer
                     </button>
                   )}
 
-                  <p className="text-sm text-slate-500 mt-3">
-                    Format recommande: PNG ou JPG, max 500 Ko
-                  </p>
+                  <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">Format recommandé:</span> PNG ou JPG, max 500 Ko
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Business Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-sky-600" />
-                Informations de l'entreprise
-              </h2>
-
-              <div className="space-y-4">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                <div className="w-10 h-10 bg-sky-100 rounded-xl flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-sky-600" />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <h2 className="text-xl font-bold text-slate-900">Informations de l'entreprise</h2>
+                  <p className="text-sm text-slate-500">Détails affichés sur vos documents</p>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Nom commercial
                   </label>
                   <input
@@ -1244,15 +1276,15 @@ export default function BrandingSettings() {
                         business_name: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
                     placeholder="Nom de votre entreprise"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     <Phone className="w-4 h-4 inline mr-1" />
-                    Telephone
+                    Téléphone
                   </label>
                   <input
                     type="tel"
@@ -1263,7 +1295,7 @@ export default function BrandingSettings() {
                         phone: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
                     placeholder="+216 XX XXX XXX"
                   />
                 </div>
@@ -1271,16 +1303,21 @@ export default function BrandingSettings() {
             </div>
 
             {/* Address Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-sky-600" />
-                Adresse
-              </h2>
-
-              <div className="space-y-4">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                <div className="w-10 h-10 bg-sky-100 rounded-xl flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-sky-600" />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Adresse
+                  <h2 className="text-xl font-bold text-slate-900">Adresse</h2>
+                  <p className="text-sm text-slate-500">Localisation de votre entreprise</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Adresse complète
                   </label>
                   <input
                     type="text"
@@ -1291,14 +1328,14 @@ export default function BrandingSettings() {
                         business_address: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                    placeholder="Rue, numero, etc."
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+                    placeholder="Rue, numéro, etc."
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Ville
                     </label>
                     <input
@@ -1310,13 +1347,13 @@ export default function BrandingSettings() {
                           business_city: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
                       placeholder="Tunis"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Code postal
                     </label>
                     <input
@@ -1328,7 +1365,7 @@ export default function BrandingSettings() {
                           business_postal_code: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
                       placeholder="1000"
                     />
                   </div>
@@ -1337,11 +1374,11 @@ export default function BrandingSettings() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end">
+            <div className="flex justify-end sticky bottom-6 z-10">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-xl hover:from-sky-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl hover:shadow-2xl font-bold transform hover:scale-105"
               >
                 {saving ? (
                   <>
@@ -1362,17 +1399,20 @@ export default function BrandingSettings() {
 
       {/* Add Social QR Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-            <div className="px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-3xl">
+              <h3 className="text-2xl font-bold text-white">
                 Ajouter un QR code social
               </h3>
+              <p className="text-purple-100 text-sm mt-1">
+                Connectez vos réseaux sociaux en un clic
+              </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-8 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
                   Lien de votre page sociale
                 </label>
                 <input
@@ -1383,50 +1423,56 @@ export default function BrandingSettings() {
                     setNewPlatform(detectPlatform(e.target.value));
                   }}
                   placeholder="https://facebook.com/votre-page"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-5 py-4 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-base"
+                  autoFocus
                 />
               </div>
 
               {newSocialUrl && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                  {getSocialIcon(newPlatform, 24)}
-                  <span className="font-medium text-slate-700">
-                    {SOCIAL_PLATFORM_LABELS[newPlatform]} détecté
-                  </span>
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex-shrink-0">
+                    {getSocialIcon(newPlatform, 32)}
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900 text-lg block">
+                      {SOCIAL_PLATFORM_LABELS[newPlatform]}
+                    </span>
+                    <span className="text-sm text-slate-600">Détecté automatiquement</span>
+                  </div>
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-700">
-                  Collez le lien de votre page Facebook, Instagram ou TikTok. Le
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <p className="text-sm text-blue-900 leading-relaxed">
+                  💡 <span className="font-semibold">Astuce:</span> Collez le lien de votre page Facebook, Instagram ou TikTok. Le
                   réseau social sera détecté automatiquement.
                 </p>
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+            <div className="px-8 py-6 bg-slate-50 rounded-b-3xl flex justify-end gap-3">
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setNewSocialUrl("");
                 }}
-                className="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+                className="px-6 py-3 text-slate-600 hover:text-slate-900 font-semibold transition-colors rounded-xl hover:bg-slate-200"
               >
                 Annuler
               </button>
               <button
                 onClick={handleAddSocialQR}
                 disabled={!newSocialUrl.trim() || savingSocial}
-                className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-300 disabled:to-slate-300 text-white rounded-xl transition-all font-bold shadow-lg disabled:shadow-none transform hover:scale-105 disabled:scale-100"
               >
                 {savingSocial ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     Création...
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                     Créer le QR code
                   </>
                 )}

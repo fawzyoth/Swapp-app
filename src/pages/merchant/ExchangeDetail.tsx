@@ -41,196 +41,6 @@ import {
 // Delivery fee constant - 9 TND per package
 const DELIVERY_FEE = 9;
 
-// Demo exchanges database - matching IDs from ExchangeList
-const DEMO_EXCHANGES_DB: Record<string, any> = {
-  "demo-1": {
-    id: "demo-1",
-    exchange_code: "EXC-2024-001",
-    client_name: "Ahmed Ben Ali",
-    client_phone: "+216 55 123 456",
-    client_address: "15 Rue de la Liberte",
-    client_city: "Tunis",
-    client_postal_code: "1000",
-    client_country: "Tunisie",
-    product_name: "T-Shirt Nike - Taille L",
-    reason: "Taille incorrecte",
-    status: "pending",
-    payment_amount: 0,
-    payment_status: "pending",
-    created_at: new Date().toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-2": {
-    id: "demo-2",
-    exchange_code: "EXC-2024-002",
-    client_name: "Leila Mansouri",
-    client_phone: "+216 98 111 222",
-    client_address: "42 Avenue Habib Bourguiba",
-    client_city: "Sfax",
-    client_postal_code: "3000",
-    client_country: "Tunisie",
-    product_name: "Robe Zara - Rouge",
-    reason: "Couleur non conforme",
-    status: "pending",
-    payment_amount: 15,
-    payment_status: "pending",
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-3": {
-    id: "demo-3",
-    exchange_code: "EXC-2024-003",
-    client_name: "Karim Bouzid",
-    client_phone: "+216 22 333 444",
-    client_address: "8 Rue Ibn Khaldoun",
-    client_city: "Sousse",
-    client_postal_code: "4000",
-    client_country: "Tunisie",
-    product_name: "Chaussures Adidas - 42",
-    reason: "Produit defectueux",
-    status: "pending",
-    payment_amount: 0,
-    payment_status: "pending",
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-4": {
-    id: "demo-4",
-    exchange_code: "EXC-2024-004",
-    client_name: "Fatma Trabelsi",
-    client_phone: "+216 22 987 654",
-    client_address: "25 Rue de Marseille",
-    client_city: "Tunis",
-    client_postal_code: "1000",
-    client_country: "Tunisie",
-    product_name: "Sac a main Guess",
-    reason: "Ne correspond pas a la description",
-    status: "validated",
-    payment_amount: 0,
-    payment_status: "free",
-    validated_at: new Date(Date.now() - 86400000).toISOString(),
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-9": {
-    id: "demo-9",
-    exchange_code: "EXC-2024-009",
-    client_name: "Mohamed Kacem",
-    client_phone: "+216 98 456 123",
-    client_address: "55 Rue de Rome",
-    client_city: "Tunis",
-    client_postal_code: "1000",
-    client_country: "Tunisie",
-    product_name: "Smartphone Samsung Galaxy",
-    reason: "Batterie defectueuse",
-    status: "completed",
-    payment_amount: 0,
-    payment_status: "free",
-    return_product_status: "accepted",
-    return_product_notes: "Produit en bon etat, echange effectue",
-    completed_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-11": {
-    id: "demo-11",
-    exchange_code: "EXC-2024-011",
-    client_name: "Raouf Jebali",
-    client_phone: "+216 58 777 888",
-    client_address: "9 Rue de Hollande",
-    client_city: "Sousse",
-    client_postal_code: "4000",
-    client_country: "Tunisie",
-    product_name: "Casque Beats Solo",
-    reason: "Son defectueux",
-    status: "completed",
-    payment_amount: 0,
-    payment_status: "free",
-    return_product_status: "problem",
-    return_product_notes: "Legere rayure sur le produit retourne",
-    completed_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
-    video: null,
-    images: null,
-  },
-  "demo-12": {
-    id: "demo-12",
-    exchange_code: "EXC-2024-012",
-    client_name: "Sarra Bouaziz",
-    client_phone: "+216 50 789 012",
-    client_address: "14 Rue de Grece",
-    client_city: "Tunis",
-    client_postal_code: "1000",
-    client_country: "Tunisie",
-    product_name: "Lunettes Ray-Ban",
-    reason: "Ne me plait plus",
-    status: "rejected",
-    rejection_reason: "Delai de retour depasse (30 jours)",
-    created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-    video: null,
-    images: null,
-  },
-};
-
-// Default demo exchange for unknown IDs
-const DEMO_EXCHANGE = {
-  id: "demo-123",
-  exchange_code: "EXC-DEMO-2024",
-  client_name: "Ahmed Ben Ali",
-  client_phone: "+216 55 123 456",
-  client_address: "15 Rue de la Liberte",
-  client_city: "Tunis",
-  client_postal_code: "1000",
-  client_country: "Tunisie",
-  product_name: "T-Shirt Nike - Taille L",
-  reason: "Taille incorrecte",
-  status: "pending",
-  payment_amount: 0,
-  payment_status: "pending",
-  created_at: new Date().toISOString(),
-  video: null,
-  images: null,
-};
-
-const DEMO_MESSAGES = [
-  {
-    id: "msg-1",
-    sender_type: "client",
-    message:
-      "Bonjour, j'ai commande une taille L mais j'ai recu une taille M. Je voudrais echanger.",
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "msg-2",
-    sender_type: "merchant",
-    message:
-      "Bonjour, nous avons bien recu votre demande. Nous allons l'examiner.",
-    created_at: new Date(Date.now() - 1800000).toISOString(),
-  },
-];
-
-const DEMO_CLIENT_HISTORY = [
-  {
-    id: "hist-1",
-    exchange_code: "EXC-ABC123",
-    reason: "Couleur non conforme",
-    status: "completed",
-    created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-  },
-  {
-    id: "hist-2",
-    exchange_code: "EXC-DEF456",
-    reason: "Produit defectueux",
-    status: "validated",
-    created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
-  },
-];
-
 export default function MerchantExchangeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -260,56 +70,9 @@ export default function MerchantExchangeDetail() {
   const [jaxError, setJaxError] = useState<string | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
-  // Test mode state - check sessionStorage on init
-  const [testMode, setTestMode] = useState(() => {
-    return sessionStorage.getItem("demo_mode") === "true";
-  });
-
   useEffect(() => {
-    if (testMode) {
-      loadDemoData();
-    } else {
-      fetchData();
-    }
-  }, [id, testMode]);
-
-  // Load demo data for test mode
-  const loadDemoData = () => {
-    setLoading(true);
-    // Simulate loading delay
-    setTimeout(() => {
-      // Get the correct exchange from demo database, or use default
-      const demoExchange =
-        id && DEMO_EXCHANGES_DB[id] ? DEMO_EXCHANGES_DB[id] : DEMO_EXCHANGE;
-      setExchange(demoExchange);
-      setMessages(DEMO_MESSAGES);
-      setClientHistory(DEMO_CLIENT_HISTORY);
-      setDeliveryAttempts([]);
-      setMerchant({
-        id: "demo-merchant",
-        name: "Boutique Demo",
-        business_name: "Ma Boutique Demo",
-        phone: "+216 70 000 000",
-        business_address: "Avenue Habib Bourguiba, Tunis",
-        business_city: "Tunis",
-      });
-      setLoading(false);
-    }, 500);
-  };
-
-  // Toggle test mode
-  const toggleTestMode = () => {
-    setTestMode(!testMode);
-    // Reset states when switching modes
-    setExchange(null);
-    setMessages([]);
-    setClientHistory([]);
-    setDeliveryAttempts([]);
-    setShowValidateModal(false);
-    setShowRejectModal(false);
-    setPaymentType("free");
-    setPaymentAmount("0");
-  };
+    fetchData();
+  }, [id]);
 
   // Lazy load video and images only when user clicks to view
   const loadMedia = async () => {
@@ -422,21 +185,6 @@ export default function MerchantExchangeDetail() {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    // Demo mode - just update local state
-    if (testMode) {
-      setMessages([
-        ...messages,
-        {
-          id: `msg-demo-${Date.now()}`,
-          sender_type: "merchant",
-          message: newMessage,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      setNewMessage("");
-      return;
-    }
-
     try {
       await supabase.from("messages").insert({
         exchange_id: id,
@@ -473,33 +221,6 @@ export default function MerchantExchangeDetail() {
     // For free exchanges, merchant pays the delivery fee
     // For paid exchanges, the delivery fee can be included in the client payment or paid by merchant
     const merchantDeliveryCharge = paymentType === "free" ? deliveryFee : 0;
-
-    // Demo mode - just update local state
-    if (testMode) {
-      setExchange({
-        ...exchange,
-        status: "validated",
-        payment_amount: clientPaymentAmount,
-        delivery_fee: deliveryFee,
-        merchant_delivery_charge: merchantDeliveryCharge,
-        payment_status: paymentType === "free" ? "free" : "pending",
-      });
-      setMessages([
-        ...messages,
-        {
-          id: `msg-demo-${Date.now()}`,
-          sender_type: "merchant",
-          message:
-            paymentType === "free"
-              ? "Votre échange a été validé. Aucun paiement supplémentaire requis."
-              : `Votre échange a été validé. Montant à payer: ${clientPaymentAmount.toFixed(2)} TND.`,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      setShowValidateModal(false);
-      setShowPrintModal(true);
-      return;
-    }
 
     try {
       await supabase
@@ -562,28 +283,7 @@ export default function MerchantExchangeDetail() {
       return;
     }
 
-    // Demo mode - just update local state
-    if (testMode) {
-      setExchange({
-        ...exchange,
-        status: "rejected",
-        rejection_reason: rejectionReason,
-      });
-      setMessages([
-        ...messages,
-        {
-          id: `msg-demo-${Date.now()}`,
-          sender_type: "merchant",
-          message: `Votre demande d'échange a été refusée. Raison: ${rejectionReason}`,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      setShowRejectModal(false);
-      setRejectionReason("");
-      return;
-    }
-
-    try {
+    try{
       await supabase
         .from("exchanges")
         .update({
@@ -1106,7 +806,7 @@ export default function MerchantExchangeDetail() {
   return (
     <MerchantLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Header with back button and test mode toggle */}
+        {/* Header with back button */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate("/merchant/exchanges")}
@@ -1115,46 +815,7 @@ export default function MerchantExchangeDetail() {
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Retour aux échanges</span>
           </button>
-
-          {/* Test Mode Toggle */}
-          <button
-            onClick={toggleTestMode}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
-              testMode
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 rounded-full ${testMode ? "bg-white animate-pulse" : "bg-slate-400"}`}
-            />
-            {testMode ? "Mode Demo Actif" : "Activer Mode Demo"}
-          </button>
         </div>
-
-        {/* Demo Mode Banner */}
-        {testMode && (
-          <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Info className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold">Mode Démonstration</h3>
-                <p className="text-purple-100 text-sm">
-                  Vous visualisez des données fictives. Cliquez sur "Activer
-                  Mode Demo" pour revenir aux vraies données.
-                </p>
-              </div>
-              <button
-                onClick={toggleTestMode}
-                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
-              >
-                Voir données réelles
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -1394,7 +1055,7 @@ export default function MerchantExchangeDetail() {
                 </div>
               )}
 
-              {!isPending && exchange.status === "validated" && (
+              {!isPending && (exchange.status === "validated" || exchange.status === "ready_for_pickup") && (
                 <div className="mt-6 space-y-3">
                   <p className="text-sm font-medium text-slate-700 text-center">
                     Imprimer le bordereau

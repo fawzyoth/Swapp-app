@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide file upload option in QR code scanner - only show camera */
+#qr-reader__dashboard_section_swaplink,
+#qr-reader__dashboard_section_csr,
+#qr-reader__dashboard_section_fsr,
+#qr-reader__filescan_input,
+#qr-reader__dashboard_section > span:last-child,
+#html5-qrcode-button-file-selection,
+input[type="file"]#html5-qrcode-private-filescan-input {
+  display: none !important;
+}
+
+/* Hide the entire file selection section */
+#qr-reader__dashboard_section_fsr {
+  display: none !important;
+}
+
+/* Hide file selection button and text */
+#qr-reader__dashboard_section > div:last-child {
+  display: none !important;
+}
+
+#qr-reader__scan_region {
+  border: 2px solid #10b981 !important;
+  border-radius: 12px !important;
+}

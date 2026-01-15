@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Star,
-  Video,
   LayoutDashboard,
   Package,
   Users,
@@ -11,7 +10,6 @@ import {
   Menu,
   X,
   Palette,
-  Key,
   Settings,
   UserCircle,
 } from "lucide-react";
@@ -25,8 +23,6 @@ const menuItems = [
   { path: "/merchant/branding", icon: Palette, label: "Ma Marque", dataOnboarding: "branding" },
   { path: "/merchant/chat", icon: MessageSquare, label: "Messagerie", dataOnboarding: "chat" },
   { path: "/merchant/reviews", icon: Star, label: "Avis Clients", dataOnboarding: null },
-  { path: "/merchant/video-calls", icon: Video, label: "Appels Video", dataOnboarding: null },
-  { path: "/merchant/api-keys", icon: Key, label: "Clés API", dataOnboarding: null },
 ];
 
 export default function MerchantSidebar() {
@@ -73,9 +69,9 @@ export default function MerchantSidebar() {
           {/* Logo Section */}
           <div className="p-6 border-b border-slate-200">
             <img
-              src="/Logo.png"
-              alt="Revixio"
-              className="h-8 w-auto"
+              src="/SWAPPIE.svg"
+              alt="SWAPPIE"
+              className="h-10 w-auto"
             />
           </div>
 
@@ -126,7 +122,7 @@ export default function MerchantSidebar() {
             {/* Action Buttons */}
             <div className="space-y-1">
               <Link
-                to="/merchant/branding"
+                to="/merchant/settings"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm"
               >

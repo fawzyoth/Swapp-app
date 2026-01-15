@@ -1,14 +1,23 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { LogIn, ArrowLeft } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    // Check if user was redirected after email confirmation
+    if (searchParams.get("confirmed") === "true") {
+      setSuccessMessage("✅ Email confirmé avec succès! Vous pouvez maintenant vous connecter.");
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +142,12 @@ export default function Login() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+              {successMessage}
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
               {error}

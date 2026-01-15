@@ -15,25 +15,6 @@ import {
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 
-// Demo stats data - matches the 15 exchanges in ExchangeList
-const DEMO_STATS = {
-  total: 15,
-  pending: 3,
-  validated: 4, // 2 validated + 2 ready_for_pickup
-  rejected: 2,
-  completed: 5,
-  validationRate: 80,
-};
-
-const DEMO_REASONS = [
-  { reason: "Taille incorrecte", count: 3 },
-  { reason: "Couleur non conforme", count: 2 },
-  { reason: "Produit defectueux", count: 4 },
-  { reason: "Ne correspond pas a la description", count: 3 },
-  { reason: "Changement d'avis", count: 2 },
-  { reason: "Ecran defectueux", count: 1 },
-];
-
 export default function MerchantDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
@@ -46,7 +27,6 @@ export default function MerchantDashboard() {
   });
   const [reasonsStats, setReasonsStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [showTutorialBanner, setShowTutorialBanner] = useState(false);
 
   useEffect(() => {
@@ -58,50 +38,8 @@ export default function MerchantDashboard() {
   }, []);
 
   useEffect(() => {
-    // Check if demo mode is active
-    const isDemoMode = sessionStorage.getItem("demo_mode") === "true";
-    setDemoMode(isDemoMode);
-
-    if (isDemoMode) {
-      // Load demo data
-      setStats(DEMO_STATS);
-      setReasonsStats(DEMO_REASONS);
-      setLoading(false);
-    } else {
-      fetchStats();
-    }
+    fetchStats();
   }, []);
-
-  const exitDemoMode = () => {
-    sessionStorage.removeItem("demo_mode");
-    sessionStorage.removeItem("demo_merchant");
-    navigate("/merchant/login");
-  };
-
-  const toggleDemoMode = () => {
-    if (demoMode) {
-      // Exit demo mode
-      sessionStorage.removeItem("demo_mode");
-      sessionStorage.removeItem("demo_merchant");
-      setDemoMode(false);
-      setLoading(true);
-      fetchStats();
-    } else {
-      // Enter demo mode
-      sessionStorage.setItem("demo_mode", "true");
-      sessionStorage.setItem(
-        "demo_merchant",
-        JSON.stringify({
-          id: "demo-merchant-id",
-          email: "demo@merchant.com",
-          name: "Boutique Demo",
-        }),
-      );
-      setDemoMode(true);
-      setStats(DEMO_STATS);
-      setReasonsStats(DEMO_REASONS);
-    }
-  };
 
   const fetchStats = async () => {
     try {
@@ -235,31 +173,7 @@ export default function MerchantDashboard() {
           </div>
         )}
 
-        {/* Demo Mode Banner */}
-        {demoMode && (
-          <div className="mb-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Play className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold">Mode Démonstration</h3>
-                <p className="text-purple-100 text-sm">
-                  Vous visualisez des données fictives. Explorez librement la
-                  plateforme!
-                </p>
-              </div>
-              <button
-                onClick={exitDemoMode}
-                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
-              >
-                Quitter la Demo
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">
               Vue d'ensemble
@@ -268,21 +182,6 @@ export default function MerchantDashboard() {
               Statistiques et métriques de vos échanges
             </p>
           </div>
-
-          {/* Test Mode Toggle Button */}
-          <button
-            onClick={toggleDemoMode}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
-              demoMode
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <div
-              className={`w-2 h-2 rounded-full ${demoMode ? "bg-white animate-pulse" : "bg-slate-400"}`}
-            />
-            {demoMode ? "Mode Demo Actif" : "Activer Mode Demo"}
-          </button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" data-onboarding="stats">

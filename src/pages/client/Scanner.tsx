@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Html5QrcodeScanner } from "html5-qrcode";
-import { ScanLine, KeyRound, Package, Star, X } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
+import { ScanLine, KeyRound, Package, Star, X, Camera } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
@@ -14,21 +14,48 @@ export default function ClientScanner() {
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [scannedCode, setScannedCode] = useState("");
   const [scannedMerchantId, setScannedMerchantId] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { t, dir, lang } = useLanguage();
 
   useEffect(() => {
     if (!useManualEntry) {
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false,
-      );
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      scannerRef.current = html5QrCode;
 
-      scanner.render(onScanSuccess, onScanError);
+      // Start scanning automatically with rear camera
+      html5QrCode
+        .start(
+          { facingMode: "environment" }, // Use rear camera
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          onScanSuccess,
+          onScanError
+        )
+        .then(() => {
+          setIsScanning(true);
+        })
+        .catch((err) => {
+          console.error("Failed to start scanning:", err);
+          setError(t("cameraAccessDenied") || "Impossible d'accéder à la caméra");
+          setIsScanning(false);
+        });
 
       return () => {
-        scanner.clear();
+        if (scannerRef.current) {
+          scannerRef.current
+            .stop()
+            .then(() => {
+              scannerRef.current?.clear();
+              setIsScanning(false);
+            })
+            .catch((err) => {
+              console.error("Error stopping scanner:", err);
+            });
+        }
       };
     }
   }, [useManualEntry]);
@@ -275,6 +302,14 @@ export default function ClientScanner() {
 
             {!useManualEntry ? (
               <div>
+                {isScanning && (
+                  <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-center gap-2">
+                    <Camera className="w-5 h-5 text-emerald-600 animate-pulse" />
+                    <span className="text-emerald-700 font-medium">
+                      {lang === "ar" ? "الكاميرا نشطة - امسح رمز QR" : "Caméra active - Scannez un QR code"}
+                    </span>
+                  </div>
+                )}
                 <div id="qr-reader" className="mb-4"></div>
                 <button
                   onClick={() => setUseManualEntry(true)}

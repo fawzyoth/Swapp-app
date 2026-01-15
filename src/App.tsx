@@ -21,6 +21,8 @@ const LandingPage = lazy(() => import("./pages/Landing"));
 const HomePage = lazy(() => import("./pages/Home"));
 const UnifiedLogin = lazy(() => import("./pages/Login"));
 const MerchantSignup = lazy(() => import("./pages/MerchantSignup"));
+const CheckEmail = lazy(() => import("./pages/CheckEmail"));
+const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 
 // Client pages
 const ClientScanner = lazy(() => import("./pages/client/Scanner"));
@@ -58,11 +60,7 @@ const MerchantBrandingSettings = lazy(
   () => import("./pages/merchant/BrandingSettings"),
 );
 const MerchantReviews = lazy(() => import("./pages/merchant/Reviews"));
-const MerchantVideoCall = lazy(() => import("./pages/merchant/VideoCall"));
-const MerchantVideoCallList = lazy(
-  () => import("./pages/merchant/VideoCallList"),
-);
-const MerchantApiKeys = lazy(() => import("./pages/merchant/ApiKeys"));
+const MerchantSettings = lazy(() => import("./pages/merchant/Settings"));
 const MerchantTutorial = lazy(() => import("./pages/merchant/Tutorial"));
 
 // Admin pages
@@ -320,11 +318,13 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<UnifiedLogin />} />
           <Route path="/signup" element={<MerchantSignup />} />
+          <Route path="/check-email" element={<CheckEmail />} />
+          <Route path="/confirm-email" element={<EmailConfirmation />} />
           <Route path="/client/*" element={<ClientRoutes />} />
           <Route path="/call/:roomId" element={<ClientVideoCall />} />
           <Route path="/go/:shortCode" element={<SocialRedirect />} />
 
-          {/* Admin routes - no auth for demo */}
+          {/* Admin routes */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/merchants" element={<AdminMerchantList />} />
           <Route path="/admin/merchant/new" element={<AdminMerchantForm />} />
@@ -437,26 +437,10 @@ function App() {
             }
           />
           <Route
-            path="/merchant/video-calls"
+            path="/merchant/settings"
             element={
               <ProtectedRoute loginPath="/login">
-                <MerchantVideoCallList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/merchant/call/:roomId"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <MerchantVideoCall />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/merchant/api-keys"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <MerchantApiKeys />
+                <MerchantSettings />
               </ProtectedRoute>
             }
           />

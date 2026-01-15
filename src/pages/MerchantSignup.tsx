@@ -7,7 +7,6 @@ export default function MerchantSignup() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -87,53 +86,65 @@ export default function MerchantSignup() {
     }
 
     try {
-      // Create auth user
+      // Create auth user with email confirmation enabled
+      // The redirect URL is where users will be sent after clicking the email link
+      const redirectUrl = `${window.location.origin}/#/confirm-email`;
+      console.log("Signup with email redirect to:", redirectUrl);
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             business_name: formData.businessName,
             contact_name: formData.contactName,
+            phone: formData.phone,
+            user_type: 'merchant',
           },
         },
       });
 
       if (authError) throw authError;
 
+      console.log("Signup successful:", authData);
+
       if (authData.user) {
-        // Create merchant record
+        // Create or update merchant record (upsert handles both cases)
         const { error: merchantError } = await supabase
           .from("merchants")
-          .insert({
+          .upsert({
+            id: authData.user.id,
             email: formData.email.trim().toLowerCase(),
-            name: formData.businessName,
-            contact_name: formData.contactName,
+            name: formData.contactName,
             phone: formData.phone,
+            business_name: formData.businessName,
             business_address: formData.address,
-            city: formData.city,
-            governorate: formData.governorate,
-            api_enabled: false,
-            onboarding_completed: false,
+            business_city: formData.city,
+            business_postal_code: formData.governorate,
+          }, {
+            onConflict: 'id', // Use id as conflict resolution (primary key)
           });
 
         if (merchantError) {
           console.error("Merchant creation error:", merchantError);
-          // Delete auth user if merchant creation fails
-          await supabase.auth.admin.deleteUser(authData.user.id);
           throw new Error("Erreur lors de la création du compte marchand");
         }
 
-        setSuccess(true);
-
-        // Redirect to onboarding after 2 seconds
-        setTimeout(() => {
-          navigate("/merchant/onboarding");
-        }, 2000);
+        // Redirect to check email page immediately
+        navigate(`/check-email?email=${encodeURIComponent(formData.email)}`);
       }
     } catch (err: any) {
       console.error("Signup error:", err);
-      setError(err.message || "Erreur lors de l'inscription");
+
+      // Handle specific error messages
+      if (err.message?.includes("User already registered")) {
+        setError("Cette adresse email est déjà enregistrée. Veuillez vous connecter ou utiliser une autre adresse email.");
+      } else if (err.message?.includes("duplicate key")) {
+        setError("Un compte avec cette adresse email existe déjà. Veuillez vous connecter.");
+      } else {
+        setError(err.message || "Erreur lors de l'inscription");
+      }
     } finally {
       setLoading(false);
     }
@@ -166,12 +177,6 @@ export default function MerchantSignup() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
               {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
-              Compte créé avec succès! Redirection vers la configuration...
             </div>
           )}
 
@@ -350,10 +355,10 @@ export default function MerchantSignup() {
 
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={loading}
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-xl font-semibold text-lg transition-colors"
             >
-              {loading ? "Création du compte..." : success ? "Compte créé!" : "Créer mon compte"}
+              {loading ? "Création du compte..." : "Créer mon compte"}
             </button>
           </form>
 

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ArrowLeft,
   Check,
   Clock,
   Package,
@@ -282,13 +281,7 @@ export default function ClientTracking() {
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             {t("exchangeNotFound")}
           </h2>
-          <p className="text-slate-600 mb-6">{t("checkCodeAndRetry")}</p>
-          <button
-            onClick={() => navigate("/client/scan")}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-          >
-            {t("scanQRCode")}
-          </button>
+          <p className="text-slate-600">{t("checkCodeAndRetry")}</p>
         </div>
       </div>
     );
@@ -301,14 +294,7 @@ export default function ClientTracking() {
   return (
     <div className="min-h-screen bg-slate-50" dir={dir}>
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => navigate("/client/scan")}
-            className="flex items-center text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 me-2" />
-            <span className="font-medium">{t("back")}</span>
-          </button>
+        <div className="flex items-center justify-end mb-6">
           <LanguageSwitcher />
         </div>
 

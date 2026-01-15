@@ -174,13 +174,14 @@ export default function MerchantDashboard() {
         )}
 
         <div className="mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-              Vue d'ensemble
-            </h2>
-            <p className="text-slate-600">
-              Statistiques et métriques de vos échanges
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Vue d'ensemble</h1>
+              <p className="text-slate-600">Statistiques et métriques de vos échanges</p>
+            </div>
           </div>
         </div>
 

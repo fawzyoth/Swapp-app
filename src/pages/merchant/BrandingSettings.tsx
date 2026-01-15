@@ -559,8 +559,15 @@ export default function BrandingSettings() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Header with Description */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Ma Marque</h1>
-            <p className="text-slate-600">Personnalisez vos QR codes et gérez votre identité de marque</p>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-pink-100 rounded-xl">
+                <Palette className="w-8 h-8 text-pink-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Ma Marque</h1>
+                <p className="text-slate-600">Personnalisez vos QR codes et gérez votre identité de marque</p>
+              </div>
+            </div>
           </div>
 
           {/* Tab Navigation - Improved Design */}

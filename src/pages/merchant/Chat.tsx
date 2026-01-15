@@ -206,10 +206,17 @@ export default function MerchantChat() {
 
   return (
     <MerchantLayout>
-      <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Messagerie</h1>
-          <p className="text-slate-600 mt-1">Communiquez avec vos clients</p>
+      <div className="mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-purple-100 rounded-xl">
+            <MessageSquare className="w-8 h-8 text-purple-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Messagerie</h1>
+            <p className="text-slate-600">Communiquez avec vos clients</p>
+          </div>
         </div>
+      </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-[calc(100vh-200px)] flex overflow-hidden">
           <div className="w-1/3 border-r border-slate-200 flex flex-col">

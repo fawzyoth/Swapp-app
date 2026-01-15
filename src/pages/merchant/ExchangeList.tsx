@@ -117,13 +117,14 @@ export default function MerchantExchangeList() {
     <MerchantLayout>
       <div>
         <div className="mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">
-              Demandes d'échange
-            </h1>
-            <p className="text-slate-600">
-              Gérez et validez les demandes de vos clients
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Package className="w-8 h-8 text-emerald-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Demandes d'échange</h1>
+              <p className="text-slate-600">Gérez et validez les demandes de vos clients</p>
+            </div>
           </div>
         </div>
 

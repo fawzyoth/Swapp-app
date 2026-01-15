@@ -5,12 +5,12 @@
  * In production, replace the sendSMS function with a real SMS API (Twilio, Vonage, etc.)
  */
 
-const APP_URL = "https://fawzyoth.github.io/Swapp-app";
+const APP_URL = "https://swapp-app.pages.dev";
 
 // URL shortener simulation (in production, use bit.ly or similar)
 const shortenUrl = (url: string): string => {
   // For now, just return a compact version
-  return url.replace("https://fawzyoth.github.io/Swapp-app/#", APP_URL + "/#");
+  return url.replace("https://swapp-app.pages.dev/#", APP_URL + "/#");
 };
 
 // Generate tracking link

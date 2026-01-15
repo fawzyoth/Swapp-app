@@ -306,7 +306,7 @@ export default function BrandingSettings() {
   };
 
   const getQRCodeUrl = (shortCode: string) => {
-    return `https://fawzyoth.github.io/Swapp-app/#/go/${shortCode}`;
+    return `https://swapp-app.pages.dev/#/go/${shortCode}`;
   };
 
   const copyToClipboard = (text: string) => {
@@ -377,7 +377,7 @@ export default function BrandingSettings() {
 
   // Generate QR code URL for exchange form
   const getExchangeFormUrl = () => {
-    const url = `https://fawzyoth.github.io/Swapp-app/#/client/exchange/new?merchant=${merchantId}`;
+    const url = `https://swapp-app.pages.dev/#/client/exchange/new?merchant=${merchantId}`;
     return url;
   };
 

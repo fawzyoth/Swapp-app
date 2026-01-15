@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Filter, Play } from "lucide-react";
+import { Search, Filter, Play, Package } from "lucide-react";
 import { supabase, STATUS_LABELS } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
 

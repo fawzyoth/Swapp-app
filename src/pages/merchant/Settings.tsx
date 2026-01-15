@@ -59,12 +59,22 @@ export default function Settings() {
   const fetchDeliveryIntegrations = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
+      if (!session?.user?.email) return;
+
+      // First get merchant ID from merchants table
+      const { data: merchant, error: merchantError } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      if (merchantError) throw merchantError;
+      if (!merchant) return;
 
       const { data, error } = await supabase
         .from("delivery_integrations")
         .select("*")
-        .eq("merchant_id", session.user.id)
+        .eq("merchant_id", merchant.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -174,7 +184,7 @@ export default function Settings() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
+      if (!session?.user?.email) {
         throw new Error("Session non trouvée. Veuillez vous reconnecter.");
       }
 
@@ -194,11 +204,23 @@ export default function Settings() {
         throw new Error("Cette société de livraison est déjà intégrée");
       }
 
+      // Get merchant ID from merchants table
+      const { data: merchant, error: merchantError } = await supabase
+        .from("merchants")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      if (merchantError) throw merchantError;
+      if (!merchant) {
+        throw new Error("Marchand non trouvé. Veuillez vous reconnecter.");
+      }
+
       // Insert new delivery integration
       const { error: insertError } = await supabase
         .from("delivery_integrations")
         .insert({
-          merchant_id: session.user.id,
+          merchant_id: merchant.id,
           delivery_company: newDeliveryCompany,
           api_key: newDeliveryApiKey,
           status: "active",

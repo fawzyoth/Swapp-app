@@ -56,11 +56,13 @@ export default function MerchantExchangeDetail() {
   const [depots, setDepots] = useState<any[]>([]);
   const [clientHistory, setClientHistory] = useState<any[]>([]);
   const [deliveryAttempts, setDeliveryAttempts] = useState<any[]>([]);
+  const [deliveryIntegrations, setDeliveryIntegrations] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showValidateModal, setShowValidateModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedTransporter, setSelectedTransporter] = useState("");
   const [selectedDepot, setSelectedDepot] = useState("");
+  const [selectedDeliveryCompany, setSelectedDeliveryCompany] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("0");
   const [paymentType, setPaymentType] = useState<"free" | "paid">("free");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -129,6 +131,7 @@ export default function MerchantExchangeDetail() {
         historyRes,
         deliveryRes,
         merchantRes,
+        deliveryIntegrationsRes,
       ] = await Promise.all([
         supabase
           .from("messages")
@@ -163,6 +166,25 @@ export default function MerchantExchangeDetail() {
               .eq("email", session.user.email)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+        // Fetch merchant's delivery integrations
+        session?.user?.email
+          ? supabase
+              .from("merchants")
+              .select("id")
+              .eq("email", session.user.email)
+              .maybeSingle()
+              .then((merchantResult) => {
+                if (merchantResult.data?.id) {
+                  return supabase
+                    .from("delivery_integrations")
+                    .select("id, delivery_company, status")
+                    .eq("merchant_id", merchantResult.data.id)
+                    .eq("status", "active")
+                    .order("delivery_company", { ascending: true });
+                }
+                return { data: [] };
+              })
+          : Promise.resolve({ data: [] }),
       ]);
 
       // Debug: Log merchant query result
@@ -174,6 +196,12 @@ export default function MerchantExchangeDetail() {
       setClientHistory(historyRes.data || []);
       setDeliveryAttempts(deliveryRes.data || []);
       setMerchant(merchantRes.data || null);
+      setDeliveryIntegrations(deliveryIntegrationsRes.data || []);
+
+      // Set default delivery company if only one is available
+      if (deliveryIntegrationsRes.data && deliveryIntegrationsRes.data.length === 1) {
+        setSelectedDeliveryCompany(deliveryIntegrationsRes.data[0].delivery_company);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -210,6 +238,12 @@ export default function MerchantExchangeDetail() {
   };
 
   const validateExchange = async () => {
+    // Validate delivery company is selected
+    if (!selectedDeliveryCompany) {
+      alert("Veuillez sélectionner une société de livraison");
+      return;
+    }
+
     // For free exchanges: client pays 0, but delivery fee (9 DT) is charged to merchant
     // For paid exchanges: client pays the specified amount
     const clientPaymentAmount =
@@ -231,6 +265,7 @@ export default function MerchantExchangeDetail() {
           delivery_fee: deliveryFee,
           merchant_delivery_charge: merchantDeliveryCharge,
           payment_status: paymentType === "free" ? "free" : "pending",
+          delivery_company: selectedDeliveryCompany,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
@@ -1458,6 +1493,65 @@ export default function MerchantExchangeDetail() {
               </div>
 
               <div className="p-6">
+                {/* Delivery Company Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-slate-600" />
+                    Société de livraison <span className="text-red-500">*</span>
+                  </label>
+
+                  {deliveryIntegrations.length === 0 ? (
+                    <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-amber-900 mb-1">
+                            Aucune société de livraison intégrée
+                          </h4>
+                          <p className="text-sm text-amber-700 mb-2">
+                            Vous devez d'abord intégrer au moins une société de livraison dans vos paramètres.
+                          </p>
+                          <button
+                            onClick={() => navigate("/merchant/settings")}
+                            className="text-sm font-semibold text-amber-900 underline hover:text-amber-800"
+                          >
+                            Aller aux paramètres →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <select
+                        value={selectedDeliveryCompany}
+                        onChange={(e) => setSelectedDeliveryCompany(e.target.value)}
+                        className="w-full px-4 py-3 pr-10 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none bg-white font-medium text-slate-900"
+                      >
+                        <option value="">Sélectionnez une société</option>
+                        {deliveryIntegrations.map((integration) => (
+                          <option key={integration.id} value={integration.delivery_company}>
+                            {integration.delivery_company.charAt(0).toUpperCase() + integration.delivery_company.slice(1).replace(/_/g, ' ')}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedDeliveryCompany && (
+                    <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span className="text-sm text-emerald-800 font-medium">
+                        {selectedDeliveryCompany.charAt(0).toUpperCase() + selectedDeliveryCompany.slice(1).replace(/_/g, ' ')} sélectionné
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Transparent Pricing Info */}
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
                   <div className="flex items-center gap-2 mb-3">
@@ -1695,8 +1789,11 @@ export default function MerchantExchangeDetail() {
                   </button>
                   <button
                     onClick={validateExchange}
+                    disabled={!selectedDeliveryCompany || deliveryIntegrations.length === 0}
                     className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
-                      paymentType === "free"
+                      !selectedDeliveryCompany || deliveryIntegrations.length === 0
+                        ? "bg-slate-300 cursor-not-allowed text-white"
+                        : paymentType === "free"
                         ? "bg-orange-500 hover:bg-orange-600 text-white"
                         : "bg-emerald-600 hover:bg-emerald-700 text-white"
                     }`}

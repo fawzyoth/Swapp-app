@@ -1479,161 +1479,242 @@ export default function MerchantExchangeDetail() {
         </div>
 
         {showValidateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-5 rounded-t-2xl">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                  <CheckCircle className="w-6 h-6" />
-                  Valider l'échange
-                </h3>
-                <p className="text-emerald-100 text-sm mt-1">
-                  {exchange?.exchange_code} • {exchange?.client_name}
-                </p>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+              {/* Header with Exchange Info */}
+              <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-8 py-6 rounded-t-3xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                      <CheckCircle className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        Valider l'échange
+                      </h3>
+                      <p className="text-emerald-100 text-sm">
+                        Configurez les détails de validation
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-emerald-100 mb-0.5">Code d'échange</p>
+                        <p className="font-mono font-bold text-white text-lg">{exchange?.exchange_code}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-emerald-100 mb-0.5">Client</p>
+                        <p className="font-semibold text-white">{exchange?.client_name}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-6">
-                {/* Delivery Company Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-slate-600" />
-                    Société de livraison <span className="text-red-500">*</span>
-                  </label>
+              <div className="p-8">
+                {/* Step Indicator */}
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <span className="text-sm font-bold text-emerald-600">1</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase tracking-wide">Étape 1</p>
+                      <p className="font-semibold text-slate-900">Société de livraison</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 h-px bg-slate-200 mx-4"></div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                      <span className="text-sm font-bold text-slate-400">2</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase tracking-wide">Étape 2</p>
+                      <p className="font-semibold text-slate-400">Paiement</p>
+                    </div>
+                  </div>
+                </div>
 
+                {/* Delivery Company Selection */}
+                <div className="mb-8">
                   {deliveryIntegrations.length === 0 ? (
-                    <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-amber-900 mb-1">
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <AlertTriangle className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-amber-900 mb-2 text-lg">
                             Aucune société de livraison intégrée
                           </h4>
-                          <p className="text-sm text-amber-700 mb-2">
-                            Vous devez d'abord intégrer au moins une société de livraison dans vos paramètres.
+                          <p className="text-sm text-amber-700 mb-4 leading-relaxed">
+                            Vous devez d'abord intégrer au moins une société de livraison dans vos paramètres pour pouvoir valider cet échange.
                           </p>
                           <button
                             onClick={() => navigate("/merchant/settings")}
-                            className="text-sm font-semibold text-amber-900 underline hover:text-amber-800"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg"
                           >
-                            Aller aux paramètres →
+                            <Truck className="w-4 h-4" />
+                            Configurer les intégrations
                           </button>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="relative">
-                      <select
-                        value={selectedDeliveryCompany}
-                        onChange={(e) => setSelectedDeliveryCompany(e.target.value)}
-                        className="w-full px-4 py-3 pr-10 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none bg-white font-medium text-slate-900"
-                      >
-                        <option value="">Sélectionnez une société</option>
+                    <div className="space-y-4">
+                      <div className="grid gap-3">
                         {deliveryIntegrations.map((integration) => (
-                          <option key={integration.id} value={integration.delivery_company}>
-                            {integration.delivery_company.charAt(0).toUpperCase() + integration.delivery_company.slice(1).replace(/_/g, ' ')}
-                          </option>
+                          <div
+                            key={integration.id}
+                            onClick={() => setSelectedDeliveryCompany(integration.delivery_company)}
+                            className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all transform hover:scale-[1.02] ${
+                              selectedDeliveryCompany === integration.delivery_company
+                                ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg shadow-emerald-100"
+                                : "border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md"
+                            }`}
+                          >
+                            {selectedDeliveryCompany === integration.delivery_company && (
+                              <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                <Check className="w-5 h-5 text-white" />
+                              </div>
+                            )}
+                            <div className="flex items-center gap-4">
+                              <div
+                                className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
+                                  selectedDeliveryCompany === integration.delivery_company
+                                    ? "bg-emerald-500 shadow-lg"
+                                    : "bg-slate-100"
+                                }`}
+                              >
+                                <Truck
+                                  className={`w-7 h-7 ${
+                                    selectedDeliveryCompany === integration.delivery_company
+                                      ? "text-white"
+                                      : "text-slate-400"
+                                  }`}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <h5 className={`font-bold text-lg ${
+                                  selectedDeliveryCompany === integration.delivery_company
+                                    ? "text-emerald-900"
+                                    : "text-slate-900"
+                                }`}>
+                                  {integration.delivery_company.charAt(0).toUpperCase() + integration.delivery_company.slice(1).replace(/_/g, ' ')}
+                                </h5>
+                                <p className="text-sm text-slate-600 mt-0.5">
+                                  Société de livraison intégrée
+                                </p>
+                              </div>
+                              <div className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                                selectedDeliveryCompany === integration.delivery_company
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {selectedDeliveryCompany === integration.delivery_company ? "Sélectionné" : "Disponible"}
+                              </div>
+                            </div>
+                          </div>
                         ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
                       </div>
                     </div>
                   )}
+                </div>
 
-                  {selectedDeliveryCompany && (
-                    <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm text-emerald-800 font-medium">
-                        {selectedDeliveryCompany.charAt(0).toUpperCase() + selectedDeliveryCompany.slice(1).replace(/_/g, ' ')} sélectionné
-                      </span>
+                {/* Divider with Step 2 */}
+                <div className="flex items-center gap-4 my-8">
+                  <div className="flex-1 h-px bg-slate-200"></div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      selectedDeliveryCompany ? "bg-emerald-100" : "bg-slate-100"
+                    }`}>
+                      <span className={`text-sm font-bold ${
+                        selectedDeliveryCompany ? "text-emerald-600" : "text-slate-400"
+                      }`}>2</span>
                     </div>
-                  )}
+                    <p className={`font-semibold ${
+                      selectedDeliveryCompany ? "text-slate-900" : "text-slate-400"
+                    }`}>Options de paiement</p>
+                  </div>
+                  <div className="flex-1 h-px bg-slate-200"></div>
                 </div>
 
                 {/* Transparent Pricing Info */}
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Info className="w-5 h-5 text-blue-600" />
-                    <h4 className="font-bold text-blue-900">
-                      Tarification transparente
-                    </h4>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Truck className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                            Frais de livraison
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            Coût fixe par colis
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-blue-600">
-                          {DELIVERY_FEE} TND
-                        </p>
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-5 mb-6 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <Truck className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-blue-900 text-lg mb-1">
+                        Frais de livraison fixe
+                      </h4>
+                      <p className="text-sm text-blue-700 mb-3">
+                        Coût unique pour chaque colis • Pas de frais cachés
+                      </p>
+                      <div className="inline-flex items-baseline gap-2 bg-white px-4 py-2 rounded-xl border border-blue-200 shadow-sm">
+                        <span className="text-3xl font-bold text-blue-600">{DELIVERY_FEE}</span>
+                        <span className="text-sm font-semibold text-blue-600">TND</span>
+                        <span className="text-xs text-slate-500 ml-1">par colis</span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-xs text-blue-700 mt-2 text-center">
-                    Pas de frais cachés • Prix unique pour tous les colis
-                  </p>
                 </div>
 
                 {/* Payment Options - Card Style */}
-                <div className="mb-6">
-                  <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-slate-600" />
+                <div className="mb-8">
+                  <h4 className="font-bold text-slate-900 mb-4 text-lg flex items-center gap-2">
+                    <DollarSign className="w-6 h-6 text-emerald-600" />
                     Qui paie les frais de livraison ?
                   </h4>
 
-                  <div className="grid gap-3">
+                  <div className="grid gap-4">
                     {/* Option 1: You pay */}
                     <div
                       onClick={() => setPaymentType("free")}
-                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all transform hover:scale-[1.02] ${
                         paymentType === "free"
-                          ? "border-orange-400 bg-orange-50 shadow-md"
-                          : "border-slate-200 bg-white hover:border-slate-300"
+                          ? "border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg shadow-orange-100"
+                          : "border-slate-200 bg-white hover:border-orange-200 hover:shadow-md"
                       }`}
                     >
                       {paymentType === "free" && (
-                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
+                        <div className="absolute -top-3 -right-3 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                          <Check className="w-5 h-5 text-white" />
                         </div>
                       )}
                       <div className="flex items-start gap-4">
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
                             paymentType === "free"
-                              ? "bg-orange-200"
+                              ? "bg-orange-500 shadow-lg"
                               : "bg-slate-100"
                           }`}
                         >
-                          <User className="w-6 h-6 text-orange-600" />
+                          <User className={`w-8 h-8 ${
+                            paymentType === "free" ? "text-white" : "text-slate-400"
+                          }`} />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h5 className="font-bold text-slate-900">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-bold text-slate-900 text-lg">
                               Vous payez
                             </h5>
-                            <span className="text-lg font-bold text-orange-600">
-                              {DELIVERY_FEE} TND
-                            </span>
+                            <div className="bg-white px-3 py-1 rounded-lg border border-orange-200 shadow-sm">
+                              <span className="text-xl font-bold text-orange-600">
+                                {DELIVERY_FEE} TND
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-sm text-slate-600 mt-1">
-                            Échange gratuit pour votre client
+                          <p className="text-sm text-slate-600 mb-3">
+                            Offrez un échange gratuit à votre client
                           </p>
-                          <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 bg-orange-100 px-2 py-1 rounded-full w-fit">
-                            <Package className="w-3 h-3" />
-                            Le client ne paie rien
+                          <div className="flex items-center gap-2 text-xs font-semibold text-orange-700 bg-orange-100 px-3 py-1.5 rounded-full w-fit">
+                            <Package className="w-3.5 h-3.5" />
+                            Client : 0 TND
                           </div>
                         </div>
                       </div>
@@ -1642,43 +1723,48 @@ export default function MerchantExchangeDetail() {
                     {/* Option 2: Client pays */}
                     <div
                       onClick={() => setPaymentType("paid")}
-                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all transform hover:scale-[1.02] ${
                         paymentType === "paid"
-                          ? "border-emerald-400 bg-emerald-50 shadow-md"
-                          : "border-slate-200 bg-white hover:border-slate-300"
+                          ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg shadow-emerald-100"
+                          : "border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md"
                       }`}
                     >
                       {paymentType === "paid" && (
-                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
+                        <div className="absolute -top-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                          <Check className="w-5 h-5 text-white" />
                         </div>
                       )}
                       <div className="flex items-start gap-4">
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
                             paymentType === "paid"
-                              ? "bg-emerald-200"
+                              ? "bg-emerald-500 shadow-lg"
                               : "bg-slate-100"
                           }`}
                         >
-                          <DollarSign className="w-6 h-6 text-emerald-600" />
+                          <DollarSign className={`w-8 h-8 ${
+                            paymentType === "paid" ? "text-white" : "text-slate-400"
+                          }`} />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h5 className="font-bold text-slate-900">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-bold text-slate-900 text-lg">
                               Le client paie
                             </h5>
-                            <span className="text-lg font-bold text-emerald-600">
-                              0 TND pour vous
-                            </span>
+                            <div className="bg-white px-3 py-1 rounded-lg border border-emerald-200 shadow-sm">
+                              <span className="text-xl font-bold text-emerald-600">
+                                0 TND pour vous
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-sm text-slate-600 mt-1">
-                            Définissez le montant à payer par le client
+                          <p className="text-sm text-slate-600 mb-3">
+                            Le client règle les frais à la livraison
                           </p>
 
                           {paymentType === "paid" && (
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                               <div className="relative">
+                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                                 <input
                                   type="number"
                                   step="0.01"
@@ -1687,20 +1773,17 @@ export default function MerchantExchangeDetail() {
                                   onChange={(e) =>
                                     setPaymentAmount(e.target.value)
                                   }
-                                  placeholder="Montant en TND"
-                                  className="w-full px-4 py-3 pr-16 border-2 border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg font-semibold"
+                                  placeholder="Ex: 9.00"
+                                  className="w-full pl-12 pr-16 py-3.5 border-2 border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg font-bold text-emerald-900 bg-white placeholder:text-emerald-300"
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600 font-bold">
                                   TND
                                 </span>
                               </div>
-                              <div className="bg-emerald-100 rounded-lg p-3 flex items-start gap-2">
+                              <div className="bg-gradient-to-r from-emerald-100 to-teal-100 rounded-xl p-3 flex items-start gap-2 border border-emerald-200">
                                 <Info className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-emerald-800">
-                                  <strong>Conseil :</strong> Mettez{" "}
-                                  {DELIVERY_FEE} TND ou plus pour couvrir les
-                                  frais de livraison. Le client paie à la
-                                  réception du colis.
+                                <p className="text-xs text-emerald-800 leading-relaxed">
+                                  <strong>Conseil :</strong> Indiquez {DELIVERY_FEE} TND minimum pour couvrir les frais de livraison.
                                 </p>
                               </div>
                             </div>
@@ -1711,95 +1794,78 @@ export default function MerchantExchangeDetail() {
                   </div>
                 </div>
 
-                {/* Clear Summary Box */}
-                <div
-                  className={`rounded-xl p-4 mb-6 ${
-                    paymentType === "free"
-                      ? "bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200"
-                      : "bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200"
-                  }`}
-                >
-                  <h4 className="font-bold text-slate-900 mb-3 text-center">
-                    Récapitulatif de votre choix
-                  </h4>
+                {/* Summary  Box - Only show if delivery company selected */}
+                {selectedDeliveryCompany && (
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-6 mb-6">
+                    <h4 className="font-bold text-slate-900 mb-4 text-center flex items-center justify-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      Résumé de la validation
+                    </h4>
 
-                  <div className="bg-white rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                      <span className="text-slate-600 flex items-center gap-2">
-                        <Truck className="w-4 h-4" />
-                        Frais de livraison
-                      </span>
-                      <span className="font-semibold">{DELIVERY_FEE} TND</span>
-                    </div>
+                    <div className="space-y-3">
+                      {/* Delivery Company */}
+                      <div className="bg-white rounded-xl p-4 flex items-center justify-between border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <Truck className="w-5 h-5 text-emerald-600" />
+                          <span className="text-sm font-medium text-slate-700">Société de livraison</span>
+                        </div>
+                        <span className="font-bold text-emerald-900">
+                          {selectedDeliveryCompany.charAt(0).toUpperCase() + selectedDeliveryCompany.slice(1).replace(/_/g, ' ')}
+                        </span>
+                      </div>
 
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                      <span className="text-slate-600 flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        Le client paie
-                      </span>
-                      <span
-                        className={`font-semibold ${paymentType === "free" ? "text-slate-400" : "text-emerald-600"}`}
-                      >
-                        {paymentType === "free"
-                          ? "0 TND (gratuit)"
-                          : `${paymentAmount || "0"} TND`}
-                      </span>
-                    </div>
-
-                    <div
-                      className={`flex justify-between items-center pt-1 ${
+                      {/* Payment Summary */}
+                      <div className={`rounded-xl p-4 border-2 ${
                         paymentType === "free"
-                          ? "text-orange-700"
-                          : "text-emerald-700"
-                      }`}
-                    >
-                      <span className="font-bold flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        Vous payez
-                      </span>
-                      <span className="text-xl font-bold">
-                        {paymentType === "free"
-                          ? `${DELIVERY_FEE} TND`
-                          : "0 TND"}
-                      </span>
+                          ? "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200"
+                          : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200"
+                      }`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-slate-700">Frais de livraison</span>
+                          <span className="font-bold text-slate-900">{DELIVERY_FEE} TND</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-slate-700">Client paie</span>
+                          <span className={`font-bold ${paymentType === "free" ? "text-slate-400" : "text-emerald-700"}`}>
+                            {paymentType === "free" ? "0 TND" : `${paymentAmount || "0"} TND`}
+                          </span>
+                        </div>
+                        <div className="pt-2 mt-2 border-t border-slate-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-900">Vous payez</span>
+                            <span className={`text-2xl font-bold ${
+                              paymentType === "free" ? "text-orange-600" : "text-emerald-600"
+                            }`}>
+                              {paymentType === "free" ? `${DELIVERY_FEE} TND` : "0 TND"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {paymentType === "free" && (
-                    <p className="text-xs text-orange-700 text-center mt-3">
-                      Ce montant sera déduit lors du ramassage
-                    </p>
-                  )}
-                  {paymentType === "paid" &&
-                    parseFloat(paymentAmount) >= DELIVERY_FEE && (
-                      <p className="text-xs text-emerald-700 text-center mt-3">
-                        Les frais de livraison sont couverts par le paiement
-                        client
-                      </p>
-                    )}
-                </div>
+                )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex gap-4 pt-4 border-t border-slate-200">
                   <button
                     onClick={() => setShowValidateModal(false)}
-                    className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold transition-colors"
+                    className="flex-1 px-6 py-4 border-2 border-slate-300 text-slate-700 rounded-2xl hover:bg-slate-50 font-bold transition-all hover:shadow-md"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={validateExchange}
                     disabled={!selectedDeliveryCompany || deliveryIntegrations.length === 0}
-                    className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] ${
                       !selectedDeliveryCompany || deliveryIntegrations.length === 0
-                        ? "bg-slate-300 cursor-not-allowed text-white"
+                        ? "bg-slate-300 cursor-not-allowed text-slate-500"
                         : paymentType === "free"
-                        ? "bg-orange-500 hover:bg-orange-600 text-white"
-                        : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                        : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
                     }`}
                   >
-                    <CheckCircle className="w-5 h-5" />
-                    Confirmer
+                    <CheckCircle className="w-6 h-6" />
+                    Valider l'échange
                   </button>
                 </div>
               </div>

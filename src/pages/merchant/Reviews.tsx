@@ -219,10 +219,10 @@ export default function MerchantReviews() {
           <div className="mb-8">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-amber-100 rounded-xl">
-                <Star className="w-8 h-8 text-amber-600" />
+                <Star className="w-7 h-7 text-amber-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Avis Clients</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Avis Clients</h1>
                 <p className="text-slate-600">Consultez et répondez aux avis de vos clients</p>
               </div>
             </div>

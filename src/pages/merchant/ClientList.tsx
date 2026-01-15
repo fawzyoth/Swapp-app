@@ -195,10 +195,10 @@ export default function MerchantClientList() {
           <div className="mb-8">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-sky-100 rounded-xl">
-                <Users className="w-8 h-8 text-sky-600" />
+                <Users className="w-7 h-7 text-sky-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Gestion des Clients</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Gestion des Clients</h1>
                 <p className="text-slate-600">Vue d'ensemble de vos clients et de leur activité</p>
               </div>
             </div>

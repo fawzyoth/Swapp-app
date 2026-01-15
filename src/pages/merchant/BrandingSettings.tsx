@@ -561,10 +561,10 @@ export default function BrandingSettings() {
           <div className="mb-8">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-pink-100 rounded-xl">
-                <Palette className="w-8 h-8 text-pink-600" />
+                <Palette className="w-7 h-7 text-pink-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Ma Marque</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Ma Marque</h1>
                 <p className="text-slate-600">Personnalisez vos QR codes et gérez votre identité de marque</p>
               </div>
             </div>

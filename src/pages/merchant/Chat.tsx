@@ -209,10 +209,10 @@ export default function MerchantChat() {
       <div className="mb-8">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-purple-100 rounded-xl">
-            <MessageSquare className="w-8 h-8 text-purple-600" />
+            <MessageSquare className="w-7 h-7 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Messagerie</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Messagerie</h1>
             <p className="text-slate-600">Communiquez avec vos clients</p>
           </div>
         </div>

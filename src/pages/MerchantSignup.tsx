@@ -131,6 +131,21 @@ export default function MerchantSignup() {
           throw new Error("Erreur lors de la création du compte marchand");
         }
 
+        // Auto-add Test Delivery integration for all new merchants
+        const { error: testDeliveryError } = await supabase
+          .from("delivery_integrations")
+          .insert({
+            merchant_id: authData.user.id,
+            delivery_company: "test_delivery",
+            api_key: "test-key-auto-generated",
+            status: "active",
+          });
+
+        if (testDeliveryError) {
+          console.error("Test delivery integration error:", testDeliveryError);
+          // Don't throw error - this is optional, signup should succeed anyway
+        }
+
         // Redirect to check email page immediately
         navigate(`/check-email?email=${encodeURIComponent(formData.email)}`);
       }

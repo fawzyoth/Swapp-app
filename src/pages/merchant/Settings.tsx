@@ -23,6 +23,10 @@ const DELIVERY_COMPANIES = [
 
 export default function Settings() {
   const navigate = useNavigate();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"general" | "delivery">("general");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -283,8 +287,40 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Change Password Section */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <button
+              onClick={() => setActiveTab("general")}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === "general"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <Lock className="w-5 h-5" />
+              <span>Général</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("delivery")}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === "delivery"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <Truck className="w-5 h-5" />
+              <span>Intégrations Livraison</span>
+              {deliveryIntegrations.length > 0 && (
+                <span className="bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {deliveryIntegrations.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* General Tab */}
+          {activeTab === "general" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
               <Lock className="w-6 h-6 text-slate-700" />
               <div>
@@ -396,10 +432,12 @@ export default function Settings() {
                 {loading ? "Changement en cours..." : "Changer le mot de passe"}
               </button>
             </form>
-          </div>
+            </div>
+          )}
 
-          {/* Delivery Company Integration Section */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          {/* Delivery Tab */}
+          {activeTab === "delivery" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
               <div className="flex items-center gap-3">
                 <Truck className="w-6 h-6 text-slate-700" />
@@ -514,7 +552,8 @@ export default function Settings() {
                 <li>• Copiez et collez la clé lors de l'ajout d'une intégration</li>
               </ul>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

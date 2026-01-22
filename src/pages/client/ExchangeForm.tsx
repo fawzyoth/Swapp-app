@@ -53,6 +53,7 @@ export default function ClientExchangeForm() {
     clientDelegation: "",
     clientCountry: "Tunisia",
     productName: "",
+    itemCount: 1,
     reason: "",
   });
   const [delegations, setDelegations] = useState<Delegation[]>([]);
@@ -512,6 +513,7 @@ export default function ClientExchangeForm() {
         client_delegation: formData.clientDelegation,
         client_country: formData.clientCountry,
         product_name: formData.productName,
+        item_count: formData.itemCount,
         reason: formData.reason,
         video: video,
         images: extractedImages.length > 0 ? extractedImages : null,
@@ -532,6 +534,7 @@ export default function ClientExchangeForm() {
         client_postal_code: formData.clientDelegation, // Store delegation in postal_code temporarily
         client_country: formData.clientCountry,
         product_name: formData.productName,
+        item_count: formData.itemCount,
         reason: formData.reason,
         video: video,
         images: extractedImages.length > 0 ? extractedImages : null,
@@ -952,6 +955,61 @@ export default function ClientExchangeForm() {
                       placeholder={t("productNamePlaceholder")}
                       className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      {lang === "ar" ? "عدد القطع" : "Nombre d'articles"} *
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            itemCount: Math.max(1, formData.itemCount - 1),
+                          })
+                        }
+                        className="w-10 h-10 bg-slate-200 hover:bg-slate-300 rounded-lg flex items-center justify-center text-xl font-bold transition-colors disabled:opacity-50"
+                        disabled={formData.itemCount <= 1}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        required
+                        value={formData.itemCount}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            itemCount: Math.max(
+                              1,
+                              Math.min(99, parseInt(e.target.value) || 1)
+                            ),
+                          })
+                        }
+                        className="w-20 px-4 py-3 border border-slate-300 rounded-lg text-center text-lg font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            itemCount: Math.min(99, formData.itemCount + 1),
+                          })
+                        }
+                        className="w-10 h-10 bg-slate-200 hover:bg-slate-300 rounded-lg flex items-center justify-center text-xl font-bold transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {lang === "ar"
+                        ? "كم عدد القطع التي تريد استبدالها؟"
+                        : "Combien d'articles souhaitez-vous échanger ?"}
+                    </p>
                   </div>
 
                   <div>

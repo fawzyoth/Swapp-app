@@ -71,6 +71,7 @@ export default function MerchantExchangeDetail() {
   const [showSMSModal, setShowSMSModal] = useState(false);
   const [jaxError, setJaxError] = useState<string | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [editedItemCount, setEditedItemCount] = useState<number>(1);
 
   useEffect(() => {
     fetchData();
@@ -122,6 +123,7 @@ export default function MerchantExchangeDetail() {
       console.log("Exchange merchant_id:", exchangeData.merchant_id);
 
       setExchange(exchangeData);
+      setEditedItemCount(exchangeData.item_count || 1);
 
       // Then fetch other data in parallel - but only needed fields
       const [
@@ -261,6 +263,7 @@ export default function MerchantExchangeDetail() {
         .from("exchanges")
         .update({
           status: "validated",
+          item_count: editedItemCount,
           payment_amount: clientPaymentAmount,
           delivery_fee: deliveryFee,
           merchant_delivery_charge: merchantDeliveryCharge,
@@ -714,6 +717,10 @@ export default function MerchantExchangeDetail() {
               <td>${exchange.product_name || "Non spécifié"}</td>
             </tr>
             <tr>
+              <th>Nb. articles</th>
+              <td><strong>${exchange.item_count || 1}</strong></td>
+            </tr>
+            <tr>
               <th>Motif</th>
               <td>${exchange.reason}</td>
             </tr>
@@ -947,6 +954,12 @@ export default function MerchantExchangeDetail() {
                       <span className="text-slate-600">Nom:</span>
                       <p className="font-medium text-slate-900">
                         {exchange.product_name || "Non spécifié"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-slate-600">Nombre d'articles:</span>
+                      <p className="font-medium text-slate-900">
+                        {exchange.item_count || 1} article(s)
                       </p>
                     </div>
                     <div>
@@ -1549,6 +1562,41 @@ export default function MerchantExchangeDetail() {
                     </div>
                   </div>
                 )}
+
+                {/* Item Count Confirmation */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nombre d'articles à échanger
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditedItemCount(Math.max(1, editedItemCount - 1))}
+                      className="w-8 h-8 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center text-lg font-bold disabled:opacity-50"
+                      disabled={editedItemCount <= 1}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={editedItemCount}
+                      onChange={(e) => setEditedItemCount(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
+                      className="w-16 px-3 py-2 border border-slate-300 rounded text-center font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditedItemCount(Math.min(99, editedItemCount + 1))}
+                      className="w-8 h-8 bg-slate-200 hover:bg-slate-300 rounded flex items-center justify-center text-lg font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Client demandé: {exchange?.item_count || 1} article(s)
+                  </p>
+                </div>
 
                 {/* Payment Options */}
                 <div>

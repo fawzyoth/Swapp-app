@@ -456,10 +456,7 @@ function App() {
           />
 
           {/* Delivery routes */}
-          <Route
-            path="/delivery/login"
-            element={<Navigate to="/login" replace />}
-          />
+          <Route path="/delivery/login" element={<DeliveryLogin />} />
           <Route
             path="/delivery/dashboard"
             element={

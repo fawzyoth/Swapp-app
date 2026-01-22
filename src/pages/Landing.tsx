@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, Package, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
+import { Shield, Package, CheckCircle, ArrowRight, RefreshCw, Settings, Truck } from "lucide-react";
 import { useState } from "react";
 import LandingNew from "./LandingNew";
 
@@ -31,6 +31,22 @@ export default function Landing() {
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Version {showNew ? "Simple" : "Animée"}
+            </button>
+            <button
+              onClick={() => navigate("/delivery/login")}
+              className="text-sm text-slate-600 hover:text-slate-900 transition-colors px-3 py-2 flex items-center gap-1.5"
+              title="Espace Livreur"
+            >
+              <Truck className="w-4 h-4" />
+              Livreur
+            </button>
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="text-sm text-slate-600 hover:text-slate-900 transition-colors px-3 py-2 flex items-center gap-1.5"
+              title="Administration"
+            >
+              <Settings className="w-4 h-4" />
+              Admin
             </button>
             <button
               onClick={() => navigate("/login")}

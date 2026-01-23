@@ -63,6 +63,7 @@ const MerchantBrandingSettings = lazy(
 const MerchantReviews = lazy(() => import("./pages/merchant/Reviews"));
 const MerchantSettings = lazy(() => import("./pages/merchant/Settings"));
 const MerchantTutorial = lazy(() => import("./pages/merchant/Tutorial"));
+const MerchantPayments = lazy(() => import("./pages/merchant/Payments"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -454,57 +455,23 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/merchant/payments"
+            element={
+              <ProtectedRoute loginPath="/login">
+                <MerchantPayments />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Delivery routes */}
+          {/* Delivery routes - uses localStorage auth, no Supabase auth needed */}
           <Route path="/delivery/login" element={<DeliveryLogin />} />
-          <Route
-            path="/delivery/dashboard"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/delivery/scan"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryBordereauScanner />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/delivery/verify/:code"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryExchangeVerification />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/delivery/verifications"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryVerificationList />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/delivery/finances"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryFinancialDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/delivery/wallet"
-            element={
-              <ProtectedRoute loginPath="/login">
-                <DeliveryWallet />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/delivery/dashboard" element={<DeliveryDashboard />} />
+          <Route path="/delivery/scan" element={<DeliveryBordereauScanner />} />
+          <Route path="/delivery/verify/:code" element={<DeliveryExchangeVerification />} />
+          <Route path="/delivery/verifications" element={<DeliveryVerificationList />} />
+          <Route path="/delivery/finances" element={<DeliveryFinancialDashboard />} />
+          <Route path="/delivery/wallet" element={<DeliveryWallet />} />
 
           {/* Finance routes - uses sessionStorage auth, no Supabase auth */}
           <Route path="/finance/login" element={<FinanceLogin />} />

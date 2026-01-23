@@ -23,13 +23,23 @@ export default function DeliveryDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if delivery person is logged in
+    const deliveryPersonId = localStorage.getItem("delivery_person_id");
+    if (!deliveryPersonId) {
+      navigate("/delivery/login");
+      return;
+    }
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Get delivery person ID from localStorage (no Supabase Auth needed)
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      if (!deliveryPersonId) {
+        navigate("/delivery/login");
+        return;
+      }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -38,7 +48,7 @@ export default function DeliveryDashboard() {
       const { data: verifications } = await supabase
         .from('delivery_verifications')
         .select('*, exchanges(*)')
-        .eq('delivery_person_id', user.id)
+        .eq('delivery_person_id', deliveryPersonId)
         .order('created_at', { ascending: false });
 
       if (verifications) {

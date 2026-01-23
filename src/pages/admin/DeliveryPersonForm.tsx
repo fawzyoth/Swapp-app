@@ -59,13 +59,20 @@ export default function DeliveryPersonForm() {
     try {
       if (isEditing) {
         // Update existing delivery person
+        const updateData: any = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        };
+
+        // Only update password if provided
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+
         const { error: updateError } = await supabase
           .from("delivery_persons")
-          .update({
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-          })
+          .update(updateData)
           .eq("id", id);
 
         if (updateError) throw updateError;
@@ -94,35 +101,14 @@ export default function DeliveryPersonForm() {
           );
         }
 
-        // Create auth user
-        const { data: authData, error: authError } = await supabase.auth.signUp(
-          {
-            email: formData.email,
-            password: formData.password,
-            options: {
-              data: {
-                name: formData.name,
-                phone: formData.phone,
-                role: "delivery_person",
-              },
-            },
-          },
-        );
-
-        if (authError) throw authError;
-
-        if (!authData.user) {
-          throw new Error("Erreur lors de la création du compte");
-        }
-
-        // Create delivery person record
+        // Create delivery person record directly (no Supabase Auth - simpler login without email confirmation)
         const { error: insertError } = await supabase
           .from("delivery_persons")
           .insert({
-            id: authData.user.id,
-            email: formData.email,
+            email: formData.email.trim().toLowerCase(),
             name: formData.name,
             phone: formData.phone,
+            password: formData.password, // Store password directly for simple auth
           });
 
         if (insertError) throw insertError;
@@ -236,24 +222,27 @@ export default function DeliveryPersonForm() {
               />
             </div>
 
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Mot de passe *
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  placeholder="Minimum 6 caractères"
-                  minLength={6}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Mot de passe {!isEditing && "*"}
+              </label>
+              <input
+                type="password"
+                required={!isEditing}
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                placeholder={isEditing ? "Laisser vide pour conserver" : "Minimum 6 caractères"}
+                minLength={!isEditing ? 6 : undefined}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+              {isEditing && (
+                <p className="text-sm text-slate-500 mt-1">
+                  Laissez vide pour conserver le mot de passe actuel
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-3 pt-4">
               <button

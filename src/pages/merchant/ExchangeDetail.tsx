@@ -359,6 +359,64 @@ export default function MerchantExchangeDetail() {
     }
   };
 
+  // Mark exchange as "preparing" (en préparation)
+  const markAsPreparing = async () => {
+    try {
+      await supabase
+        .from("exchanges")
+        .update({
+          status: "preparing",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      await supabase.from("status_history").insert({
+        exchange_id: id,
+        status: "preparing",
+      });
+
+      await supabase.from("messages").insert({
+        exchange_id: id,
+        sender_type: "merchant",
+        message: "Votre colis est en cours de préparation.",
+      });
+
+      // Update local state
+      setExchange({ ...exchange, status: "preparing" });
+    } catch (error) {
+      console.error("Error updating status to preparing:", error);
+    }
+  };
+
+  // Mark exchange as "ready_for_pickup" (prêt pour ramassage)
+  const markAsReadyForPickup = async () => {
+    try {
+      await supabase
+        .from("exchanges")
+        .update({
+          status: "ready_for_pickup",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      await supabase.from("status_history").insert({
+        exchange_id: id,
+        status: "ready_for_pickup",
+      });
+
+      await supabase.from("messages").insert({
+        exchange_id: id,
+        sender_type: "merchant",
+        message: "Votre colis est prêt et attend le ramassage par le livreur.",
+      });
+
+      // Update local state
+      setExchange({ ...exchange, status: "ready_for_pickup" });
+    } catch (error) {
+      console.error("Error updating status to ready_for_pickup:", error);
+    }
+  };
+
   // Create JAX colis and print bordereau
   const printBordereauGo = async () => {
     if (!exchange) return;
@@ -1105,63 +1163,158 @@ export default function MerchantExchangeDetail() {
                 </div>
               )}
 
-              {!isPending && (exchange.status === "validated" || exchange.status === "ready_for_pickup") && (
-                <div className="mt-6 space-y-3">
-                  <p className="text-sm font-medium text-slate-700 text-center">
-                    Imprimer le bordereau
-                  </p>
+              {/* Status progression for validated exchanges */}
+              {!isPending && (exchange.status === "validated" || exchange.status === "preparing" || exchange.status === "ready_for_pickup") && (
+                <div className="mt-6 space-y-4">
+                  {/* Visual Progress Stepper */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-4">Progression du colis</h4>
+                    <div className="flex items-center justify-between">
+                      {/* Step 1: Validé */}
+                      <div className="flex flex-col items-center flex-1">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          exchange.status === "validated" || exchange.status === "preparing" || exchange.status === "ready_for_pickup"
+                            ? "bg-emerald-500 text-white"
+                            : "bg-slate-200 text-slate-400"
+                        }`}>
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs mt-2 font-medium text-slate-700">Validé</span>
+                      </div>
 
-                  {/* Show JAX EAN if already created */}
-                  {exchange.jax_ean && (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
-                      <p className="text-xs text-emerald-700 mb-1">
-                        Code JAX créé
-                      </p>
-                      <p className="font-mono font-bold text-emerald-900">
-                        {exchange.jax_ean}
-                      </p>
+                      {/* Connector 1 */}
+                      <div className={`flex-1 h-1 mx-2 rounded ${
+                        exchange.status === "preparing" || exchange.status === "ready_for_pickup"
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
+                      }`} />
+
+                      {/* Step 2: En préparation */}
+                      <div className="flex flex-col items-center flex-1">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          exchange.status === "preparing"
+                            ? "bg-blue-500 text-white ring-4 ring-blue-100"
+                            : exchange.status === "ready_for_pickup"
+                              ? "bg-emerald-500 text-white"
+                              : "bg-slate-200 text-slate-400"
+                        }`}>
+                          <Package className="w-5 h-5" />
+                        </div>
+                        <span className={`text-xs mt-2 font-medium ${
+                          exchange.status === "preparing" ? "text-blue-600" : "text-slate-700"
+                        }`}>En préparation</span>
+                      </div>
+
+                      {/* Connector 2 */}
+                      <div className={`flex-1 h-1 mx-2 rounded ${
+                        exchange.status === "ready_for_pickup"
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
+                      }`} />
+
+                      {/* Step 3: Prêt */}
+                      <div className="flex flex-col items-center flex-1">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          exchange.status === "ready_for_pickup"
+                            ? "bg-emerald-500 text-white ring-4 ring-emerald-100"
+                            : "bg-slate-200 text-slate-400"
+                        }`}>
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <span className={`text-xs mt-2 font-medium ${
+                          exchange.status === "ready_for_pickup" ? "text-emerald-600" : "text-slate-700"
+                        }`}>Prêt</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Button based on current status */}
+                  {exchange.status === "validated" && (
+                    <button
+                      onClick={markAsPreparing}
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-3 shadow-lg shadow-blue-600/20"
+                    >
+                      <Package className="w-6 h-6" />
+                      <span>Commencer la préparation</span>
+                    </button>
+                  )}
+
+                  {exchange.status === "preparing" && (
+                    <button
+                      onClick={markAsReadyForPickup}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20"
+                    >
+                      <Truck className="w-6 h-6" />
+                      <span>Colis prêt pour ramassage</span>
+                    </button>
+                  )}
+
+                  {exchange.status === "ready_for_pickup" && (
+                    <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4 text-center">
+                      <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                      <p className="font-semibold text-emerald-900">Prêt pour ramassage</p>
+                      <p className="text-sm text-emerald-700 mt-1">En attente du livreur</p>
                     </div>
                   )}
 
-                  {/* Error message */}
-                  {jaxError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                      <p className="text-sm text-red-700">{jaxError}</p>
-                      <p className="text-xs text-red-500 mt-1">
-                        Vérifiez votre token JAX dans les paramètres
-                      </p>
-                    </div>
-                  )}
+                  {/* Bordereau section */}
+                  <div className="border-t border-slate-200 pt-4">
+                    <p className="text-sm font-medium text-slate-700 text-center mb-3">
+                      Bordereau de livraison
+                    </p>
 
-                  <button
-                    onClick={printBordereauGo}
-                    disabled={jaxLoading}
-                    className={`w-full py-3 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                      jaxLoading
-                        ? "bg-slate-400 cursor-not-allowed"
-                        : "bg-sky-600 hover:bg-sky-700"
-                    }`}
-                  >
-                    {jaxLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Création du colis JAX...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Printer className="w-5 h-5" />
-                        <span>
-                          {exchange.jax_ean
-                            ? "Réimprimer Bordereau"
-                            : "Créer & Imprimer Bordereau"}
-                        </span>
-                      </>
+                    {/* Show JAX EAN if already created */}
+                    {exchange.jax_ean && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center mb-3">
+                        <p className="text-xs text-emerald-700 mb-1">
+                          Code JAX créé
+                        </p>
+                        <p className="font-mono font-bold text-emerald-900">
+                          {exchange.jax_ean}
+                        </p>
+                      </div>
                     )}
-                  </button>
 
-                  <p className="text-xs text-slate-500 text-center">
-                    Le colis sera créé automatiquement chez JAX Delivery
-                  </p>
+                    {/* Error message */}
+                    {jaxError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center mb-3">
+                        <p className="text-sm text-red-700">{jaxError}</p>
+                        <p className="text-xs text-red-500 mt-1">
+                          Vérifiez votre token JAX dans les paramètres
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={printBordereauGo}
+                      disabled={jaxLoading}
+                      className={`w-full py-3 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                        jaxLoading
+                          ? "bg-slate-400 cursor-not-allowed"
+                          : "bg-sky-600 hover:bg-sky-700"
+                      }`}
+                    >
+                      {jaxLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <span>Création du colis JAX...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Printer className="w-5 h-5" />
+                          <span>
+                            {exchange.jax_ean
+                              ? "Réimprimer Bordereau"
+                              : "Créer & Imprimer Bordereau"}
+                          </span>
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-xs text-slate-500 text-center mt-2">
+                      Le colis sera créé automatiquement chez JAX Delivery
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

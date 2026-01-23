@@ -347,7 +347,7 @@ export const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   validated: "Validé",
   ready_for_pickup: "Prêt pour ramassage",
-  preparing: "Préparation mini-dépôt",
+  preparing: "En préparation",
   in_transit: "En route",
   delivery_verified: "Vérifié par livreur",
   delivery_rejected: "Refusé par livreur",

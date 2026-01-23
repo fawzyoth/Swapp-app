@@ -29,13 +29,17 @@ export default function VerificationList() {
 
   const fetchVerifications = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Get delivery person ID from localStorage
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      if (!deliveryPersonId) {
+        navigate("/delivery/login");
+        return;
+      }
 
       const { data, error } = await supabase
         .from('delivery_verifications')
         .select('*, exchanges(*)')
-        .eq('delivery_person_id', user.id)
+        .eq('delivery_person_id', deliveryPersonId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

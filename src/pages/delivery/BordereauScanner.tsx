@@ -16,6 +16,13 @@ export default function BordereauScanner() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if delivery person is logged in
+    const deliveryPersonId = localStorage.getItem("delivery_person_id");
+    if (!deliveryPersonId) {
+      navigate("/delivery/login");
+      return;
+    }
+
     if (!useManualEntry) {
       startCamera();
     }

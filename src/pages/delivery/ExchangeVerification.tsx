@@ -175,6 +175,13 @@ export default function ExchangeVerification() {
   const [returnProductNotes, setReturnProductNotes] = useState("");
 
   useEffect(() => {
+    // Check if delivery person is logged in
+    const deliveryPersonId = localStorage.getItem("delivery_person_id");
+    if (!deliveryPersonId) {
+      navigate("/delivery/login");
+      return;
+    }
+
     if (code) {
       fetchExchangeData();
     }
@@ -252,10 +259,9 @@ export default function ExchangeVerification() {
 
     setProcessing(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      // Get delivery person ID from localStorage
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      if (!deliveryPersonId) throw new Error("Non authentifié");
 
       // Update exchange status
       await supabase
@@ -269,7 +275,7 @@ export default function ExchangeVerification() {
       // Create verification record
       await supabase.from("delivery_verifications").insert({
         exchange_id: exchange.id,
-        delivery_person_id: user.id,
+        delivery_person_id: deliveryPersonId,
         status: "rejected",
         rejection_reason: rejectionReason,
       });
@@ -309,10 +315,9 @@ export default function ExchangeVerification() {
 
     setProcessing(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      // Get delivery person ID from localStorage
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      if (!deliveryPersonId) throw new Error("Non authentifié");
 
       // Auto-generate bag ID
       const autoBagId = generateBagId();
@@ -331,7 +336,7 @@ export default function ExchangeVerification() {
           bag_id: autoBagId,
           return_product_status: returnProductStatus,
           return_product_notes: returnProductNotes || null,
-          delivery_person_id: user.id,
+          delivery_person_id: deliveryPersonId,
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -349,7 +354,7 @@ export default function ExchangeVerification() {
           .update({
             amount_collected: collectedAmount,
             collection_date: new Date().toISOString(),
-            collected_by: user.id,
+            collected_by: deliveryPersonId,
             settlement_status: "pending_settlement",
           })
           .eq("id", exchange.id)
@@ -365,7 +370,7 @@ export default function ExchangeVerification() {
         .from("delivery_verifications")
         .insert({
           exchange_id: exchange.id,
-          delivery_person_id: user.id,
+          delivery_person_id: deliveryPersonId,
           status: "accepted",
           bag_id: autoBagId,
           payment_collected: paymentCollected,
@@ -388,7 +393,7 @@ export default function ExchangeVerification() {
           .from("financial_transactions")
           .insert({
             exchange_id: exchange.id,
-            delivery_person_id: user.id,
+            delivery_person_id: deliveryPersonId,
             merchant_id: exchange.merchant_id,
             transaction_type: "collection_from_client",
             amount: collectedAmount,
@@ -396,7 +401,7 @@ export default function ExchangeVerification() {
             direction: "credit",
             status: "completed",
             description: `Encaissement client - ${exchange.exchange_code}`,
-            created_by: user.id,
+            created_by: deliveryPersonId,
           })
           .then(({ error }) => {
             if (error) {

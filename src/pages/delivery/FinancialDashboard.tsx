@@ -58,26 +58,23 @@ export default function DeliveryFinancialDashboard() {
 
   const checkAuthAndFetch = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
+      // Get delivery person ID from localStorage
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      const deliveryPersonName = localStorage.getItem("delivery_person_name");
+      const deliveryPersonEmail = localStorage.getItem("delivery_person_email");
+
+      if (!deliveryPersonId) {
         navigate("/delivery/login");
         return;
       }
 
-      // Verify delivery person exists
-      const { data: deliveryPerson } = await supabase
-        .from("delivery_persons")
-        .select("id, name, email")
-        .eq("email", authUser.email)
-        .maybeSingle();
+      setUser({
+        id: deliveryPersonId,
+        name: deliveryPersonName || "",
+        email: deliveryPersonEmail || "",
+      });
 
-      if (!deliveryPerson) {
-        navigate("/delivery/login");
-        return;
-      }
-
-      setUser(deliveryPerson);
-      await fetchFinancialData(deliveryPerson.id);
+      await fetchFinancialData(deliveryPersonId);
     } catch (error) {
       console.error("Error:", error);
     } finally {

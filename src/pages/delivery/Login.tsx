@@ -14,30 +14,34 @@ export default function DeliveryLogin() {
     setError("");
 
     try {
-      // Sign in with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      // Direct authentication against delivery_persons table (no email confirmation needed)
+      const { data: deliveryPerson, error: dpError } = await supabase
+        .from("delivery_persons")
+        .select("id, name, email, password")
+        .eq("email", email.trim().toLowerCase())
+        .maybeSingle();
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Check if user is a delivery person
-        const { data: deliveryPerson, error: dpError } = await supabase
-          .from("delivery_persons")
-          .select("id")
-          .eq("email", data.user.email)
-          .maybeSingle();
-
-        if (dpError || !deliveryPerson) {
-          await supabase.auth.signOut();
-          throw new Error("Compte livreur non trouvé.");
-        }
-
-        // Redirect to dashboard
-        window.location.href = "#/delivery/dashboard";
+      if (dpError) {
+        console.error("Error checking delivery person:", dpError);
+        throw new Error("Erreur de connexion");
       }
+
+      if (!deliveryPerson) {
+        throw new Error("Compte livreur non trouvé. Vérifiez votre email.");
+      }
+
+      // Check password (stored directly in delivery_persons table)
+      if (deliveryPerson.password !== password) {
+        throw new Error("Mot de passe incorrect.");
+      }
+
+      // Store delivery person session in localStorage
+      localStorage.setItem("delivery_person_id", deliveryPerson.id);
+      localStorage.setItem("delivery_person_name", deliveryPerson.name);
+      localStorage.setItem("delivery_person_email", deliveryPerson.email);
+
+      // Redirect to dashboard
+      window.location.href = "#/delivery/dashboard";
     } catch (err: any) {
       setError(err.message || "Erreur de connexion");
     } finally {

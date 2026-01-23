@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import MerchantLayout from "../../components/MerchantLayout";
+import { useMerchantLanguage } from "../../contexts/MerchantLanguageContext";
 
-export default function MerchantClientList() {
+function ClientListContent() {
   const navigate = useNavigate();
+  const { t, dir, lang } = useMerchantLanguage();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -181,125 +183,122 @@ export default function MerchantClientList() {
 
   if (loading) {
     return (
-      <MerchantLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
-        </div>
-      </MerchantLayout>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+      </div>
     );
   }
 
   return (
-    <MerchantLayout>
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="p-3 bg-sky-100 rounded-xl">
                 <Users className="w-7 h-7 text-sky-600" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Gestion des Clients</h1>
-                <p className="text-slate-600">Vue d'ensemble de vos clients et de leur activité</p>
+              <div className={dir === 'rtl' ? 'text-right' : ''}>
+                <h1 className="text-2xl font-bold text-slate-900">{t('clientManagement')}</h1>
+                <p className="text-slate-600">{t('clientOverview')}</p>
               </div>
             </div>
           </div>
 
           <div className="grid md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="p-2 bg-sky-100 rounded-lg">
                 <Users className="w-5 h-5 text-sky-600" />
               </div>
-              <div>
+              <div className={dir === 'rtl' ? 'text-right' : ''}>
                 <div className="text-2xl font-bold text-slate-900">
                   {stats.total}
                 </div>
-                <div className="text-xs text-slate-600">Clients uniques</div>
+                <div className="text-xs text-slate-600">{t('uniqueClients')}</div>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="p-2 bg-emerald-100 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
               </div>
-              <div>
+              <div className={dir === 'rtl' ? 'text-right' : ''}>
                 <div className="text-2xl font-bold text-slate-900">
                   {stats.active}
                 </div>
-                <div className="text-xs text-slate-600">Clients actifs</div>
+                <div className="text-xs text-slate-600">{t('activeClients')}</div>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Award className="w-5 h-5 text-blue-600" />
               </div>
-              <div>
+              <div className={dir === 'rtl' ? 'text-right' : ''}>
                 <div className="text-2xl font-bold text-slate-900">
                   {stats.avgRate}%
                 </div>
-                <div className="text-xs text-slate-600">Taux d'acceptation</div>
+                <div className="text-xs text-slate-600">{t('acceptanceRate')}</div>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 mb-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <div className="p-2 bg-amber-100 rounded-lg">
                 <Package className="w-5 h-5 text-amber-600" />
               </div>
-              <div>
+              <div className={dir === 'rtl' ? 'text-right' : ''}>
                 <div className="text-2xl font-bold text-slate-900">
                   {stats.totalExchanges}
                 </div>
-                <div className="text-xs text-slate-600">Échanges totaux</div>
+                <div className="text-xs text-slate-600">{t('totalExchanges')}</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className={`flex flex-col md:flex-row gap-4 ${dir === 'rtl' ? 'md:flex-row-reverse' : ''}`}>
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className={`absolute ${dir === 'rtl' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400`} />
               <input
                 type="text"
-                placeholder="Rechercher par nom, téléphone ou email..."
+                placeholder={t('searchByNamePhoneEmail')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                className={`w-full ${dir === 'rtl' ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4'} py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500`}
               />
             </div>
 
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2">
+            <div className={`flex gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                 <Filter className="w-4 h-4 text-slate-500" />
-                <span className="text-sm text-slate-600">Statut:</span>
+                <span className="text-sm text-slate-600">{t('statusLabel')}:</span>
               </div>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                className={`px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 ${dir === 'rtl' ? 'text-right' : ''}`}
               >
-                <option value="all">Tous ({stats.total})</option>
-                <option value="active">Actifs ({stats.active})</option>
+                <option value="all">{t('all')} ({stats.total})</option>
+                <option value="active">{t('active')} ({stats.active})</option>
                 <option value="inactive">
-                  Inactifs ({stats.total - stats.active})
+                  {t('inactive')} ({stats.total - stats.active})
                 </option>
               </select>
 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                className={`px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 ${dir === 'rtl' ? 'text-right' : ''}`}
               >
-                <option value="exchanges">Plus d'échanges</option>
-                <option value="rate">Meilleur taux</option>
-                <option value="recent">Plus récents</option>
+                <option value="exchanges">{t('moreExchanges')}</option>
+                <option value="rate">{t('bestRate')}</option>
+                <option value="recent">{t('mostRecent')}</option>
               </select>
             </div>
           </div>
@@ -309,12 +308,12 @@ export default function MerchantClientList() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              Aucun client trouvé
+              {t('noClientFound')}
             </h3>
             <p className="text-slate-600">
               {searchTerm
-                ? "Essayez de modifier votre recherche"
-                : "Les clients apparaîtront ici après leur premier échange"}
+                ? t('tryModifySearch')
+                : t('clientsWillAppear')}
             </p>
           </div>
         ) : (
@@ -325,34 +324,34 @@ export default function MerchantClientList() {
                 to={`/merchant/client/${encodeURIComponent(client.phone)}`}
                 className="block bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-sky-200 transition-all p-5 group"
               >
-                <div className="flex items-center justify-between gap-4">
+                <div className={`flex items-center justify-between gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className={`flex items-center gap-3 mb-3 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                       <div className="w-12 h-12 bg-gradient-to-br from-sky-100 to-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-lg font-bold text-sky-700">
                           {client.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className={`flex-1 min-w-0 ${dir === 'rtl' ? 'text-right' : ''}`}>
+                        <div className={`flex items-center gap-2 mb-1 ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
                           <h3 className="font-semibold text-slate-900 text-lg truncate">
                             {client.name}
                           </h3>
                           {client.isActive && (
                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
-                              Actif
+                              {t('active')}
                             </span>
                           )}
                           {client.totalExchanges > 5 && (
                             <Award className="w-4 h-4 text-amber-500" />
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-600">
-                          <div className="flex items-center gap-1">
+                        <div className={`flex items-center gap-4 text-sm text-slate-600 ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
+                          <div className={`flex items-center gap-1 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                             <Phone className="w-3.5 h-3.5" />
                             <span>{client.phone}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className={`flex items-center gap-1 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                             <Mail className="w-3.5 h-3.5" />
                             <span className="truncate">{client.email}</span>
                           </div>
@@ -360,12 +359,12 @@ export default function MerchantClientList() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4 pl-15">
-                      <div>
+                    <div className={`grid grid-cols-4 gap-4 ${dir === 'rtl' ? 'pr-15' : 'pl-15'}`}>
+                      <div className={dir === 'rtl' ? 'text-right' : ''}>
                         <div className="text-xs text-slate-500 mb-1">
-                          Échanges
+                          {t('exchanges')}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className={`flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
                           <Package className="w-4 h-4 text-sky-600" />
                           <span className="font-semibold text-slate-900">
                             {client.totalExchanges}
@@ -373,14 +372,14 @@ export default function MerchantClientList() {
                         </div>
                       </div>
 
-                      <div>
+                      <div className={dir === 'rtl' ? 'text-right' : ''}>
                         <div className="text-xs text-slate-500 mb-1">
-                          Taux acceptation
+                          {t('acceptanceRate')}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className={`flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
                           <div className="flex-1 bg-slate-200 rounded-full h-1.5 max-w-[60px]">
                             <div
-                              className={`h-1.5 rounded-full ${
+                              className={`h-1.5 rounded-full ${dir === 'rtl' ? 'ml-auto' : ''} ${
                                 client.acceptanceRate >= 80
                                   ? "bg-emerald-500"
                                   : client.acceptanceRate >= 50
@@ -396,49 +395,56 @@ export default function MerchantClientList() {
                         </div>
                       </div>
 
-                      <div>
+                      <div className={dir === 'rtl' ? 'text-right' : ''}>
                         <div className="text-xs text-slate-500 mb-1">
-                          Statuts
+                          {t('statuses')}
                         </div>
-                        <div className="flex items-center gap-2 text-xs">
+                        <div className={`flex items-center gap-2 text-xs ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
                           {client.pending > 0 && (
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
-                              {client.pending} en attente
+                              {client.pending} {t('pendingCount')}
                             </span>
                           )}
                           {client.validated > 0 && (
                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded">
-                              {client.validated} validés
+                              {client.validated} {t('validatedCount')}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div>
+                      <div className={dir === 'rtl' ? 'text-right' : ''}>
                         <div className="text-xs text-slate-500 mb-1">
-                          Dernière activité
+                          {t('lastActivity')}
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-slate-700">
+                        <div className={`flex items-center gap-1 text-sm text-slate-700 ${dir === 'rtl' ? 'flex-row-reverse justify-end' : ''}`}>
                           <Clock className="w-3.5 h-3.5" />
                           <span>
                             {client.daysSinceLastExchange === 0
-                              ? "Aujourd'hui"
+                              ? t('today')
                               : client.daysSinceLastExchange === 1
-                                ? "Hier"
-                                : `Il y a ${client.daysSinceLastExchange}j`}
+                                ? t('yesterday')
+                                : `${t('daysAgo')} ${client.daysSinceLastExchange}${lang === 'ar' ? '' : 'j'}`}
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-sky-600 transition-colors flex-shrink-0" />
+                  <ChevronRight className={`w-5 h-5 text-slate-400 group-hover:text-sky-600 transition-colors flex-shrink-0 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
                 </div>
               </Link>
             ))}
           </div>
         )}
-      </div>
+    </div>
+  );
+}
+
+export default function MerchantClientList() {
+  return (
+    <MerchantLayout>
+      <ClientListContent />
     </MerchantLayout>
   );
 }

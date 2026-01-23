@@ -31,10 +31,14 @@ export default function DeliverySidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    // Sign out locally (no server call to avoid CORS)
+    // Clear delivery person session from localStorage
+    localStorage.removeItem("delivery_person_id");
+    localStorage.removeItem("delivery_person_name");
+    localStorage.removeItem("delivery_person_email");
+    // Also sign out from Supabase if logged in there
     supabase.auth.signOut({ scope: "local" });
-    // Redirect to unified login
-    window.location.href = "#/login";
+    // Redirect to delivery login
+    window.location.href = "#/delivery/login";
   };
 
   const goHome = () => {

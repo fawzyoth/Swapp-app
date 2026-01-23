@@ -22,19 +22,25 @@ export default function DeliveryWallet() {
   const [deliveryPerson, setDeliveryPerson] = useState<any>(null);
 
   useEffect(() => {
+    // Check if delivery person is logged in
+    const deliveryPersonId = localStorage.getItem("delivery_person_id");
+    if (!deliveryPersonId) {
+      window.location.href = "#/delivery/login";
+      return;
+    }
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      // Get current delivery person
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Get current delivery person from localStorage
+      const deliveryPersonId = localStorage.getItem("delivery_person_id");
+      if (!deliveryPersonId) return;
 
       const { data: dpData } = await supabase
         .from('delivery_persons')
         .select('*')
-        .eq('email', user.email)
+        .eq('id', deliveryPersonId)
         .single();
 
       if (dpData) {

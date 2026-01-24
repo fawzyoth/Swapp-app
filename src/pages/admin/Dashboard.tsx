@@ -27,6 +27,9 @@ import {
   Eye,
   MessageSquare,
   Play,
+  Shield,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import AdminLayout from "../../components/AdminLayout";
@@ -69,6 +72,9 @@ export default function AdminDashboard() {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Pending verifications
+  const [pendingVerifications, setPendingVerifications] = useState<any[]>([]);
+
   // Search states
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -88,15 +94,22 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [merchantsRes, exchangesRes] = await Promise.all([
+      const [merchantsRes, exchangesRes, pendingVerificationsRes] = await Promise.all([
         // Only select fields needed for display - NO logo_base64
         supabase.from("merchants").select("id, name, email"),
         // Only select fields needed for stats - NO video, NO images
         supabase.from("exchanges").select("merchant_id, status"),
+        // Fetch pending verification requests
+        supabase
+          .from("merchants")
+          .select("id, name, email, phone, business_type, verification_document_url, verification_status, created_at")
+          .eq("verification_status", "pending")
+          .order("created_at", { ascending: false }),
       ]);
 
       setMerchants(merchantsRes.data || []);
       setExchanges(exchangesRes.data || []);
+      setPendingVerifications(pendingVerificationsRes.data || []);
     } finally {
       setLoading(false);
     }
@@ -408,7 +421,7 @@ export default function AdminDashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Rechercher par téléphone, nom, code-barres (EAN) ou code Swapp..."
+                placeholder="Rechercher par téléphone, nom, code-barres (EAN) ou code ixmoove..."
                 className="w-full px-4 py-3 pl-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
               <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 transform -translate-y-1/2" />
@@ -435,7 +448,7 @@ export default function AdminDashboard() {
             </button>
           </div>
           <p className="text-sm text-slate-500 mt-2">
-            Vous pouvez rechercher par numéro de téléphone, nom du client, code-barres EAN ou code Swapp
+            Vous pouvez rechercher par numéro de téléphone, nom du client, code-barres EAN ou code ixmoove
           </p>
         </div>
 
@@ -622,6 +635,80 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pending Verification Requests */}
+        {pendingVerifications.length > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-amber-900 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-amber-600" />
+                Demandes de vérification en attente
+                <span className="ml-2 px-2 py-0.5 bg-amber-200 text-amber-800 text-sm rounded-full">
+                  {pendingVerifications.length}
+                </span>
+              </h3>
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="space-y-3">
+              {pendingVerifications.map((merchant) => (
+                <div
+                  key={merchant.id}
+                  className="bg-white rounded-lg border border-amber-200 p-4 hover:border-amber-400 transition-colors"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                        <Store className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{merchant.name}</h4>
+                        <div className="flex items-center gap-3 text-sm text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {merchant.email}
+                          </span>
+                          {merchant.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {merchant.phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
+                          {merchant.business_type === 'individual' ? (
+                            <>
+                              <CreditCard className="w-3 h-3" />
+                              Particulier (CIN)
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-3 h-3" />
+                              Entreprise (Patente)
+                            </>
+                          )}
+                        </span>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {new Date(merchant.created_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <Link
+                        to={`/admin/merchant/${merchant.id}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Vérifier
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -969,7 +1056,7 @@ export default function AdminDashboard() {
                     </div>
                     {selectedExchange.commission_amount && (
                       <div className="mt-3 pt-3 border-t border-white/20 text-sm">
-                        <span className="text-emerald-200">Commission Swapp:</span>
+                        <span className="text-emerald-200">Commission ixmoove:</span>
                         <span className="font-semibold ml-2">{selectedExchange.commission_amount} TND</span>
                       </div>
                     )}

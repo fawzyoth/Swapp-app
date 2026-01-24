@@ -51,6 +51,8 @@ function DashboardContent() {
   const [recentExchanges, setRecentExchanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTutorialBanner, setShowTutorialBanner] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [businessType, setBusinessType] = useState<string | null>(null);
 
   useEffect(() => {
     const tutorialCompleted = localStorage.getItem("merchant_tutorial_completed");
@@ -75,7 +77,7 @@ function DashboardContent() {
 
       const { data: merchantData } = await supabase
         .from("merchants")
-        .select("id")
+        .select("id, verification_status, business_type")
         .eq("email", session.user.email)
         .maybeSingle();
 
@@ -83,6 +85,10 @@ function DashboardContent() {
         setLoading(false);
         return;
       }
+
+      // Set verification status
+      setVerificationStatus(merchantData.verification_status || 'not_submitted');
+      setBusinessType(merchantData.business_type || null);
 
       // Fetch exchanges with more data
       const { data: exchanges } = await supabase
@@ -222,7 +228,7 @@ function DashboardContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -267,6 +273,75 @@ function DashboardContent() {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Status Banner */}
+        {verificationStatus && verificationStatus !== 'verified' && (
+          <div className={`mb-6 rounded-xl p-5 border-2 ${
+            verificationStatus === 'pending'
+              ? 'bg-amber-50 border-amber-200'
+              : verificationStatus === 'rejected'
+              ? 'bg-red-50 border-red-200'
+              : 'bg-orange-50 border-orange-200'
+          }`}>
+            <div className={`flex items-start gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+              <div className={`p-3 rounded-xl ${
+                verificationStatus === 'pending'
+                  ? 'bg-amber-100'
+                  : verificationStatus === 'rejected'
+                  ? 'bg-red-100'
+                  : 'bg-orange-100'
+              }`}>
+                <Clock className={`w-6 h-6 ${
+                  verificationStatus === 'pending'
+                    ? 'text-amber-600'
+                    : verificationStatus === 'rejected'
+                    ? 'text-red-600'
+                    : 'text-orange-600'
+                }`} />
+              </div>
+              <div className={`flex-1 ${dir === 'rtl' ? 'text-right' : ''}`}>
+                <h3 className={`text-lg font-bold mb-1 ${
+                  verificationStatus === 'pending'
+                    ? 'text-amber-900'
+                    : verificationStatus === 'rejected'
+                    ? 'text-red-900'
+                    : 'text-orange-900'
+                }`}>
+                  {verificationStatus === 'pending'
+                    ? 'Vérification en cours'
+                    : verificationStatus === 'rejected'
+                    ? 'Document rejeté'
+                    : 'Document requis'}
+                </h3>
+                <p className={`text-sm ${
+                  verificationStatus === 'pending'
+                    ? 'text-amber-700'
+                    : verificationStatus === 'rejected'
+                    ? 'text-red-700'
+                    : 'text-orange-700'
+                }`}>
+                  {verificationStatus === 'pending'
+                    ? `Votre ${businessType === 'individual' ? 'carte CIN' : 'patente'} est en cours de vérification par notre équipe. Vous serez notifié une fois validé.`
+                    : verificationStatus === 'rejected'
+                    ? 'Votre document a été rejeté. Veuillez télécharger un nouveau document valide dans les paramètres.'
+                    : `Veuillez télécharger votre ${businessType === 'individual' ? 'carte CIN' : 'patente'} pour activer pleinement votre compte.`}
+                </p>
+                {(verificationStatus === 'not_submitted' || verificationStatus === 'rejected') && (
+                  <button
+                    onClick={() => navigate('/merchant/settings')}
+                    className={`mt-3 px-4 py-2 rounded-lg font-medium text-sm ${
+                      verificationStatus === 'rejected'
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-orange-600 text-white hover:bg-orange-700'
+                    } transition-colors`}
+                  >
+                    Télécharger le document
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -461,7 +536,7 @@ function DashboardContent() {
           {/* Client Stats */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className={`text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
-              <Users className="w-5 h-5 text-sky-600" />
+              <Users className="w-5 h-5 text-blue-600" />
               Clients
             </h3>
             <div className="grid grid-cols-3 gap-4">
@@ -483,7 +558,7 @@ function DashboardContent() {
           {/* Exchange Reasons */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className={`text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
-              <BarChart3 className="w-5 h-5 text-sky-600" />
+              <BarChart3 className="w-5 h-5 text-blue-600" />
               {t('mainExchangeReasons')}
             </h3>
             {reasonsStats.length > 0 ? (
@@ -496,7 +571,7 @@ function DashboardContent() {
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2">
                       <div
-                        className={`bg-gradient-to-r from-sky-500 to-blue-500 h-2 rounded-full ${dir === 'rtl' ? 'ml-auto' : ''}`}
+                        className={`bg-blue-600 h-2 rounded-full ${dir === 'rtl' ? 'ml-auto' : ''}`}
                         style={{ width: `${(item.count / stats.total) * 100}%` }}
                       />
                     </div>
@@ -518,7 +593,7 @@ function DashboardContent() {
             </h3>
             <Link
               to="/merchant/exchanges"
-              className={`text-sm text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
+              className={`text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}
             >
               Voir tout
               <ArrowRight className={`w-4 h-4 ${dir === 'rtl' ? 'rotate-180' : ''}`} />

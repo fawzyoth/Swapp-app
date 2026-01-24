@@ -14,6 +14,11 @@ import {
   Users,
   DollarSign,
   Save,
+  FileText,
+  CreditCard,
+  Shield,
+  ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -36,6 +41,10 @@ export default function AdminMerchantDetail() {
   const [deliveryFee, setDeliveryFee] = useState<number>(DEFAULT_DELIVERY_FEE);
   const [savingFees, setSavingFees] = useState(false);
   const [feesSaved, setFeesSaved] = useState(false);
+
+  // Verification state
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -105,6 +114,31 @@ export default function AdminMerchantDetail() {
       }
     } finally {
       setSavingFees(false);
+    }
+  };
+
+  const updateVerificationStatus = async (status: 'verified' | 'rejected') => {
+    setVerificationLoading(true);
+    try {
+      const { error } = await supabase
+        .from("merchants")
+        .update({ verification_status: status })
+        .eq("id", id);
+
+      if (!error) {
+        setMerchant({
+          ...merchant,
+          verification_status: status,
+        });
+      }
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  const downloadDocument = () => {
+    if (merchant?.verification_document_url) {
+      window.open(merchant.verification_document_url, '_blank');
     }
   };
 
@@ -264,6 +298,157 @@ export default function AdminMerchantDetail() {
               </div>
             </div>
 
+            {/* Verification Section */}
+            {(merchant.business_type || merchant.verification_document_url || merchant.verification_status) && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Vérification
+                  </h3>
+                  <Shield className="w-5 h-5 text-purple-600" />
+                </div>
+
+                {/* Status Badge */}
+                <div className="mb-4">
+                  <span className="text-sm text-slate-500">Statut:</span>
+                  <div className="mt-1">
+                    {merchant.verification_status === 'verified' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+                        <CheckCircle className="w-4 h-4" />
+                        Vérifié
+                      </span>
+                    )}
+                    {merchant.verification_status === 'rejected' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                        <XCircle className="w-4 h-4" />
+                        Rejeté
+                      </span>
+                    )}
+                    {merchant.verification_status === 'pending' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+                        <Clock className="w-4 h-4" />
+                        En attente de vérification
+                      </span>
+                    )}
+                    {(!merchant.verification_status || merchant.verification_status === 'not_submitted') && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-sm font-medium">
+                        <AlertTriangle className="w-4 h-4" />
+                        Non soumis
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Business Type */}
+                {merchant.business_type && (
+                  <div className="mb-4 pb-4 border-b border-slate-200">
+                    <span className="text-sm text-slate-500">Type d'entreprise:</span>
+                    <div className="mt-1 flex items-center gap-2">
+                      {merchant.business_type === 'individual' ? (
+                        <>
+                          <CreditCard className="w-4 h-4 text-sky-600" />
+                          <span className="text-slate-900 font-medium">Particulier (CIN)</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 text-purple-600" />
+                          <span className="text-slate-900 font-medium">Entreprise (Patente)</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Document Preview/Download */}
+                {merchant.verification_document_url && (
+                  <div className="mb-4">
+                    <span className="text-sm text-slate-500 block mb-2">Document soumis:</span>
+
+                    {/* Image Preview for images */}
+                    {merchant.verification_document_url.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                      <div className="mb-3">
+                        <img
+                          src={merchant.verification_document_url}
+                          alt="Document de vérification"
+                          className="w-full h-40 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setShowDocumentModal(true)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mb-3 p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-red-500" />
+                        <span className="text-sm text-slate-600">Document PDF</span>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={downloadDocument}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ouvrir le document
+                    </button>
+                  </div>
+                )}
+
+                {/* Approve/Reject Actions */}
+                {merchant.verification_status === 'pending' && merchant.verification_document_url && (
+                  <div className="pt-4 border-t border-slate-200 space-y-2">
+                    <button
+                      onClick={() => updateVerificationStatus('verified')}
+                      disabled={verificationLoading}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                    >
+                      {verificationLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <CheckCircle className="w-4 h-4" />
+                      )}
+                      Approuver le commerçant
+                    </button>
+                    <button
+                      onClick={() => updateVerificationStatus('rejected')}
+                      disabled={verificationLoading}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Rejeter
+                    </button>
+                  </div>
+                )}
+
+                {/* Re-verify option for rejected */}
+                {merchant.verification_status === 'rejected' && (
+                  <div className="pt-4 border-t border-slate-200">
+                    <button
+                      onClick={() => updateVerificationStatus('verified')}
+                      disabled={verificationLoading}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Approuver finalement
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Document Modal */}
+            {showDocumentModal && merchant.verification_document_url && (
+              <div
+                className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+                onClick={() => setShowDocumentModal(false)}
+              >
+                <div className="max-w-4xl max-h-[90vh] overflow-auto">
+                  <img
+                    src={merchant.verification_document_url}
+                    alt="Document de vérification"
+                    className="max-w-full h-auto rounded-lg"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* QR Code */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -318,7 +503,7 @@ export default function AdminMerchantDetail() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Frais Plateforme SWAPP (TND)
+                    Frais Plateforme ixmoove (TND)
                   </label>
                   <input
                     type="number"
